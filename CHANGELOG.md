@@ -9,6 +9,10 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Fixed
+- **[2026-08-15]**: fix: correct PostToolUse hook schema and tighten local git permissions
+
+
 ### Changed
 - **[2026-08-15]**: chore: rename project to co-abap-plugin and update GitHub repo references
 
