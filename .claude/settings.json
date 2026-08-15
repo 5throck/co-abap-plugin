@@ -35,7 +35,12 @@
     "PostToolUse": [
       {
         "matcher": "Write|Edit",
-        "command": "bun scripts/sync-md.ts 2>/dev/null || true"
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bun scripts/sync-md.ts 2>/dev/null || true"
+          }
+        ]
       }
     ]
   },
