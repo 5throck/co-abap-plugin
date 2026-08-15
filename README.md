@@ -1,4 +1,4 @@
-# abap-harness-engineering
+# co-abap-plugin
 
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](./LICENSE)
 [![Claude Code Plugin](https://img.shields.io/badge/Claude_Code-Plugin-blue)](https://claude.com/claude-code)
@@ -78,14 +78,14 @@ Or set them in your shell profile / Claude Code environment.
 **Local testing:**
 ```bash
 # Set CLAUDE_PLUGIN_ROOT environment variable to test plugin locally
-export CLAUDE_PLUGIN_ROOT=/path/to/abap-harness-engineering
+export CLAUDE_PLUGIN_ROOT=/path/to/co-abap-plugin
 # Then run Claude Code CLI from your consumer project directory
 ```
 
 **From Marketplace:**
 1. Open Claude Code
 2. Go to **Settings → Plugins → Browse**
-3. Search for **"abap-harness-engineering"**
+3. Search for **"co-abap-plugin"**
 4. Click **Install → Enable**
 5. Enter SAP credentials when prompted
 
@@ -249,7 +249,7 @@ bun scripts/verify-skills.ts
 
 Check for plugin updates in Claude Code:
 ```
-Settings → Plugins → abap-harness-engineering → Check for Updates
+Settings → Plugins → co-abap-plugin → Check for Updates
 ```
 
 Version history: [CHANGELOG.md](CHANGELOG.md)
@@ -274,8 +274,8 @@ The plugin is fully self-contained and ships with the complete Harness Engineeri
 
 ## Community
 
-- 🐛 [Report Issues](https://github.com/5throck/abap_vibe_coding_plugin/issues)
-- 💡 [Feature Requests](https://github.com/5throck/abap_vibe_coding_plugin/discussions)
+- 🐛 [Report Issues](https://github.com/5throck/co-abap-plugin/issues)
+- 💡 [Feature Requests](https://github.com/5throck/co-abap-plugin/discussions)
 - 📖 [Contributing Guide](CONTRIBUTING.md)
 
 ---
@@ -295,4 +295,4 @@ AGPL v3 - see [LICENSE](./LICENSE) for details.
 
 ---
 
-*Last Updated: 2026-07-11*
+*Last Updated: 2026-08-15*

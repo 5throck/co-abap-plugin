@@ -1,6 +1,6 @@
 # Configuration Guide
 
-This directory contains sample configuration files for setting up the **abap-harness-engineering** plugin.
+This directory contains sample configuration files for setting up the **co-abap-plugin** plugin.
 
 ## Installation Methods
 
@@ -58,7 +58,7 @@ cp .gemini/settings.json.sample .gemini/settings.json
 
 ### Marketplace Install (Recommended)
 
-1. Install via Claude Code: Settings → Plugins → Search "abap-harness-engineering"
+1. Install via Claude Code: Settings → Plugins → Search "co-abap-plugin"
 2. Enable the plugin in your project
 3. Follow the `userConfig` prompts to enter SAP credentials
 
@@ -116,4 +116,4 @@ These are automatically included in all configuration samples.
 
 ---
 
-*Last Updated: 2026-05-24*
+*Last Updated: 2026-08-15*

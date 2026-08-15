@@ -48,4 +48,4 @@ This command runs the complete QA chain:
 
 ---
 
-*Plugin: abap-harness-engineering*
+*Plugin: co-abap-plugin*

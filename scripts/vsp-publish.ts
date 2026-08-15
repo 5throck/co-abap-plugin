@@ -101,7 +101,7 @@ console.log("--- Harness Packaging & Publishing Hook ---");
 // 1. Validate target directory
 if (!TARGET_DIR) {
   console.error("  [!] CLAUDE_PLUGIN_ROOT is not set.");
-  console.error('  [!] Usage: CLAUDE_PLUGIN_ROOT=/path/to/abap_vibe_coding_plugin bun scripts/vsp-publish.ts "<message>"');
+  console.error('  [!] Usage: CLAUDE_PLUGIN_ROOT=/path/to/co-abap-plugin bun scripts/vsp-publish.ts "<message>"');
   process.exit(1);
 }
 

@@ -1,6 +1,6 @@
 # Skills Index
 
-Auto-generated index of all available skills in the `skills/` directory for the **abap-harness-engineering** plugin.
+Auto-generated index of all available skills in the `skills/` directory for the **co-abap-plugin** plugin.
 
 ## Core Skills
 
@@ -48,4 +48,4 @@ To add a new skill:
 ---
 
 *Generated: 2026-07-11*
-*Source: abap-harness-engineering plugin*
+*Source: co-abap-plugin plugin*

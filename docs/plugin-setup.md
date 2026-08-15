@@ -23,7 +23,7 @@ Depending on whether you are actively developing and testing the harness plugin 
 If you want to test the plugin locally without copying files under your user home profile, invoke Claude Code directly pointing to the cloned plugin directory:
 ```bash
 # Windows / macOS / Linux
-claude --plugin-dir /path/to/abap-harness-engineering
+claude --plugin-dir /path/to/co-abap-plugin
 ```
 
 ### Method B. Permanent Consumer Repository Installation (Recommended)
@@ -116,4 +116,4 @@ For detailed guidelines regarding the complete Harness Governance, Agent role re
 - **MCP Server Details**: [docs/mcp_usage.md](https://github.com/5throck/abap_vibe_coding/blob/main/docs/mcp_usage.md)
 
 ---
-*Last Updated: 2026-07-08*
+*Last Updated: 2026-08-15*

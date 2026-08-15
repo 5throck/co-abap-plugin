@@ -1,5 +1,5 @@
-# gitleaks configuration — abap_vibe_coding_plugin
-title = "abap_vibe_coding_plugin gitleaks config"
+# gitleaks configuration — co-abap-plugin
+title = "co-abap-plugin gitleaks config"
 
 [extend]
 useDefault = true
