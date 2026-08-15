@@ -1,15 +1,15 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
-  "name": "abap-harness-engineering",
+  "name": "co-abap-plugin",
   "displayName": "ABAP Harness Engineering",
   "version": "0.1.0",
   "description": "AI Harness Engineering framework for SAP ABAP development — 19 agents, 15 skills, 7 commands, and MCP integration for the full ABAP lifecycle.",
   "author": {
     "name": "5throck",
-    "url": "https://github.com/5throck/abap_vibe_coding_plugin"
+    "url": "https://github.com/5throck/co-abap-plugin"
   },
-  "homepage": "https://github.com/5throck/abap_vibe_coding_plugin#readme",
-  "repository": "https://github.com/5throck/abap_vibe_coding_plugin",
+  "homepage": "https://github.com/5throck/co-abap-plugin#readme",
+  "repository": "https://github.com/5throck/co-abap-plugin",
   "license": "AGPL-3.0-only",
   "keywords": ["sap", "abap", "harness", "mcp", "erp", "vsp", "abap-dev", "s4hana"],
   "hooks": "./hooks/hooks.json",

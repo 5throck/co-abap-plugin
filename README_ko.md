@@ -1,4 +1,4 @@
-# abap-harness-engineering
+# co-abap-plugin
 
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](./LICENSE)
 [![Claude Code Plugin](https://img.shields.io/badge/Claude_Code-Plugin-blue)](https://claude.com/claude-code)
@@ -78,13 +78,13 @@ export SAP_CLIENT=100
 **로컬 테스트:**
 ```bash
 # 로컬에서 플러그인을 테스트하려면 CLAUDE_PLUGIN_ROOT 환경 변수를 설정합니다
-export CLAUDE_PLUGIN_ROOT=/path/to/abap-harness-engineering
+export CLAUDE_PLUGIN_ROOT=/path/to/co-abap-plugin
 # 그런 다음 소비자 프로젝트 디렉토리에서 Claude Code CLI를 실행합니다
 ```
 
 **마켓플레이스에서 설치:**
 1. Claude Code를 열고 **설정(Settings) → 플러그인(Plugins) → 찾아보기(Browse)**로 이동
-2. **"abap-harness-engineering"**을 검색
+2. **"co-abap-plugin"**을 검색
 3. **설치(Install) → 활성화(Enable)** 클릭
 4. 프롬프트가 표시되면 SAP 자격증명 입력
 
@@ -248,7 +248,7 @@ bun scripts/verify-skills.ts
 
 Claude Code에서 플러그인 업데이트 확인:
 ```
-설정(Settings) → 플러그인(Plugins) → abap-harness-engineering → 업데이트 확인
+설정(Settings) → 플러그인(Plugins) → co-abap-plugin → 업데이트 확인
 ```
 
 버전 기록: [CHANGELOG.md](CHANGELOG.md)
@@ -273,8 +273,8 @@ Claude Code에서 플러그인 업데이트 확인:
 
 ## 커뮤니티
 
-- 🐛 [이슈 신고](https://github.com/5throck/abap_vibe_coding_plugin/issues)
-- 💡 [기능 요청](https://github.com/5throck/abap_vibe_coding_plugin/discussions)
+- 🐛 [이슈 신고](https://github.com/5throck/co-abap-plugin/issues)
+- 💡 [기능 요청](https://github.com/5throck/co-abap-plugin/discussions)
 - 📖 [기여 가이드](CONTRIBUTING.md)
 
 ---

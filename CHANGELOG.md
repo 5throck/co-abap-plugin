@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to **abap-harness-engineering** are documented here.
+All notable changes to **co-abap-plugin** are documented here.
 
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 Versions follow [Semantic Versioning](https://semver.org/).
@@ -8,6 +8,10 @@ Versions follow [Semantic Versioning](https://semver.org/).
 ---
 
 ## [Unreleased]
+
+### Changed
+- **[2026-08-15]**: chore: rename project to co-abap-plugin and update GitHub repo references
+
 
 ### Changed
 - **[2026-07-10]**: docs: update README skill count after parent sync (15 skills)
