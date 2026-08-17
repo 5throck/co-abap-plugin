@@ -131,17 +131,24 @@ Required env keys (see `.env.sample`):
 | `dev-sync.ts` | Full sync pipeline (memlog → changelog → audit → commit → PR) | active |
 | `audit.ts` | Documentation integrity audit | active |
 | `sync-md.ts` | Update `memory/MEMORY.md` index | active |
+| `sync-skills.ts` | 3-platform skill distribution (.agents → .claude/.gemini) | active |
+| `validate-docs-links.ts` | Markdown link validation (dev-sync gate) | active |
 | `verify-skills.ts` | Skill auto-discovery and index generation | active |
 | `agent-verify.ts` | Agent file ↔ documentation synchronization check | active |
 | `agent-create.ts` | Create new agent files from template | active |
 | `agent-list.ts` | List all agents with metadata | active |
 | `agent-delete.ts` | Delete agent files | active |
-| `dispatch.ts` | Main CLI dispatcher with parallel/serial modes | active |
-| `dispatch-parallel.ts` | Parallel agent dispatcher for read-only tasks | active |
-| `dispatch-serial.ts` | Serial pipeline executor for write operations | active |
+| `dispatch.ts` | Main CLI dispatcher with parallel/serial modes — *variant: scripts/co-abap/* | active |
+| `dispatch-parallel.ts` | Parallel agent dispatcher for read-only tasks — *variant wrapper (ADR-0050), common logic at scripts/dispatch-parallel.ts* | active |
+| `dispatch-serial.ts` | Serial pipeline executor for write operations — *variant wrapper (ADR-0050), common logic at scripts/dispatch-serial.ts* | active |
 | `retry-handler.ts` | Error recovery with 3-retry limit and exponential backoff | active |
+| `vsp-audit.ts` | Legacy audit wrapper (delegates to audit.ts) | active |
 | `vsp-task.ts` | Create task files from `docs/task-template.md` | active |
+| `new-requirement.ts` | Scaffold `deliverables/REQ-NNN-slug/01_srs.md` and register RTM row (Stage 1) | active |
 | `setup.ts` | Post-scaffold environment setup (deps, license audit, `.env`, initial commit) | active |
+| `scratch-cleanup.ts` | Scratch workspace hygiene (temp purge, task archival, status) | active |
+| `install-vsp.ts` | VSP (VS Code extension) installation | active |
+| `install-bun.ts` | Bun runtime installation | active |
 | `vsp-publish.ts` | Sanitizes and copies core framework assets to the plugin repository | active |
 
 > **Scripting Note**: All utility scripts (dev-sync, audit, sync-md, vsp-task, setup, verify-skills) are TypeScript (.ts) and run via `bun scripts/<name>.ts`. Bootstrap scripts (`install-bun.sh/.ps1`, `install-vsp.sh/.ps1`) remain as native shell pairs — no cross-platform Bun equivalent is planned for these bootstrap-only scripts.

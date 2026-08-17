@@ -373,7 +373,7 @@ If the cross-module analysis reveals conflicting ACs (e.g., SD wants field X, FI
 
 ---
 
-*Last Updated: 2026-07-11 (rev 3)*
+*Last Updated: 2026-08-18 (rev 3)*
 
 
 ## Universal Baseline Behaviors
@@ -434,14 +434,14 @@ if (!result.success) {
 
 The project includes automated dispatch scripts for coordinating multi-agent workflows:
 
-- `scripts/dispatch.ts` - Main CLI dispatcher with parallel/serial modes
+- `scripts/co-abap/dispatch.ts` - Main CLI dispatcher with parallel/serial modes
 - `scripts/dispatch-parallel.ts` - Parallel agent dispatcher for read-only tasks
 - `scripts/dispatch-serial.ts` - Serial pipeline executor for write operations
 
 **Usage:**
 ```bash
-bun scripts/dispatch.ts parallel   # Multiple read-only agents
-bun scripts/dispatch.ts serial     # Sequential workflow
+bun scripts/co-abap/dispatch.ts parallel   # Multiple read-only agents
+bun scripts/co-abap/dispatch.ts serial     # Sequential workflow
 ```
 
 ### Error Recovery Protocol
@@ -496,9 +496,9 @@ interface SkillMetadata {
 **Parallel Dispatch (Read-Only):**
 - Use for: Initial research, schema inspection, business analysis
 - Agents: `sap-investigator`, `read-only-analyst`, `schema-inspector`
-- Command: `bun scripts/dispatch.ts parallel`
+- Command: `bun scripts/co-abap/dispatch.ts parallel`
 
 **Serial Execution (Write):**
 - Use for: Code implementation, testing, transport management
 - Agents: `code-writer` → `test-runner` (ordered sequence)
-- Command: `bun scripts/dispatch.ts serial`
+- Command: `bun scripts/co-abap/dispatch.ts serial`

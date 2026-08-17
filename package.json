@@ -8,8 +8,8 @@
     "agent:list": "bun scripts/agent-list.ts",
     "agent:delete": "bun scripts/agent-delete.ts",
     "agent:verify": "bun scripts/agent-verify.ts",
-    "dispatch:parallel": "bun scripts/dispatch.ts parallel",
-    "dispatch:serial": "bun scripts/dispatch.ts serial"
+    "dispatch:parallel": "bun scripts/co-abap/dispatch.ts parallel",
+    "dispatch:serial": "bun scripts/co-abap/dispatch.ts serial"
   },
   "devDependencies": {
     "@types/node": "^20.19.43",
