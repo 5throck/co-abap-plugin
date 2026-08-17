@@ -1,9 +1,16 @@
 ---
 name: Post-Write Mandatory Chain
 description: Use after ANY WriteSource, EditSource, or Activate operation on SAP ABAP objects. Enforces the mandatory quality gate: SyntaxCheck → RunUnitTests → GetCodeCoverage → RunATCCheck. Trigger automatically after every ABAP write operation.
-metadata:
-  type: core
 version: 1.1.0
+metadata:
+  type: process
+  triggers:
+    - after write
+    - syntax check
+    - ATC check
+    - post-write QA
+    - WriteSource
+    - EditSource
 ---
 
 > ⚠️ **Desktop App**: `PostToolUse` hooks do **not** fire automatically. Run `/post-write <object-name>` **manually** after every WriteSource or EditSource in Desktop App sessions.
