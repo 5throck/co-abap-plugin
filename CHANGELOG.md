@@ -9,6 +9,12 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+- **[2026-08-17]**: --body-file
+
+
+- **[2026-08-18]**: fix(git): add `merge=union` union merge drivers to `.gitattributes` for the append-only pipeline files (`CHANGELOG.md`, `memory/*.md`, `docs/VERSION_MANIFEST.md`, `scripts/README.md`) to prevent recurring merge conflicts when parallel PR branches both update the same anchor lines on every `/sync`; ported from `ai-workspace-standards` PR #556
+
 ### Fixed
 - **[2026-08-15]**: fix: correct PostToolUse hook schema and tighten local git permissions
 
