@@ -9,6 +9,9 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+- **[2026-08-18]**: docs(context): align `docs/co-abap.context.md` and `docs/context.md` with the canonical templates (`templates/co-abap/docs/co-abap.context.md`, `templates/common/docs/context.md`). **co-abap.context.md**: restored the 4 missing `VARIANT-INJECT` markers (Environment Setup x2, `guidelines [REQUIRED]` + `END VARIANT-INJECT`), added the missing `Read-Only Analyst`/`Schema Inspector` agent rows and `Dump Monitoring`/`Performance Tuning` skill rows (the files/directories already exist in this project but were omitted from the tables), fixed the archiving target (`docs/history.md` → `memory/`), and updated the footer. **context.md**: bumped the 3-Tier model mapping to the current generation (`gemini-3.7-flash`, `claude-opus-5-0`, `claude-sonnet-5-0`), added the "Skills needing non-English reference data" note, completed the Lifecycle Management section, and added the Platform Hooks & Governance Enforcement section (Hook Support table, GateGuard pre-edit gate, Prompt Defense, `nul` avoidance, Sequential Branch Dependency ADR-0038) — adapted for this project: no CONSTITUTION/ADR links (the project has neither), and the `nul`-detection claim was softened because this project's `audit.ts` copy is a generation behind. context.md version 2.0 → 2.1.
+
+
 - **[2026-08-18]**: fix(hooks): align `.githooks/commit-msg` with the canonical L1 hook — the project copy's memory-log dedup used `grep -qF "## $COMMIT_MSG"`, which does not match the new dev-sync's `## Session Summary
 <msg>` block, so every `/sync` commit left a duplicate memory entry in the working tree (repo never clean). Canonical hook uses exact full-line match (`grep -qxF "$COMMIT_MSG"`) and the `## Session Summary` 4-section format, and adds the English commit-message gate; removes the legacy CHANGELOG auto-add (handled by the `/changelog` command and the new pipeline's `[Unreleased]` gate).
 

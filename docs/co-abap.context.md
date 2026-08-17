@@ -28,6 +28,7 @@
 
 ---
 
+<!-- VARIANT-INJECT -->
 ## Environment Setup
 
 ```bash
@@ -55,6 +56,7 @@ Required env keys (see `.env.sample`):
 - `SAP_MODE` — MCP mode (default: `hyperfocused`)
 
 ---
+<!-- VARIANT-INJECT -->
 
 ## Agents
 
@@ -86,6 +88,8 @@ Required env keys (see `.env.sample`):
 | Security Monitor | `agents/security-monitor.md` | Security policies and safe dependencies | active |
 | GUI Scripter | `agents/gui-scripter.md` | BDC / VBS automation (last resort) | active |
 | Intelligence Investigator | `agents/sap-investigator.md` | Codebase pattern scan, historical design extraction | active |
+| Read-Only Analyst | `agents/read-only-analyst.md` | Business data queries, AS-IS analysis with draft acceptance criteria | active |
+| Schema Inspector | `agents/schema-inspector.md` | Table/CDS structure inspection, dependency maps | active |
 
 > Lifecycle management: `bun scripts/agent-verify.ts` (agent ↔ documentation sync check)
 > After any agent change, update AGENTS.md and this table.
@@ -101,7 +105,9 @@ Required env keys (see `.env.sample`):
 |-------|-----------|---------|--------|
 | ABAP Development | `skills/abap-dev/` | Core SAP ABAP development workflow | active |
 | Desktop App Fallback | `skills/desktop-app-fallback/` | Manual post-write QA for Claude Code Desktop App | active |
+| Dump Monitoring | `skills/dump-monitor/` | Standardized ListDumps/GetDump health check routed to /triage | active |
 | Meeting Facilitation | `skills/meeting-facilitation/` | Structured multi-agent meetings for decisions | active |
+| Performance Tuning | `skills/performance-tuning/` | Standardized trace/SQL/call-graph analysis for slow programs and large-table access | active |
 | Post-Write Chain | `skills/post-write-chain/` | Mandatory QA chain after WriteSource/EditSource | active |
 | Project Review | `skills/project-review/` | PM-led workspace health audit and findings report | active |
 | SAP CO — Controlling | `skills/sap-co/` | CO module: cost centers, internal orders, CO-PA | active |
@@ -444,7 +450,10 @@ For a full comparison of tool capabilities (Claude Code CLI vs Desktop App vs An
 
 ---
 
+<!-- VARIANT-INJECT: guidelines [REQUIRED] -->
 ## Coding Guidelines (ABAP Supplement)
+
+<!-- intentional-duplicate: workspace standards §8 — maintained locally for AI context proximity; update when source changes -->
 
 > These rules extend the base Coding Guidelines in context.md with ABAP-specific rules.
 > Full rationale: [context.md §Coding Guidelines](context.md#coding-guidelines)
@@ -465,13 +474,14 @@ For a full comparison of tool capabilities (Claude Code CLI vs Desktop App vs An
 ### 5. Response Language
 - All **conversational** replies — **Korean** by default.
 - All code, config, commit messages, PR titles, branch names, **CHANGELOG.md**, and **memory/` logs — **English only**.
+<!-- END VARIANT-INJECT -->
 
 ---
 
 ## Auto-Updating & Context Maintenance
 
 - **Trigger**: Agents MUST automatically append a summary to the `memory/MEMORY.md` or update architecture sections in `docs/co-abap.context.md` whenever a significant architectural decision or multi-file feature is completed.
-- **Archiving**: If `docs/co-abap.context.md` or logs become too unwieldy, older decisions should be archived to `docs/history.md`.
+- **Archiving**: If `docs/co-abap.context.md` or logs become too unwieldy, older decisions should be archived to `memory/`.
 
 ## Dynamic Roster & Skills Note
 **Note:** The agent and skills lists in this project may be dynamically expanded by the PM orchestrator during the Kickoff Phase based on emerging requirements.
@@ -490,4 +500,4 @@ For a full comparison of tool capabilities (Claude Code CLI vs Desktop App vs An
 - **Git Hooks**: Hook scripts in `.githooks/` remain Unix shell (`.sh`) for git compatibility.
 
 ---
-*co-abap.context.md version: 1.0 — migrated from legacy context.md on 2026-07-05*
+*co-abap.context.md version: 1.0 — migrated from legacy context.md on 2026-07-05; aligned with templates/co-abap/docs/co-abap.context.md (VARIANT-INJECT markers, agent/skill roster) on 2026-08-18*
