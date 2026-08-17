@@ -10,4 +10,4 @@
 | [2026-07-10](2026-07-10.md) | docs: update README skill count after parent sync (15 skills) |
 | [2026-08-15](2026-08-15.md) | fix: correct PostToolUse hook schema and tighten local git permissions |
 | [2026-08-17](2026-08-17.md) | fix(git): add merge=union drivers to .gitattributes to prevent CHANGELOG/memory conflicts |
-| [2026-08-18](2026-08-18.md) | docs(context): align co-abap.context.md and context.md with canonical templates |
+| [2026-08-18](2026-08-18.md) | chore(align): align agents, skills, and scripts with templates/co-abap |

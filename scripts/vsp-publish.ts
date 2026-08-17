@@ -1,64 +1,28 @@
 #!/usr/bin/env bun
-/**
- * vsp-publish.ts - Standardized packaging script
- * Sanitizes and copies core framework assets to the plugin repository.
- *
- * Usage:
- *   CLAUDE_PLUGIN_ROOT=/path/to/plugin bun scripts/vsp-publish.ts "feat: description"
- *   bun scripts/vsp-publish.ts --check          # dry-run validation
- *
- * @module vsp-publish
- */
+// @version 1.0.0
+// vsp-publish.ts - Harness Packaging & Publishing Hook
+// Standardized packaging script to sanitize and copy core framework assets to the plugin repository.
+// Usage: bun scripts/vsp-publish.ts "feat: align with main reference implementation"
+//   (requires CLAUDE_PLUGIN_ROOT env var pointing at the target co-abap_plugin checkout)
+//
+// TypeScript port of vsp-publish.sh / vsp-publish.ps1 (ADR-0036) — also corrects the
+// asset list, which still referenced scripts/*.ps1 and scripts/*.sh files that no
+// longer exist in this repo (all scripts migrated to .ts) and were silently skipped.
 
-import { execSync, execFileSync, ExecSyncOptions, SpawnSyncOptions } from "node:child_process";
-import { existsSync, readFileSync, mkdirSync, cpSync, readdirSync, statSync, rmSync } from "node:fs";
-import { createHash } from "node:crypto";
-import path from "node:path";
+import { $ } from "bun";
+import * as fs from "node:fs";
+import * as path from "node:path";
+import * as crypto from "node:crypto";
 
-// ── Parse arguments ───────────────────────────────────────────────────────────
-const DRY_RUN = process.argv[2] === "--check";
-const COMMIT_MESSAGE = DRY_RUN ? "" : (process.argv[2] || "");
+const GREEN = "\x1b[32m";
+const RED = "\x1b[31m";
+const YELLOW = "\x1b[33m";
+const CYAN = "\x1b[36m";
+const GRAY = "\x1b[90m";
+const RESET = "\x1b[0m";
 
-// ── Resolve paths ──────────────────────────────────────────────────────────────
 const scriptDir = path.dirname(import.meta.path);
 const sourceDir = path.resolve(scriptDir, "..");
-const TARGET_DIR = process.env.CLAUDE_PLUGIN_ROOT || "";
-
-// ── Helpers ───────────────────────────────────────────────────────────────────
-function run(cmd: string, opts?: ExecSyncOptions): string {
-  try {
-    return execSync(cmd, { encoding: "utf-8", stdio: ["pipe", "pipe", "pipe"], cwd: sourceDir, ...opts }).trim();
-  } catch {
-    return "";
-  }
-}
-
-function runOrFail(cmd: string, opts?: ExecSyncOptions): string {
-  return execSync(cmd, { encoding: "utf-8", stdio: "pipe", cwd: sourceDir, ...opts }).trim();
-}
-
-/**
- * Shell-safe execution — uses execFileSync with argument array.
- * Prevents shell injection for user-controlled inputs.
- */
-function runSafe(cmd: string, args: string[], opts?: SpawnSyncOptions): string {
-  try {
-    const result = execFileSync(cmd, args, { encoding: "utf-8", stdio: "pipe", cwd: sourceDir, ...opts });
-    return (result as string).trim();
-  } catch {
-    return "";
-  }
-}
-
-function runSafeOrFail(cmd: string, args: string[], opts?: SpawnSyncOptions): string {
-  const result = execFileSync(cmd, args, { encoding: "utf-8", stdio: "pipe", cwd: sourceDir, ...opts });
-  return (result as string).trim();
-}
-
-function md5File(filePath: string): string {
-  const data = readFileSync(filePath);
-  return createHash("md5").update(data).digest("hex");
-}
 
 interface Asset {
   source: string;
@@ -66,166 +30,171 @@ interface Asset {
   isFolder: boolean;
 }
 
-// Assets to sync — folders (target may differ from source)
-const SYNC_FOLDERS: Array<{ src: string; tgt: string }> = [
-  { src: "agents", tgt: "agents" },
-  { src: "skills", tgt: "skills" },
-  { src: path.join(".claude", "commands"), tgt: "commands" },
+const ASSETS: Asset[] = [
+  { source: "agents", target: "agents", isFolder: true },
+  { source: "skills", target: "skills", isFolder: true },
+  { source: path.join(".claude", "commands"), target: "commands", isFolder: true },
+  { source: path.join("docs", "prd-template.md"), target: path.join("docs", "prd-template.md"), isFolder: false },
+  { source: path.join("docs", "task-template.md"), target: path.join("docs", "task-template.md"), isFolder: false },
+  { source: path.join("docs", "plugin-setup.md"), target: path.join("docs", "plugin-setup.md"), isFolder: false },
+  { source: path.join("scripts", "install-vsp.ts"), target: path.join("scripts", "install-vsp.ts"), isFolder: false },
+  { source: path.join("scripts", "sync-md.ts"), target: path.join("scripts", "sync-md.ts"), isFolder: false },
+  { source: path.join("scripts", "vsp-audit.ts"), target: path.join("scripts", "vsp-audit.ts"), isFolder: false },
+  { source: path.join("scripts", "vsp-task.ts"), target: path.join("scripts", "vsp-task.ts"), isFolder: false },
+  { source: ".mcp.json.sample", target: ".mcp.json.sample", isFolder: false },
 ];
 
-// Assets to sync — individual files
-const SYNC_FILES: string[] = [
-  path.join("docs", "prd-template.md"),
-  path.join("docs", "task-template.md"),
-  path.join("docs", "plugin-setup.md"),
-  path.join("scripts", "install-vsp.ps1"),
-  path.join("scripts", "install-vsp.sh"),
-  path.join("scripts", "sync-md.ts"),
-  path.join("scripts", "audit.ts"),
-  path.join("scripts", "dev-sync.ts"),
-  path.join("scripts", "vsp-task.ts"),
-  path.join("scripts", "setup.ts"),
-  path.join("scripts", "vsp-publish.ts"),
-  ".mcp.json.sample",
-];
-
-// ── Dry-run ────────────────────────────────────────────────────────────────────
-if (DRY_RUN) {
-  console.log("✅ vsp-publish.ts: syntax OK (dry-run mode)");
-  process.exit(0);
-}
-
-// ── Main ─────────────────────────────────────────────────────────────────────
-console.log("--- Harness Packaging & Publishing Hook ---");
-
-// 1. Validate target directory
-if (!TARGET_DIR) {
-  console.error("  [!] CLAUDE_PLUGIN_ROOT is not set.");
-  console.error('  [!] Usage: CLAUDE_PLUGIN_ROOT=/path/to/co-abap-plugin bun scripts/vsp-publish.ts "<message>"');
-  process.exit(1);
-}
-
-if (!existsSync(TARGET_DIR)) {
-  console.error(`  [!] Target plugin directory '${TARGET_DIR}' does not exist.`);
-  process.exit(1);
-}
-
-const targetDir = path.resolve(TARGET_DIR);
-let verifyFailed = false;
-
-// 2. Sync folders
-for (const { src, tgt } of SYNC_FOLDERS) {
-  const srcPath = path.join(sourceDir, src);
-  const tgtPath = path.join(targetDir, tgt);
-
-  if (!existsSync(srcPath)) {
-    console.warn(`  [!] Source Folder '${srcPath}' not found. Skipping.`);
-    continue;
+function listFilesRecursive(dir: string): string[] {
+  const results: string[] = [];
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      results.push(...listFilesRecursive(full));
+    } else {
+      results.push(full);
+    }
   }
-
-  // Clean target directory first to prevent orphaned files
-  if (existsSync(tgtPath)) {
-    rmSync(tgtPath, { recursive: true, force: true });
-  }
-  mkdirSync(tgtPath, { recursive: true });
-
-  // Copy all files recursively
-  const entries = readdirSync(srcPath);
-  for (const entry of entries) {
-    const srcEntry = path.join(srcPath, entry);
-    const tgtEntry = path.join(tgtPath, entry);
-    cpSync(srcEntry, tgtEntry, { recursive: true });
-  }
-  console.log(`  [+] Synced Folder: ${src} -> ${tgt}`);
+  return results;
 }
 
-// 3. Sync files
-for (const relFile of SYNC_FILES) {
-  const srcFile = path.join(sourceDir, relFile);
-  const tgtFile = path.join(targetDir, relFile);
-
-  if (!existsSync(srcFile)) {
-    console.warn(`  [!] Source File '${srcFile}' not found. Skipping.`);
-    continue;
-  }
-
-  mkdirSync(path.dirname(tgtFile), { recursive: true });
-  cpSync(srcFile, tgtFile);
-  console.log(`  [+] Synced File  : ${relFile} -> ${relFile}`);
+function md5(filePath: string): string {
+  return crypto.createHash("md5").update(fs.readFileSync(filePath)).digest("hex");
 }
 
-// 4. Hash Verification
-console.log("Verifying copied assets integrity...");
+function syncAssets(targetDir: string): void {
+  console.log(`${GREEN}Copying core assets to plugin...${RESET}`);
 
-for (const { src, tgt } of SYNC_FOLDERS) {
-  const srcPath = path.join(sourceDir, src);
-  const tgtPath = path.join(targetDir, tgt);
-  if (!existsSync(srcPath)) continue;
+  for (const asset of ASSETS) {
+    const srcPath = path.join(sourceDir, asset.source);
+    const tgtPath = path.join(targetDir, asset.target);
 
-  // Walk source tree recursively
-  function walkDir(dir: string, base: string): void {
-    const entries = readdirSync(dir);
-    for (const entry of entries) {
-      const fullPath = path.join(dir, entry);
-      const relPath = path.join(base, entry);
-      const stat = statSync(fullPath);
+    if (!fs.existsSync(srcPath)) {
+      console.warn(`${YELLOW}  [!] Source path '${srcPath}' not found. Skipping.${RESET}`);
+      continue;
+    }
 
-      if (stat.isDirectory()) {
-        walkDir(fullPath, relPath);
-      } else {
-        const tfPath = path.join(tgtPath, relPath);
-        if (!existsSync(tfPath)) {
-          console.error(`  [!] Missing target file: ${tgt}/${relPath}`);
+    if (asset.isFolder) {
+      // Clean target directory first to prevent orphaned files
+      if (fs.existsSync(tgtPath)) fs.rmSync(tgtPath, { recursive: true, force: true });
+      fs.mkdirSync(tgtPath, { recursive: true });
+      fs.cpSync(srcPath, tgtPath, { recursive: true });
+      console.log(`${GRAY}  [+] Synced Folder: ${asset.source} -> ${asset.target}${RESET}`);
+    } else {
+      fs.mkdirSync(path.dirname(tgtPath), { recursive: true });
+      fs.copyFileSync(srcPath, tgtPath);
+      console.log(`${GRAY}  [+] Synced File  : ${asset.source} -> ${asset.target}${RESET}`);
+    }
+  }
+}
+
+function verifyAssets(targetDir: string): boolean {
+  console.log(`${GREEN}Verifying copied assets integrity...${RESET}`);
+  let verifyFailed = false;
+
+  for (const asset of ASSETS) {
+    const srcPath = path.join(sourceDir, asset.source);
+    const tgtPath = path.join(targetDir, asset.target);
+
+    if (!fs.existsSync(srcPath)) continue;
+
+    if (asset.isFolder) {
+      for (const sf of listFilesRecursive(srcPath)) {
+        const relPath = path.relative(srcPath, sf);
+        const tf = path.join(tgtPath, relPath);
+
+        if (!fs.existsSync(tf)) {
+          console.error(`${RED}  [!] Missing target file: ${path.join(asset.target, relPath)}${RESET}`);
           verifyFailed = true;
           continue;
         }
-        const srcHash = md5File(fullPath);
-        const tgtHash = md5File(tfPath);
-        if (srcHash !== tgtHash) {
-          console.error(`  [!] Hash mismatch in file: ${tgt}/${relPath}`);
+        if (md5(sf) !== md5(tf)) {
+          console.error(`${RED}  [!] Hash mismatch in file: ${path.join(asset.target, relPath)}${RESET}`);
           verifyFailed = true;
         }
       }
+    } else {
+      if (!fs.existsSync(tgtPath)) {
+        console.error(`${RED}  [!] Missing target file: ${asset.target}${RESET}`);
+        verifyFailed = true;
+        continue;
+      }
+      if (md5(srcPath) !== md5(tgtPath)) {
+        console.error(`${RED}  [!] Hash mismatch in file: ${asset.target}${RESET}`);
+        verifyFailed = true;
+      }
     }
   }
-  walkDir(srcPath, ".");
+
+  return !verifyFailed;
 }
 
-for (const relFile of SYNC_FILES) {
-  const srcFile = path.join(sourceDir, relFile);
-  const tgtFile = path.join(targetDir, relFile);
-  if (!existsSync(srcFile)) continue;
+async function commitAndPush(targetDir: string, commitMessage: string): Promise<void> {
+  console.log(`${GREEN}Staging and committing in target plugin repository...${RESET}`);
 
-  const srcHash = md5File(srcFile);
-  const tgtHash = md5File(tgtFile);
-  if (srcHash !== tgtHash) {
-    console.error(`  [!] Hash mismatch in file: ${relFile}`);
-    verifyFailed = true;
-  }
-}
+  const branchRes = await $`git -C ${targetDir} rev-parse --abbrev-ref HEAD`.quiet().nothrow();
+  const branch = branchRes.stdout.toString().trim();
 
-if (verifyFailed) {
-  console.error("Integrity check FAILED. Assets do not match.");
-  process.exit(1);
-} else {
-  console.log("Integrity verification PASSED. All copied assets match 100%.");
-}
+  await $`git -C ${targetDir} add -A`.quiet().nothrow();
+  const statusRes = await $`git -C ${targetDir} status --porcelain`.quiet().nothrow();
+  const status = statusRes.stdout.toString().trim();
 
-// 5. Commit and Push inside the Target Repository
-if (COMMIT_MESSAGE) {
-  console.log("Staging and committing in target plugin repository...");
-  runSafe("git", ["add", "-A"], { cwd: targetDir });
-
-  const status = run(`cd "${targetDir}" && git status --porcelain`);
   if (!status) {
-    console.log("No changes detected in plugin repository. Distribution up to date.");
-  } else {
-    runSafeOrFail("git", ["commit", "-m", COMMIT_MESSAGE], { cwd: targetDir });
-    const branch = runSafeOrFail("git", ["rev-parse", "--abbrev-ref", "HEAD"], { cwd: targetDir });
-    console.log(`Pushing to remote origin ${branch}...`);
-    runSafeOrFail("git", ["push", "origin", branch], { cwd: targetDir });
-    console.log("Distribution successfully pushed!");
+    console.log(`${YELLOW}No changes detected in plugin repository. Distribution up to date.${RESET}`);
+    return;
   }
+
+  const commitRes = await $`git -C ${targetDir} commit -m ${commitMessage}`.nothrow();
+  if (commitRes.exitCode !== 0) {
+    console.error(`${RED}  [!] Commit failed.${RESET}`);
+    process.exit(1);
+  }
+
+  console.log(`${GREEN}Pushing to remote origin ${branch}...${RESET}`);
+  const pushRes = await $`git -C ${targetDir} push origin ${branch}`.nothrow();
+  if (pushRes.exitCode !== 0) {
+    console.error(`${RED}  [!] Push failed.${RESET}`);
+    process.exit(1);
+  }
+
+  console.log(`${GREEN}Distribution successfully pushed!${RESET}`);
 }
 
-console.log("Harness packaging complete!");
+async function main() {
+  const commitMessage = process.argv.slice(2).join(" ");
+
+  console.log(`${CYAN}--- Harness Packaging & Publishing Hook ---${RESET}`);
+
+  const targetDir = process.env.CLAUDE_PLUGIN_ROOT;
+  if (!targetDir) {
+    console.error(`${RED}  [!] CLAUDE_PLUGIN_ROOT is not set.${RESET}`);
+    console.error(`  [!] Usage: CLAUDE_PLUGIN_ROOT=/path/to/co-abap_plugin bun scripts/vsp-publish.ts "<message>"`);
+    process.exit(1);
+  }
+  if (!fs.existsSync(targetDir)) {
+    console.error(`${RED}  [!] Target plugin directory '${targetDir}' does not exist.${RESET}`);
+    process.exit(1);
+  }
+
+  syncAssets(targetDir);
+
+  if (!verifyAssets(targetDir)) {
+    console.error(`${RED}Integrity check FAILED. Assets do not match.${RESET}`);
+    process.exit(1);
+  }
+  console.log(`${GREEN}Integrity verification PASSED. All copied assets match 100%.${RESET}`);
+
+  if (commitMessage) {
+    await commitAndPush(targetDir, commitMessage);
+  }
+
+  console.log(`${GREEN}Harness packaging complete!${RESET}`);
+}
+
+if (import.meta.main) {
+  main().catch((e) => {
+    console.error(`vsp-publish: ${e}`);
+    process.exit(1);
+  });
+}
+
+export { main, syncAssets, verifyAssets, ASSETS };

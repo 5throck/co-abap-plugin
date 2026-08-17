@@ -1,8 +1,18 @@
 #!/usr/bin/env bun
 /**
- * Error Recovery Handler
- * @version 1.0.1
+ * Error Recovery Handler — VSP variant
+ * @version 1.0.2
  * Implements retry logic with exponential backoff for subagent failures
+ *
+ * VARIANT-SPECIFIC FEATURES:
+ * - AbortSignal support for cancellation (VSP-specific, not in common version)
+ * - Randomized jitter in backoff to prevent thundering herd in parallel dispatch
+ * - Simpler error classification (co-abap does not require auth error detection)
+ *
+ * NOTE: Common version has more comprehensive auth error classification (401/403).
+ * This variant intentionally excludes it as VSP context does not use such errors.
+ * If merging with common later, consider whether auth error detection is needed.
+ * (ADR-0050 Part 1: Variant files only diverge when logic is genuinely variant-specific)
  */
 
 import path from "node:path";
@@ -15,7 +25,7 @@ interface RetryConfig {
   initialDelay: number; // milliseconds
   backoffMultiplier: number;
   maxDelay: number; // milliseconds
-  isSuccess?: (result: unknown) => boolean; // optional predicate; when omitted, throw = failure, return = success (unchanged behavior)
+  isSuccess?: (result: unknown) => boolean; // optional predicate; when omitted, throw = failure, return = success
 }
 
 interface RetryResult {
@@ -34,30 +44,33 @@ const DEFAULT_CONFIG: RetryConfig = {
 
 /**
  * Execute a function with retry logic
+ *
+ * Pass an optional AbortSignal to allow external cancellation (e.g. Ctrl-C,
+ * caller timeout). A thrown AbortError propagates immediately without retrying.
  */
 async function withRetry<T>(
   fn: () => Promise<T>,
   config: RetryConfig = DEFAULT_CONFIG,
-  context?: string
+  context?: string,
+  signal?: AbortSignal
 ): Promise<RetryResult & { result?: T }> {
   const startTime = Date.now();
   let lastError: Error | undefined;
   let delay = config.initialDelay;
 
   for (let attempt = 1; attempt <= config.maxRetries; attempt++) {
+    if (signal?.aborted) {
+      throw (signal.reason ?? new DOMException("Aborted", "AbortError"));
+    }
+
     try {
       console.log(`${context ? `[${context}] ` : ''}Attempt ${attempt}/${config.maxRetries}`);
 
       const result = await fn();
 
+      // If isSuccess predicate is provided, use it to determine success
       if (config.isSuccess && !config.isSuccess(result)) {
-        // Predicate says this "successful" (non-throwing) result is actually a failure —
-        // e.g. a Bun Shell .nothrow() result with a non-zero exit code. Synthesize an
-        // Error and route it through the same failure handling a caught exception gets.
-        const r = result as { stderr?: unknown; exitCode?: unknown } | undefined;
-        const stderrText = r?.stderr !== undefined ? String(r.stderr).trim() : '';
-        const message = stderrText || `Command failed with exit code ${r?.exitCode}`;
-        throw new Error(message);
+        throw new Error(`isSuccess predicate returned false for attempt ${attempt}`);
       }
 
       const totalTime = Date.now() - startTime;
@@ -70,26 +83,15 @@ async function withRetry<T>(
         result
       };
     } catch (error) {
-      lastError = error as Error;
+      lastError = error instanceof Error ? error : new Error(String(error));
       console.error(`${context ? `[${context}] ` : ''}Attempt ${attempt} failed: ${lastError.message}`);
 
-      if (config.isSuccess && classifyError(lastError) === 'tool') {
-        // Non-retryable (e.g. permission/access-denied) — fail immediately without
-        // consuming remaining attempts or entering the backoff delay.
-        const totalTime = Date.now() - startTime;
-        return {
-          success: false,
-          attempts: attempt,
-          lastError,
-          totalTime
-        };
-      }
-
       if (attempt < config.maxRetries) {
-        const waitTime = Math.min(delay, config.maxDelay);
-        console.log(`${context ? `[${context}] ` : ''}Waiting ${waitTime}ms before retry...`);
+        // Randomized jitter avoids thundering-herd retries in parallel dispatch.
+        const waitTime = Math.min(delay, config.maxDelay) * (0.5 + Math.random() * 0.5);
+        console.log(`${context ? `[${context}] ` : ''}Waiting ${Math.round(waitTime)}ms before retry...`);
         await new Promise(resolve => setTimeout(resolve, waitTime));
-        delay = Math.floor(delay * config.backoffMultiplier);
+        delay = Math.min(Math.floor(delay * config.backoffMultiplier), config.maxDelay);
       }
     }
   }
@@ -130,6 +132,12 @@ Possible actions:
 
 /**
  * Classify error type for appropriate response
+ *
+ * TODO(Task 26): Expand error classification with more granular categories:
+ * - HTTP status codes (404, 429, 500, 503)
+ * - SAP-specific errors (RFC_EXCEPTION, SYSTEM_FAILURE)
+ * - Timeout subtypes (connect, read, write)
+ * Consider extracting patterns into a configurable rule set.
  */
 function classifyError(error: Error): 'tool' | 'context' | 'logic' | 'external' {
   const message = error.message.toLowerCase();
@@ -140,20 +148,7 @@ function classifyError(error: Error): 'tool' | 'context' | 'logic' | 'external' 
   if (message.includes('not found') || message.includes('does not exist')) {
     return 'context';
   }
-  if (
-    message.includes('permission') ||
-    message.includes('access denied') ||
-    message.includes('bad credentials') ||
-    message.includes('http 401') ||
-    message.includes('http 403') ||
-    message.includes('401 unauthorized') ||
-    message.includes('403 forbidden')
-  ) {
-    // Non-retryable auth failures (e.g. `gh` CLI on an expired/invalid token) surface as
-    // "Bad credentials" / "HTTP 401: Bad credentials" rather than "permission"/"access denied" —
-    // observed empirically from `gh api` and `gh pr list` against the real GitHub API with an
-    // invalid token. Matched as full phrases (not bare "401"/"403") to avoid misclassifying
-    // retryable errors that happen to contain those digits incidentally.
+  if (message.includes('permission') || message.includes('access denied')) {
     return 'tool';
   }
 
