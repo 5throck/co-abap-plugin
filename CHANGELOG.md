@@ -9,6 +9,13 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+- **[2026-08-18]**: fix(hooks): align `.githooks/commit-msg` with the canonical L1 hook — the project copy's memory-log dedup used `grep -qF "## $COMMIT_MSG"`, which does not match the new dev-sync's `## Session Summary
+<msg>` block, so every `/sync` commit left a duplicate memory entry in the working tree (repo never clean). Canonical hook uses exact full-line match (`grep -qxF "$COMMIT_MSG"`) and the `## Session Summary` 4-section format, and adds the English commit-message gate; removes the legacy CHANGELOG auto-add (handled by the `/changelog` command and the new pipeline's `[Unreleased]` gate).
+
+
+- **[2026-08-18]**: chore(scripts): upgrade `dev-sync.ts` to the canonical v1.5.4 pipeline (L1 `templates/common`) with its supporting toolchain — `lib/language-guard.ts`, `retry-handler.ts` 1.0.1, `gen-pr-body.ts`, `sync-skills.ts`, `validate-docs-links.ts`. The old project copy had no `@version` header, lacked `--body-file` argument parsing (it mangled the commit message into the PR branch name), and ran no audit/language/link gates. The new pipeline adds: `--body-file` PR-body support, English commit/PR language gate, documentation link validation gate, workspace audit gate, CHANGELOG `[Unreleased]` gate, memory archival, QA pre-checks, and skill sync to platform directories. Also upgraded `skills/sync/SKILL.md` 1.0.0→1.2.0 (canonical L1) and re-synced the `.claude/`/`.gemini/`/`.agents/` platform skill mirrors; fixed a pre-existing broken link in `docs/co-abap.context.md` (§8 rationale pointed at a workspace-root `docs/constitution/08-coding-guidelines.md` that does not exist in this project — now points at the project's own `context.md#coding-guidelines`), which the new link-validation gate requires to pass. Note: this project still runs an older `audit.ts` and lacks `SCRIPTS.md`/other L1 scripts; a full `upgrade-project.ts` template sync is the recommended follow-up.
+
+
 ### Fixed
 - **[2026-08-17]**: fix(git): add merge=union drivers to .gitattributes to prevent CHANGELOG/memory conflicts
 

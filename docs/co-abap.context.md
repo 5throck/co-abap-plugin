@@ -447,7 +447,7 @@ For a full comparison of tool capabilities (Claude Code CLI vs Desktop App vs An
 ## Coding Guidelines (ABAP Supplement)
 
 > These rules extend the base Coding Guidelines in context.md with ABAP-specific rules.
-> Full rationale: [CONSTITUTION.md §8](../docs/constitution/08-coding-guidelines.md)
+> Full rationale: [context.md §Coding Guidelines](context.md#coding-guidelines)
 
 ### 1. Think Before Coding
 - State assumptions explicitly before implementing. If uncertain, ask — don't guess silently.

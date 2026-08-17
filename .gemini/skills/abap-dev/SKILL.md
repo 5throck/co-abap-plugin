@@ -1,9 +1,18 @@
 ---
 name: ABAP Development Skills
 description: Use when working on SAP ABAP development tasks — provides specialized workflows for BAPI exploration, transport management, unit testing, performance analysis, impact architecture analysis, and documentation audits. Trigger on any SAP/ABAP coding, debugging, or system analysis task.
-metadata:
-  type: core
 version: 1.1.0
+metadata:
+  type: domain
+  triggers:
+    - ABAP development
+    - BAPI exploration
+    - transport management
+    - unit testing
+    - performance analysis
+    - impact architecture
+    - SAP coding
+    - syntax check
 ---
 
 # ABAP Development Skills (vsp)
@@ -187,11 +196,11 @@ ENDCLASS.
 **Workflow**:
 1. Run the audit script:
    ```bash
-   bun scripts/vsp-audit.ts
+   bun scripts/audit.ts
    ```
 2. **Analyze Results**:
    - If audit passes: proceed to `/sync`.
-   - If audit fails: identify the specific issue and fix it in the source `.md` or script.
+   - If audit fails: identify the specific issue (Broken link, Absolute path, etc.) and fix it in the source `.md` or script.
 3. **Re-run**: Repeat until the audit returns 0 errors.
 
 **Gate**: A passing audit is required before running the final `/sync` command.

@@ -1,29 +1,29 @@
 ---
 name: meeting
 status: active
-scope: claude
+scope: common
 description: >
-  Claude Code platform-specific meeting skill. Delegates to .claude/commands/meeting.md.
+  Shortcut alias for the meeting-facilitation skill. Facilitates structured multi-agent
+  meetings for collaborative decision-making and problem resolution.
 owner: pm
-version: 1.4.0
-last_reviewed: 2026-07-08
+version: 1.1.0
+last_reviewed: 2026-07-09
 metadata:
   type: process
-  platform: claude
   triggers:
     - meeting
     - agent discussion
     - collaborative decision
     - multi-agent coordination
+    - facilitate meeting
 ---
 
-Claude Code platform override for the `meeting` skill.
+Shortcut skill for `meeting-facilitation`. Run via the platform-specific command:
 
-Use the native slash command:
+| Platform | Command |
+|----------|---------|
+| Claude Code | `/meeting "topic" --agents agent1,agent2 --rounds 2 --dialogue` |
+| Gemini CLI | Read `.gemini/commands/meeting.md` and follow the full procedure |
+| Antigravity | Read `.gemini/commands/meeting.md` and follow the full procedure |
 
-```
-/meeting "topic" --agents [agent1,agent2] --rounds 2 --dialogue
-```
-
-See `.claude/commands/meeting.md` for the full 8-step meeting process.
-See `skills/meeting-facilitation/SKILL.md` for the cross-platform reference.
+Full skill definition: `skills/meeting-facilitation/SKILL.md`
