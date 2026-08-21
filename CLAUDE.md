@@ -98,7 +98,7 @@ See `skills/desktop-app-fallback/SKILL.md` for the complete fallback workflow.
 
 ---
 
-*Last Updated: 2026-07-08*
+*Last Updated: 2026-08-21*
 
 
 ### Optimal Interaction Guidelines
@@ -123,3 +123,123 @@ Agent(
 )
 ```
 When dispatching subagents defined in `agents/*.md`, translate their configured tier into the corresponding short alias above.
+
+
+<!-- COMMON-CLAUDE:START -->
+#### teammateMode (Claude Code Agent Teams execution mode)
+
+**teammateMode** specifies the parallel execution mode when Agent Teams is enabled in Claude Code.
+
+**Values**:
+- `in-process` — Parallel execution within the same process (applies to both Claude Code CLI and Desktop App)
+- `tmux` — Parallel execution using tmux split-pane (Claude Code CLI only, not supported in Desktop App)
+- `null` — Default value (auto-selects based on environment)
+
+**Configuration location**: `.claude/settings.json` → `teammateMode`
+
+**Note**: Antigravity does not have an equivalent to Agent Teams, so teammateMode is a Claude Code-specific setting. Antigravity 2.0+ uses Agent Manager to manage multiple workspace shards.
+
+**Relationship to execution plan table**: teammateMode controls parallel execution mode. The execution plan table defines the multi-agent task dispatch.
+<!-- COMMON-CLAUDE:END -->
+
+
+<!-- COMMON-CLAUDE:START -->
+### 4. Language Policy for Documentation
+
+All `.md` files you create or modify MUST be in English, except in `ko/` or `locales/ko/` directories (Korean translation zones) or when explicitly declared as a Korean legal/regulatory content exception.
+
+- README.md, CLAUDE.md, GEMINI.md, AGENTS.md, context.md, CHANGELOG.md — English only
+- All documentation in docs/, agents/, skills/ — English only
+- Git commit messages, PR titles, PR descriptions — English only
+- Branch names — English only
+- Code comments — English (unless documenting locale-specific logic)
+
+#### Language Policy Exception
+For files where Korean is legally or academically mandatory, add to the frontmatter:
+```yaml
+lang: ko
+lang_reason: legal # legal | source-material | proper-noun
+```
+*(Not available for: context.md, CLAUDE.md, GEMINI.md, AGENTS.md, or any variant context.md)*
+<!-- COMMON-CLAUDE:END -->
+
+
+<!-- COMMON-CLAUDE:START -->
+## Execution Plan Boilerplate
+
+The execution plan table format, the Design Gate (Row 0) rule, exemption categories, and the `/sync`-as-final-step rule are the Single Source of Truth in **[AGENTS.md §5.1 Standard Execution Plan Template](AGENTS.md#51-standard-execution-plan-template)** and **[§5.1.1 Design Gate Exemptions](AGENTS.md#511-design-gate-exemptions)** — do not restate them here.
+
+> **Note (Claude Code-specific)**: The `Model` column shows the Claude Code short alias (`sonnet`/`opus`/`haiku`/`fable`) actually passed to the `Agent()` tool's `model` parameter — not the registry ID (e.g. `claude-sonnet-5-0`). See §6 (Native Sub-agents) below for the registry-ID → alias translation table. On Gemini/Antigravity, use the literal model ID instead (see GEMINI.md's equivalent note).
+<!-- Note: `fable` is a forward-looking alias not yet registered in docs/workspace-schema.json; do not use until added to the schema -->
+
+**Claude Code execution**: Use the native `Agent` tool for specialist dispatch. See §6 (Native Sub-agents) and §7 (Native Plan Mode) in this file.
+<!-- COMMON-CLAUDE:END -->
+
+
+<!-- COMMON-CLAUDE:START -->
+### 7. Native Plan Mode (`EnterPlanMode`)
+Enter native plan mode using the `EnterPlanMode` tool when:
+- The user requests a new feature or significant refactor.
+- The change modifies more than 2 files.
+- The correct approach is unclear or requires clarifying assumptions.
+
+Once in plan mode:
+1. Draft the implementation plan and present it for user review.
+2. Obtain explicit user approval before modifying any code.
+3. Track progress using the native `TaskCreate` / `TaskUpdate` toolset.
+4. After completion, summarize outcomes in the active `memory/YYYY-MM-DD.md` daily log.
+<!-- COMMON-CLAUDE:END -->
+
+
+<!-- COMMON-CLAUDE:START -->
+### 8. Task Tracking (`TaskCreate` / `TaskUpdate`)
+When working in a plan-mode session:
+- Call `TaskCreate` before starting any multi-step execution.
+- Set status `in_progress` prior to beginning each atomic step.
+- Update status to `completed` immediately upon verification of the step.
+- Never leave tasks `in_progress` at the end of a session.
+<!-- COMMON-CLAUDE:END -->
+
+
+<!-- COMMON-CLAUDE:START -->
+### 9. Project Boundary Policy
+
+- **Strict Scope**: Work only within the current project directory.
+- **No Cross-Project Modification**: Modifying files outside the project root during a session is forbidden.
+
+> For lifecycle management rules, see [docs/context.md — Lifecycle Management](docs/context.md#lifecycle-management).
+<!-- COMMON-CLAUDE:END -->
+
+
+<!-- COMMON-CLAUDE:START -->
+### 10. Custom Command Error Recovery
+If a custom slash command or background script returns a non-zero exit code:
+* **Don't bypass hooks**: Never attempt to run git commands with `--no-verify` to bypass the hook system unless under explicit, written user instruction.
+* **Code Page / UTF-8 Issues (Windows)**: If broken Korean characters or Unicode errors appear in CLI output, the Windows terminal code page (CP949) is likely the cause. Ensure `$OutputEncoding = [Console]::OutputEncoding = [System.Text.Encoding]::UTF8;` or `chcp 65001` is prepended to scripts.
+* **Diagnostic Audit**: Immediately read the failure stdout log. Common errors include:
+  * Missing staged `CHANGELOG.md` edits (caught by `pre-commit`). Fix by running `/changelog` and staging the file.
+  * Direct push attempt to `main` (caught by `pre-push`). Fix by executing the `/sync` pipeline script which handles target branch generation and PR staging automatically.
+<!-- COMMON-CLAUDE:END -->
+
+
+<!-- COMMON-CLAUDE:START -->
+### 11. Windows Platform Requirement
+
+**Git Bash required on Windows**: This workspace uses Unix-style shell scripts (`.sh`) for `.githooks/` hook files. Windows users must have Git Bash installed and configured as the default shell for git hooks.
+
+- Git Bash ships with [Git for Windows](https://gitforwindows.org/) — install if not present.
+- Verify: `git config core.hooksPath` should point to `.githooks/`
+- All `scripts/` operational scripts are TypeScript (`.ts`) — run via `bun scripts/<name>.ts`. No `.sh/.ps1` counterparts (ADR-0036).
+- If a hook fails on Windows with "command not found", run it via Git Bash: `"C:\Program Files\Git\bin\bash.exe" .githooks/pre-commit`
+<!-- COMMON-CLAUDE:END -->
+
+
+<!-- COMMON-CLAUDE:START -->
+## Git & PR Additions (Claude Code)
+
+All shared Git/PR rules are in [docs/context.md](docs/context.md). Claude Code-specific additions:
+
+- **PR Language**: Governed by [docs/context.md](docs/context.md). All PR titles, bodies, and review comments must be written in English - no exceptions.
+
+*Last Updated: 2026-08-21 — removed redundant N-1/N boilerplate rows; /sync already covers lifecycle + audit + commit + push + PR; previous: 2026-06-21 inlined N-1/N rows*
+<!-- COMMON-CLAUDE:END -->

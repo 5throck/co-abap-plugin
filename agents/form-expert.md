@@ -13,6 +13,11 @@ examples:
     assistant: "Let me use the form-expert agent for the Adobe Form design and implementation."
   - user: "The output determination is not triggering for LD00"
     assistant: "I'll dispatch the form-expert agent to investigate the TNAPR configuration."
+lifecycle:
+  phase: production
+  created: 2026-08-21
+  last_updated: 2026-08-21
+  governance: docs/lifecycle/agents/form-expert.md
 ---
 
 ## Role

@@ -13,6 +13,11 @@ examples:
     assistant: "Let me use the sap-investigator agent to scan for existing implementations."
   - user: "Find all callers of function module Z_MY_FM"
     assistant: "I'll dispatch the sap-investigator agent to grep across packages."
+lifecycle:
+  phase: production
+  created: 2026-08-21
+  last_updated: 2026-08-21
+  governance: docs/lifecycle/agents/sap-investigator.md
 ---
 
 ## Role

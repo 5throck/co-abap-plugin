@@ -13,6 +13,11 @@ examples:
     assistant: "Let me use the schema-inspector agent to trace the CDS dependency tree."
   - user: "Get the schema context for the MM procure-to-pay tables"
     assistant: "I'll dispatch the schema-inspector agent to inspect EKKO, EKPO, and related tables."
+lifecycle:
+  phase: production
+  created: 2026-08-21
+  last_updated: 2026-08-21
+  governance: docs/lifecycle/agents/schema-inspector.md
 ---
 
 ## Role

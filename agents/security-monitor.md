@@ -8,6 +8,11 @@ description: 'Security Monitor — enforces security policies, audits dependenci
 examples:
   - user: "Run security check before deployment"
     assistant: "I'll dispatch the security-monitor agent to audit dependencies and scan for secrets."
+lifecycle:
+  phase: production
+  created: 2026-08-21
+  last_updated: 2026-08-21
+  governance: docs/lifecycle/agents/security-monitor.md
 ---
 
 # Security Monitor Agent

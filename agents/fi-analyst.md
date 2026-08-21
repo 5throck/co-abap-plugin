@@ -10,6 +10,11 @@ examples:
     assistant: "I'll dispatch the fi-analyst agent to query BSIK/BSAK and produce the AP aging AS-IS report."
   - user: "FI analyst — check why GL account 400000 has uncleared postings from last period"
     assistant: "Let me use the fi-analyst agent to examine BKPF/BSEG and draft the clearing gap analysis."
+lifecycle:
+  phase: production
+  created: 2026-08-21
+  last_updated: 2026-08-21
+  governance: docs/lifecycle/agents/fi-analyst.md
 ---
 
 # FI Analyst — Financial Accounting

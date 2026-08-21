@@ -10,6 +10,11 @@ examples:
     assistant: "I'll dispatch the sd-analyst agent to query VBAK/VBAP/VBEP and produce an AS-IS delivery block analysis."
   - user: "We need to understand the order-to-cash process gap in billing — SD analyst please"
     assistant: "Let me use the sd-analyst agent to examine VBRK/VBRP billing data and draft the PRD with acceptance criteria."
+lifecycle:
+  phase: production
+  created: 2026-08-21
+  last_updated: 2026-08-21
+  governance: docs/lifecycle/agents/sd-analyst.md
 ---
 
 # SD Analyst — Sales & Distribution

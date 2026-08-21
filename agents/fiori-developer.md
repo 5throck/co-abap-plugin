@@ -13,6 +13,11 @@ examples:
     assistant: "Let me use the fiori-developer agent to investigate and fix the OData layer."
   - user: "Create a mockup for the new Fiori screen"
     assistant: "I'll dispatch the fiori-developer agent to produce an HTML prototype."
+lifecycle:
+  phase: production
+  created: 2026-08-21
+  last_updated: 2026-08-21
+  governance: docs/lifecycle/agents/fiori-developer.md
 ---
 
 ## Role

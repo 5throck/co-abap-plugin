@@ -98,64 +98,65 @@ Required env keys (see `.env.sample`):
 
 ## Skills
 
-<!-- Auto-discovered from skills/ — see skills/SKILLS.md for the generated index. -->
+<!-- DYNAMIC_SKILLS_START -->
+<!-- Auto-discovered from .agents/skills/ — synced to .claude/skills/ and .gemini/skills/ via sync-skills.ts -->
 <!-- Status: active | deprecated | experimental -->
 
 | Skill | Directory | Purpose | Status |
 |-------|-----------|---------|--------|
-| ABAP Development | `skills/abap-dev/` | Core SAP ABAP development workflow | active |
-| Desktop App Fallback | `skills/desktop-app-fallback/` | Manual post-write QA for Claude Code Desktop App | active |
-| Dump Monitoring | `skills/dump-monitor/` | Standardized ListDumps/GetDump health check routed to /triage | active |
-| Meeting Facilitation | `skills/meeting-facilitation/` | Structured multi-agent meetings for decisions | active |
-| Performance Tuning | `skills/performance-tuning/` | Standardized trace/SQL/call-graph analysis for slow programs and large-table access | active |
-| Post-Write Chain | `skills/post-write-chain/` | Mandatory QA chain after WriteSource/EditSource | active |
-| Project Review | `skills/project-review/` | PM-led workspace health audit and findings report | active |
-| SAP CO — Controlling | `skills/sap-co/` | CO module: cost centers, internal orders, CO-PA | active |
-| SAP FI — Financial Accounting | `skills/sap-fi/` | FI module: journal entries, GL, AR/AP, fixed assets | active |
-| SAP LE — Logistics Execution | `skills/sap-le/` | LE module: shipping, transport, warehouse management | active |
-| SAP MM — Materials Management | `skills/sap-mm/` | MM module: purchasing, goods receipt, material master | active |
-| SAP PP — Production Planning | `skills/sap-pp/` | PP module: BOM, routing, production orders, MRP | active |
-| SAP SD — Sales & Distribution | `skills/sap-sd/` | SD module: sales orders, deliveries, billing, pricing | active |
-| Source Command: Celebrate | `skills/source-command-celebrate/` | Celebrate task completion for team morale | active |
-| Sync | `skills/sync/` | Full project sync pipeline (memlog → changelog → audit → commit → push → PR) | active |
+| ABAP Development | `.agents/skills/abap-dev/` | Core SAP ABAP development workflow | active |
+| Desktop App Fallback | `.agents/skills/desktop-app-fallback/` | Manual post-write QA for Claude Code Desktop App | active |
+| Dump Monitoring | `.agents/skills/dump-monitor/` | Standardized ListDumps/GetDump health check routed to /triage | active |
+| Performance Tuning | `.agents/skills/performance-tuning/` | Standardized trace/SQL/call-graph analysis for slow programs and large-table access | active |
+| Post-Write Chain | `.agents/skills/post-write-chain/` | Mandatory QA chain after WriteSource/EditSource | active |
+| SAP CO — Controlling | `.agents/skills/sap-co/` | CO module: cost centers, internal orders, CO-PA | active |
+| SAP FI — Financial Accounting | `.agents/skills/sap-fi/` | FI module: journal entries, GL, AR/AP, fixed assets | active |
+| SAP LE — Logistics Execution | `.agents/skills/sap-le/` | LE module: shipping, transport, warehouse management | active |
+| SAP MM — Materials Management | `.agents/skills/sap-mm/` | MM module: purchasing, goods receipt, material master | active |
+| SAP PP — Production Planning | `.agents/skills/sap-pp/` | PP module: BOM, routing, production orders, MRP | active |
+| SAP SD — Sales & Distribution | `.agents/skills/sap-sd/` | SD module: sales orders, deliveries, billing, pricing | active |
+| Source Command: Celebrate | `.agents/skills/source-command-celebrate/` | Celebrate task completion for team morale | active |
+<!-- DYNAMIC_SKILLS_END -->
 
-> Lifecycle management: `bun scripts/verify-skills.ts`
-> Skills are also mirrored to `.claude/skills/`, `.gemini/skills/`, and `.agents/skills/` for platform-specific loading.
+> **SSOT**: Skills live in `.agents/skills/` and are synced to `.claude/skills/` and `.gemini/skills/` via `bun scripts/sync-skills.ts`.
+> Workspace-root skills (e.g., `meeting`, `meeting-facilitation`, `project-review`, `sync`) are inherited from L0 at scaffold time and are not variant-managed.
 
 ---
 
 ## Scripts
 
+> Scripts without a `scripts/co-abap/` path are inherited from `templates/common/scripts/` (copied to the project `scripts/` at scaffold time). Variant-specific scripts live in `scripts/co-abap/`.
+
 | Script | Purpose | Status |
 |--------|---------|--------|
-| `dev-sync.ts` | Full sync pipeline (memlog → changelog → audit → commit → PR) | active |
-| `audit.ts` | Documentation integrity audit | active |
-| `sync-md.ts` | Update `memory/MEMORY.md` index | active |
-| `sync-skills.ts` | 3-platform skill distribution (.agents → .claude/.gemini) | active |
-| `validate-docs-links.ts` | Markdown link validation (dev-sync gate) | active |
-| `verify-skills.ts` | Skill auto-discovery and index generation | active |
-| `agent-verify.ts` | Agent file ↔ documentation synchronization check | active |
-| `agent-create.ts` | Create new agent files from template | active |
-| `agent-list.ts` | List all agents with metadata | active |
-| `agent-delete.ts` | Delete agent files | active |
+| `dev-sync.ts` | Full sync pipeline (memlog → changelog → audit → commit → PR) — *inherited from common* | active |
+| `sync-skills.ts` | 3-platform skill distribution (.agents → .claude/.gemini) — *inherited from common* | active |
+| `audit.ts` | Documentation integrity audit — *inherited from common* | active |
+| `sync-md.ts` | Update memory/MEMORY.md index — *inherited from common* | active |
+| `sync-mcp.ts` | Propagate .mcp.json (SSOT) to .claude/.gemini settings — *inherited from common* | active |
+| `verify-skills.ts` | Skill auto-discovery and index generation — *inherited from common* | active |
+| `agent-verify.ts` | Agent file ↔ documentation synchronization check — *inherited from common* | active |
+| `agent-create.ts` | Create new agent files from template — *inherited from common* | active |
+| `agent-list.ts` | List all agents with metadata — *inherited from common* | active |
+| `agent-delete.ts` | Delete agent files — *inherited from common* | active |
 | `dispatch.ts` | Main CLI dispatcher with parallel/serial modes — *variant: scripts/co-abap/* | active |
-| `dispatch-parallel.ts` | Parallel agent dispatcher for read-only tasks — *variant wrapper (ADR-0050), common logic at scripts/dispatch-parallel.ts* | active |
-| `dispatch-serial.ts` | Serial pipeline executor for write operations — *variant wrapper (ADR-0050), common logic at scripts/dispatch-serial.ts* | active |
-| `retry-handler.ts` | Error recovery with 3-retry limit and exponential backoff | active |
-| `vsp-audit.ts` | Legacy audit wrapper (delegates to audit.ts) | active |
-| `vsp-task.ts` | Create task files from `docs/task-template.md` | active |
-| `new-requirement.ts` | Scaffold `deliverables/REQ-NNN-slug/01_srs.md` and register RTM row (Stage 1) | active |
-| `setup.ts` | Post-scaffold environment setup (deps, license audit, `.env`, initial commit) | active |
-| `scratch-cleanup.ts` | Scratch workspace hygiene (temp purge, task archival, status) | active |
-| `install-vsp.ts` | VSP (VS Code extension) installation | active |
-| `install-bun.ts` | Bun runtime installation | active |
-| `vsp-publish.ts` | Sanitizes and copies core framework assets to the plugin repository | active |
-
-> **Scripting Note**: All utility scripts (dev-sync, audit, sync-md, vsp-task, setup, verify-skills) are TypeScript (.ts) and run via `bun scripts/<name>.ts`. Bootstrap scripts (`install-bun.sh/.ps1`, `install-vsp.sh/.ps1`) remain as native shell pairs — no cross-platform Bun equivalent is planned for these bootstrap-only scripts.
+| `dispatch-parallel.ts` | Parallel agent dispatcher for read-only tasks — *variant: scripts/co-abap/* | active |
+| `dispatch-serial.ts` | Serial pipeline executor for write operations — *variant: scripts/co-abap/* | active |
+| `retry-handler.ts` | Error recovery with 3-retry limit and exponential backoff — *variant: scripts/co-abap/* | active |
+| `vsp-audit.ts` | Legacy audit wrapper (delegates to audit.ts) — *variant: scripts/co-abap/* | active |
+| `vsp-task.ts` | Create task files from template — *variant: scripts/co-abap/* | active |
+| `new-requirement.ts` | Scaffold `deliverables/REQ-NNN-slug/01_srs.md` and register RTM row (Stage 1) — *variant: scripts/co-abap/* | active |
+| `setup.ts` | Project environment setup — *variant: scripts/co-abap/* | active |
+| `scratch-cleanup.ts` | Scratch workspace hygiene (temp purge, task archival, status) — *variant: scripts/co-abap/* | active |
+| `install-vsp.ts` | VSP (VS Code extension) installation — *variant: scripts/co-abap/* | active |
+| `install-bun.ts` | Bun runtime installation — *variant: scripts/co-abap/* | active |
 
 ---
 
 ## Development Workflow
+
+> See [`docs/phase-definitions.md`](phase-definitions.md) for the full 6-step orchestration
+> workflow, the orchestration-step ↔ agent-phase numbering map, and the PM facilitation table.
 
 ```bash
 # 1. Start a task
@@ -164,12 +165,6 @@ Required env keys (see `.env.sample`):
 # 2. After implementation
 /post-write                # SyntaxCheck → RunUnitTests → GetCodeCoverage → RunATCCheck
 /transport                 # Create/release CTS transport
-
-# 3. Sync to Git
-/sync "feat: description"  # memlog → changelog → audit → commit → PR
-
-# Manual equivalent
-bun scripts/dev-sync.ts "feat: description"
 ```
 
 > **Requirements-Driven Deliverables Workflow (Stage 1 to 5)**:
@@ -179,6 +174,18 @@ bun scripts/dev-sync.ts "feat: description"
 > - `03_implementation_report.md` (Stage 3: Implementation Summary — Owner: Specialist Developers)
 > - `04_qa_report.md` (Stage 4: QA & Verification — Owner: QA Engineer)
 > - Release & sync (Stage 5 — Owner: PM & DevOps/Admin)
+
+---
+
+## Git / PR Workflow
+
+See `docs/context.md` § Git / PR Workflow for the full `/sync` pipeline (memlog → MEMORY.md
+index update → CHANGELOG.md → audit → branch → commit/push → PR). No content override —
+`co-abap`'s only variant-specific rule is ordering: `/sync "feat: description"` always runs
+**after** `/transport` (Development Workflow step 2, above) — the CTS transport must be
+created/released before the git-side commit, or the two are out of sync.
+
+Manual equivalent: `bun scripts/dev-sync.ts "feat: description"`.
 
 ---
 
@@ -200,6 +207,8 @@ bun scripts/dev-sync.ts "feat: description"
 MCP servers are configured in `.mcp.json` (Single Source of Truth).
 
 > **Policy**: `.mcp.json` is tracked in git as a shared configuration template. It must NEVER contain credentials. All secrets must be stored in `.env` (gitignored). This is enforced by the pre-commit hook.
+
+> **Duplication Note**: MCP server definitions exist in 3 locations — `.mcp.json` (SSOT), `.claude/settings.json` (Claude Code), and `.gemini/settings.json` (Gemini CLI). The pre-commit hook (Step 5) detects drift between these files. Run `bun scripts/sync-mcp.ts` to propagate `.mcp.json` changes to the other two files automatically (`--check` for drift report only).
 
 See `.mcp.json` for the complete server list.
 
@@ -226,7 +235,7 @@ See `.mcp.json` for the complete server list.
 | `scratch/tasks/` | Active task handoff files (created by `/new-task`) | Yes |
 | `scratch/stable/` | Exported ABAP sources kept for reference (read-only snapshots) | Yes |
 | `scratch/temp/` | Throwaway work files — not committed | No |
-| `.agents/skills/` | Skill mirror for Claude Agent SDK-based tools — kept in sync with `skills/` | Yes |
+| `.agents/skills/` | Skill SSOT — synced to `.claude/skills/` and `.gemini/skills/` via `sync-skills.ts` | Yes |
 | `.agents/` (other) | Claude Code plugin runtime cache (auto-generated by Desktop App) | No |
 | `.claude/worktrees/` | Parallel session worktrees (auto-managed by Desktop App) | No |
 
@@ -369,7 +378,7 @@ func (s *Server) handleX(ctx context.Context, req mcp.CallToolRequest) (*mcp.Cal
 4. **Auth** — use basic OR cookies, not both
 5. **ZADT_VSP** — WebSocket debug/RFC/RunReport require it installed on SAP
 
-> Security and sanitization rules are in [security.md](security.md).
+> Security and sanitization rules are in [security.md](security.md) (inherited from `templates/common/docs/_common/security.md` at scaffold time).
 
 ---
 
@@ -403,22 +412,21 @@ All `.md` files must be written in **English**. **Exception**: files whose name 
 
 ### Documentation Synchronization
 
-`docs/context.md` is the **single source of truth** for shared engineering content.
+`templates/common/docs/context.md` is the **single source of truth** for shared engineering content (inherited by this variant; the variant's own context file is `docs/co-abap.context.md`).
 
 | Change type | Action |
 |-------------|--------|
-| Shared content (build, codebase, rules, issues) | Update `docs/context.md` only |
+| Shared content (build, codebase, rules, issues) | Update `templates/common/docs/context.md` only |
 | Tool-specific config or skill | Update `CLAUDE.md`, `GEMINI.md`, or `.codex/` only |
-| Agent roles or workflow | Update `AGENTS.md`; reflect summary in `docs/context.md` |
+| Agent roles or workflow | Update `AGENTS.md`; reflect summary in `templates/common/docs/context.md` |
 | ABAP-specific configuration | Update `docs/co-abap.context.md` only |
 
-Do **not** copy shared sections from `docs/context.md` into tool-specific files.
+Do **not** copy shared sections from `templates/common/docs/context.md` into tool-specific files.
 
 ### Initial Context Files
 <!-- Files listed here MUST be loaded at the start of EVERY session by ALL AI tools. -->
 <!-- The exact loading mechanism (e.g., '@' syntax or 'Read' commands) is tool-specific and defined in CLAUDE.md / GEMINI.md. -->
-- `docs/context.md` - Full architecture map, standards
-- `docs/co-abap.context.md` - ABAP-specific tech stack, agents, skills, workflow
+- `docs/co-abap.context.md` - Full architecture map, standards, ABAP-specific tech stack (shared base: `templates/common/docs/context.md`)
 - `AGENTS.md` - Canonical agent roster
 - `memory/MEMORY.md` - Recent session history (if exists)
 - `skills/abap-dev/SKILL.md` - Always load for SAP ABAP development tasks
@@ -461,9 +469,6 @@ For a full comparison of tool capabilities (Claude Code CLI vs Desktop App vs An
 ## Coding Guidelines (ABAP Supplement)
 
 <!-- intentional-duplicate: workspace standards §8 — maintained locally for AI context proximity; update when source changes -->
-
-> These rules extend the base Coding Guidelines in context.md with ABAP-specific rules.
-> Full rationale: [context.md §Coding Guidelines](context.md#coding-guidelines)
 
 ### 1. Think Before Coding
 - State assumptions explicitly before implementing. If uncertain, ask — don't guess silently.

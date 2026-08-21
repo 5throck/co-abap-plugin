@@ -1,5 +1,11 @@
 # Memory Index
 
+## Sessions
+
+| Date | Summary |
+|------|---------|
+| [2026-08-21](2026-08-21.md) | chore(upgrade): sync template infra and backfill agent lifecycle governance |
+
 | Date | Summary |
 |------|---------|
 | [2026-05-25](2026-05-25.md) | Restructure plugin to Standalone Architecture and sync scripts |
@@ -11,3 +17,13 @@
 | [2026-08-15](2026-08-15.md) | fix: correct PostToolUse hook schema and tighten local git permissions |
 | [2026-08-17](2026-08-17.md) | fix(git): add merge=union drivers to .gitattributes to prevent CHANGELOG/memory conflicts |
 | [2026-08-18](2026-08-18.md) | chore(align): align agents, skills, and scripts with templates/co-abap |
+
+## Meetings
+
+| Date | Topic | File |
+|------|-------|------|
+
+## ADRs
+
+| ID | Title | Status | File |
+|----|-------|--------|------|
