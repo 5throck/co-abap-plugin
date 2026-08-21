@@ -11,6 +11,11 @@ examples:
     assistant: "I'll dispatch the gui-scripter agent — confirming no BAPI alternative first."
   - user: "Create a BDC program for MM01 mass creation"
     assistant: "Let me use the gui-scripter agent to implement the BDC solution."
+lifecycle:
+  phase: production
+  created: 2026-08-21
+  last_updated: 2026-08-21
+  governance: docs/lifecycle/agents/gui-scripter.md
 ---
 
 ## Role

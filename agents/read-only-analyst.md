@@ -13,6 +13,11 @@ examples:
     assistant: "Let me use the read-only-analyst agent to query MARD and produce the AS-IS report."
   - user: "Find all open vendor invoices"
     assistant: "I'll dispatch the read-only-analyst agent for AP open item analysis."
+lifecycle:
+  phase: production
+  created: 2026-08-21
+  last_updated: 2026-08-21
+  governance: docs/lifecycle/agents/read-only-analyst.md
 ---
 
 ## Role

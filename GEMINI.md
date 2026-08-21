@@ -171,7 +171,71 @@ The PM agent MUST leverage the **`superpowers`** plugin (e.g., `subagent-driven-
 
 ---
 
-*Last Updated: 2026-07-08*
+*Last Updated: 2026-08-21*
 
 
 
+
+
+<!-- COMMON-GEMINI:START -->
+### 4. Language Policy for Documentation
+
+All `.md` files you create or modify MUST be in English, except in `ko/` or `locales/ko/` directories (Korean translation zones) or when explicitly declared as a Korean legal/regulatory content exception.
+
+- README.md, CLAUDE.md, GEMINI.md, AGENTS.md, context.md, CHANGELOG.md — English only
+- All documentation in docs/, agents/, skills/ — English only
+- Git commit messages, PR titles, PR descriptions — English only
+- Branch names — English only
+- Code comments — English (unless documenting locale-specific logic)
+
+#### Language Policy Exception
+For files where Korean is legally or academically mandatory, add to the frontmatter:
+```yaml
+lang: ko
+lang_reason: legal # legal | source-material | proper-noun
+```
+*(Not available for: context.md, CLAUDE.md, GEMINI.md, AGENTS.md, or any variant context.md)*
+<!-- COMMON-GEMINI:END -->
+
+
+<!-- COMMON-GEMINI:START -->
+## Execution Plan Boilerplate
+
+The execution plan table format, the Design Gate (Row 0) rule, exemption categories, and the `/sync`-as-final-step rule are the Single Source of Truth in **[AGENTS.md §5.1 Standard Execution Plan Template](AGENTS.md#51-standard-execution-plan-template)** and **[§5.1.1 Design Gate Exemptions](AGENTS.md#511-design-gate-exemptions)** — do not restate them here.
+
+> **Note (Antigravity-specific)**: Use the literal Gemini model ID (e.g. `gemini-3.1-pro`) in the `Model` column, not a Claude-style short alias.
+
+**Antigravity execution**: Use `invoke_subagent` for specialist dispatch. See §3 (Subagent Instantiation & Async Orchestration) in this file.
+<!-- COMMON-GEMINI:END -->
+
+
+<!-- COMMON-GEMINI:START -->
+## Git & PR Additions (Gemini)
+
+All shared Git/PR rules are in [docs/context.md](docs/context.md). Gemini-specific additions:
+
+- **Platform Hook Support**: Gemini CLI supports BeforeTool/AfterTool/PreCompress hooks (stdin(JSON) → stdout(JSON)). AfterTool runs `bun scripts/hooks/post-write-lifecycle-check.ts --platform gemini` after every write_file/replace_file_content/multi_replace_file_content. Antigravity does NOT fire hooks (VS Code extension limitation). Claude Desktop App uses bundled CLI (hooks should fire per Anthropic docs, but workspace testing observed intermittent behavior). If hooks are not firing in your environment, run `bun scripts/hooks/post-write-lifecycle-check.ts` manually before committing.
+- **Commit Protection (SYNC_ACTIVE)**: Direct `git commit` or `git push` calls via `run_command` are **FORBIDDEN**. The pre-commit hook blocks direct commits unless executed through `/sync`. Never manipulate environment variables (e.g., `$env:SYNC_ACTIVE=1; git commit`) to bypass QA gates. If you see `[FAIL] Direct git commits are restricted`, run `/sync \"type: description\"` instead. **`--no-verify` is forbidden** — it bypasses secret scanning and all quality gates.
+- **Sequential Branch Dependency Rule**: Before running `/sync` to open a new PR while a prior PR from the same session is still open and unmerged, merge the prior PR first (or explicitly justify parallel branching in a plan/design doc). `dev-sync.ts` touches shared pipeline files (CHANGELOG.md, memory logs, VERSION_MANIFEST.md, generated READMEs) on every commit, so unmerged parallel branches conflict by default, not by exception. Full rule: context.md §3.3.
+- **PR Language**: Governed by [docs/context.md](docs/context.md). All PR titles, bodies, and review comments must be written in English - no exceptions.
+- **Windows: Git Bash required**: `.githooks/` hook files are Unix shell scripts. Windows users must have Git Bash installed. Run `git config core.hooksPath .githooks` to activate hooks. All `scripts/` operational scripts are TypeScript (`.ts`) — run via `bun scripts/<name>.ts`. No `.sh/.ps1` counterparts (ADR-0036).
+<!-- COMMON-GEMINI:END -->
+
+
+<!-- COMMON-GEMINI:START -->
+## Pre-Edit Quality Gate (All Platforms)
+
+Before editing any file for the **FIRST time in a session**, the agent MUST:
+
+1. Search for all files that import or require the target file
+2. Identify data schemas, interfaces, and type definitions the file exports
+3. Review the user's instructions for explicit scope constraints
+4. Briefly summarize findings (1-3 sentences) before proceeding
+
+| Platform | Enforcement | Details |
+|----------|:-----------:|---------|
+| Gemini CLI | ✅ Hook (automatic) | BeforeTool `deny` mode — blocked until agent investigates |
+| Antigravity | ✅ Prompt (manual) | Hooks do not fire — agent self-enforces |
+
+If the hook is not active (Antigravity), agents must still follow the 4-step process before making first edits.
+<!-- COMMON-GEMINI:END -->

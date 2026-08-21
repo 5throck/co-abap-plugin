@@ -13,6 +13,11 @@ examples:
     assistant: "Let me use the code-writer agent for the implementation."
   - user: "Modify the program per the execution plan step 2"
     assistant: "I'll dispatch the code-writer agent for this serial implementation step."
+lifecycle:
+  phase: production
+  created: 2026-08-21
+  last_updated: 2026-08-21
+  governance: docs/lifecycle/agents/code-writer.md
 ---
 
 ## Role

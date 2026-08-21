@@ -1,0 +1,4 @@
+variant=co-abap
+version=0.5.3
+platform=both
+upgraded=2026-08-21T00:18:33.174Z

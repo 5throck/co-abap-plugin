@@ -1,20 +1,20 @@
-# abap_vibe_coding — Project Context
+# [Project Name] — Project Context
 
 > Shared reference for all AI tools (Claude Code, Gemini CLI, Antigravity).
 > Tool-specific behaviors: CLAUDE.md (Claude Code), GEMINI.md (Gemini/Antigravity).
 > Variant-specific configuration (tech stack, agents, skills, scripts, workflow):
->   → docs/co-abap.context.md
+>   → docs/<variant-name>.context.md
 >
 > ⚠️ This file is IMMUTABLE after project creation.
->    All project-specific changes belong in docs/co-abap.context.md
+>    All project-specific changes belong in docs/<variant-name>.context.md
 
 ---
 
 ## Project Overview
 
-SAP ABAP Harness Engineering framework — a PM-led, multi-agent development harness for SAP ABAP projects using the **vsp** MCP server. Provides governance workflows, role-based agents, reusable skills, and automated QA chains for ABAP development.
+[One-sentence description of what this project does and who it's for.]
 
-**Type**: mcp
+**Type**: web | cli | api | mcp
 **Status**: Active development
 
 ---
@@ -40,16 +40,18 @@ Standard directory layout for all projects in this workspace:
 
 ```
 <project-root>/
-├── agents/          # 20 AI agent role definitions (+ 2 handoff-spec docs)
-├── deliverables/    # Global index & per-requirement folder logs (srs, design, implementation, QA)
-├── skills/          # 13 skill files (abap-dev, post-write-chain, meeting-facilitation, project-review, sync, sap-*)
-├── scripts/         # dev-sync, audit, sync-md automation
-├── memory/          # session logs (YYYY-MM-DD.md)
-├── scratch/tasks/   # per-task work files (task-YYYY-MM-DD-NNN.md)
-├── docs/            # context.md (this file) + co-abap.context.md + ADRs
-├── vsp             # vsp binary (gitignored — install via scripts/install-vsp.sh)
-└── .mcp.json        # MCP server config (tracked — shared template; secrets via .env)
+├── src/          # Source code
+├── docs/         # context.md (this file) + <variant>.context.md + ADRs
+├── scripts/      # Automation scripts (TypeScript, .ts via bun)
+├── memory/       # Session logs (MEMORY.md index + daily logs)
+├── agents/       # Role-based agent definitions
+├── skills/       # Reusable workflow skills (SSOT for all platforms)
+├── .claude/      # Claude Code / Claude Desktop App settings and slash commands
+├── .gemini/      # Gemini CLI settings and slash commands
+└── .agents/      # Antigravity / Antigravity CLI settings and slash commands
 ```
+
+**Cross-Platform Skill Availability**: `skills/` is the Single Source of Truth (SSOT) for all skill definitions. Every skill MUST be available on all AI platforms (Claude Code, Claude Desktop App, Gemini CLI, Antigravity, Antigravity CLI). Platform distribution directories (`.claude/skills/`, `.gemini/skills/`, `.agents/skills/`) are derived copies — they MUST NOT be the sole location of any skill.
 
 ---
 
@@ -58,16 +60,17 @@ Standard directory layout for all projects in this workspace:
 | File | Purpose |
 |------|---------|
 | `docs/context.md` | This file — immutable project identity |
-| `docs/co-abap.context.md` | ABAP variant config — tech stack, agents, skills, scripts, workflow |
-| `AGENTS.md` | Canonical agent index — auto-loaded by Claude Code |
-| `deliverables/index.md` | Global Requirements Traceability Matrix and stage tracking |
-| `CLAUDE.md` | Claude Code-specific configuration |
-| `GEMINI.md` | Gemini CLI-specific configuration |
+| `docs/<variant>.context.md` | Variant config — tech stack, agents, skills, scripts, workflow |
+| `CLAUDE.md` | Claude Code session behavior and slash commands |
+| `GEMINI.md` | Gemini CLI / Antigravity session behavior |
+| `AGENTS.md` | Canonical agent index (auto-loaded by Claude Code) |
+| `.claude/skills.json` | Claude Code/App skill discovery config (registers `skills/` SSOT) |
+| `.gemini/skills.json` | Gemini CLI skill discovery config (registers `skills/` SSOT) |
+| `.agents/skills.json` | Antigravity/Antigravity CLI skill discovery config (registers `skills/` SSOT) |
+| `scripts/audit.ts` | Documentation audit (enforced on pre-commit) |
+| `scripts/dev-sync.ts` | Full sync pipeline (memlog → audit → commit → PR) |
+| `memory/MEMORY.md` | Development log index |
 | `CHANGELOG.md` | User-visible change history |
-| `scripts/dev-sync.ts` | Full sync pipeline |
-| `scripts/audit.ts` | Documentation integrity audit |
-| `memory/MEMORY.md` | Session log index |
-| `.env.sample` | Required environment variable template |
 
 ---
 
@@ -167,7 +170,7 @@ Key rules:
 All agents must follow this file routing policy. **Creating `.md` files at the project root is prohibited** unless they are standard root files.
 
 ### Standard Root Files (allowed at root)
-`README.md`, `CHANGELOG.md`, `AGENTS.md`, `SECURITY.md`, `CLAUDE.md`, `GEMINI.md`
+`README.md`, `CHANGELOG.md`, `AGENTS.md`, `SECURITY.md`, `workspace standards`, `CLAUDE.md`, `GEMINI.md`
 
 ### File Type Routing
 | File Type | Default Location |
@@ -261,6 +264,25 @@ Use an external computation tool when the task involves ANY of the following:
 
 ---
 
+## Git / PR Workflow
+
+<!-- intentional-duplicate: workspace standards §3 — maintained locally for AI context proximity; update when source changes -->
+
+```
+/sync "feat: description"
+  — 1. memory log (memlog)
+  — 2. MEMORY.md index update (sync-md)
+  — 3. CHANGELOG.md [Unreleased] auto-add
+  — 4. audit.ts  (must exit 0)
+  — 5. git checkout -b pr/<date>-<slug>
+  — 6. git commit + push
+  — 7. gh pr create
+```
+
+> All PR titles, bodies, and review comments must be in **English**.
+
+---
+
 ## Lifecycle Management
 
 This workspace follows explicit lifecycle management practices for Agents, Skills, and Scripts to ensure consistency and maintainability.
@@ -268,10 +290,39 @@ This workspace follows explicit lifecycle management practices for Agents, Skill
 ### Common Principles
 
 - **Agent / Skill / Script** each have explicit lifecycle states (active, deprecated, retired/archived)
-- Full lifecycle rules are defined in the workspace governance documentation (`AGENTS.md`)
-- Audit commands exist for each domain: `scripts/agent-verify.ts`, `scripts/verify-skills.ts`
+- Full lifecycle rules are defined in [AGENTS.md §8 Lifecycle Management](../AGENTS.md#8-lifecycle-management)
+- Audit commands exist for each domain: `agent-lifecycle-audit.ts`, `skill-lifecycle-audit.ts`, `verify-scripts.ts`
 
----
+For full lifecycle procedures:
+- **Agent Lifecycle**: See [AGENTS.md §8 Lifecycle Management](../AGENTS.md#8-lifecycle-management)
+- **Skill Lifecycle**: See [AGENTS.md §8 Lifecycle Management](../AGENTS.md#8-lifecycle-management)
+- **Script Lifecycle**: See [AGENTS.md §8 Lifecycle Management](../AGENTS.md#8-lifecycle-management)
+
+### Context Commonization Review
+
+This file (`docs/context.md`) and each variant's `docs/<variant>.context.md` follow the same
+one-directional inheritance rule ADR-0050 already established for scripts: `docs/context.md`
+(this file) is the SSOT for content genuinely shared by every variant; a `docs/<variant>.context.md`
+may only add variant-specific content, never re-state what belongs here. As the number of variants
+grows, unrelated variants independently reaching for the same wording is expected — left unmanaged,
+that duplication compounds project-by-project instead of being fixed once at the source.
+
+- **Trigger**: after scaffolding a new variant (`create-variant` skill), and at minimum every 5
+  new variants or once per quarter (whichever comes first) since the last review.
+- **Detection**: `scripts/audit.ts`'s `checkVariantContextCommonization()` (mirrors `checkVariantScriptDrift()`)
+  flags `docs/<variant>.context.md` sections with high textual overlap across multiple variants —
+  WARN-only, a first-pass heuristic requiring human judgment, not an auto-fix.
+- **Decision** (architect-owned): content shared by nearly all variants → promote into this file via
+  `scripts/promote-context-section.ts`, so the version-footer sync in `upgrade-project.ts` propagates
+  it everywhere automatically. Content shared by only a subset → extract into a shared skill or
+  `docs/_common/` reference the affected variants opt into, rather than bloating this file (every
+  project pays the cost of reading it — irrelevant content here is a tax on variants that never
+  needed it). Coincidental, likely-to-diverge similarity → leave alone. A high overlap percentage is
+  a hint, not a verdict — `promote-context-section.ts` always shows a per-variant diff before writing
+  anything, since near-identical text can still carry a deliberate, load-bearing difference.
+- Full procedure: `skills/context-commonization-review/SKILL.md`. Full rationale, thresholds, and
+  worked examples: ADR-0050 Part 3 (Variant Script Inheritance and Golden-Reference SSOT) in the
+  workspace root repository — not linked here for the same relative-path reason noted above.
 
 ## Platform Hooks & Governance Enforcement
 
@@ -307,13 +358,15 @@ This is enforced automatically via hooks on Claude Code CLI (configurable `--mod
 
 - **Cross-Platform Redirection**: Unix/Git Bash scripts MUST use `> /dev/null 2>&1`, and PowerShell scripts MUST use `> $null` or `| Out-Null`.
 - **Prohibition of `> nul`**: Writing `> nul` or `2> nul` inside Git Bash or Bun/Node child processes creates a physical file named `nul` on Windows because Bash interprets `nul` as a relative file path.
-- **Git Ignore Protection**: `.gitignore` explicitly excludes `nul` and `NUL` to prevent accidental tracking.
+- **Git Ignore & Audit Protection**: `.gitignore` explicitly excludes `nul` and `NUL`. `scripts/audit.ts` automatically detects and removes physical `WINDOWS_DEVICE_NAMES` artifacts.
 
 ### Sequential Branch Dependency & Pipeline Integrity (ADR-0038)
 
-- **Sequential PR Merge Rule**: Before executing `/sync` to open a new PR while a prior PR from the same session is unmerged, merge the prior PR first. Shared pipeline files (`CHANGELOG.md`, `memory/YYYY-MM-DD.md`, `VERSION_MANIFEST.md`) are updated on every commit, so parallel branches conflict by default — this project mitigates that for the append-only files with `merge=union` rules in `.gitattributes`, but the sequential rule still applies to genuinely conflicting files.
+- **Sequential PR Merge Rule**: Before executing `/sync` to open a new PR while a prior PR from the same session is unmerged, merge the prior PR first. Shared pipeline files (`CHANGELOG.md`, `memory/YYYY-MM-DD.md`, `VERSION_MANIFEST.md`) are updated on every commit, so parallel branches conflict by default.
 - **Pluggable Variant Audit Hook**: Core scripts (`scripts/dev-sync.ts`, `scripts/audit.ts`) are immutable across variants. Projects requiring custom validation rules must implement them in `scripts/audit-variant.ts`.
+
+See the workspace governance documentation (Governance Enforcement Layers) and ADR-0021 (Platform Settings Parity Policy) in the workspace root repository for full specification — not linked here since this file's relative path to the workspace root differs across project depths (L2 vs. L3) and after Phase B promotion.
 
 ---
 
-*context.md version: 2.1 — aligned with `templates/common/docs/context.md` (ECC Phase 1 governance enforcement layers) on 2026-08-18*
+*context.md version: 2.4 — promoted "Git / PR Workflow" section from 6 variants (co-consult, co-design, co-develop, co-export, co-security, co-work)*

@@ -11,6 +11,11 @@ examples:
     assistant: "I'll dispatch the dba agent to design the table and optimize the indexes."
   - user: "Tune this slow SQL query querying BSEG/ACDOCA"
     assistant: "Let me use the dba agent to analyze index utilization and rewrite the SQL."
+lifecycle:
+  phase: production
+  created: 2026-08-21
+  last_updated: 2026-08-21
+  governance: docs/lifecycle/agents/dba.md
 ---
 
 ## Role

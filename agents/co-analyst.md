@@ -10,6 +10,11 @@ examples:
     assistant: "I'll dispatch the co-analyst agent to query COSP/COSS and produce the cost variance AS-IS analysis."
   - user: "CO analyst — why are internal order settlements failing for order 600001?"
     assistant: "Let me use the co-analyst agent to examine AUFK/COEP settlement data and draft the PRD."
+lifecycle:
+  phase: production
+  created: 2026-08-21
+  last_updated: 2026-08-21
+  governance: docs/lifecycle/agents/co-analyst.md
 ---
 
 # CO Analyst — Controlling
