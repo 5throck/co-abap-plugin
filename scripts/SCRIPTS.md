@@ -58,7 +58,8 @@
 | `retry-handler.ts` | L0 | 1.0.2 | active | — | — | common | — |
 | `scratch-cleanup.ts` | L0 | 1.0.0 | active | — | — | common | — |
 | `setup-github-branch-protection.ts` | L0 | 1.0.1 | active | — | — | common | — |
-| `setup.ts` | L0 | 1.0.0 | active | — | — | common | — |
+| `setup.ts` | L0 | 1.0.1 | active | — | — | common | — |
+| `co-abap/setup.ts` | L0 | 1.0.1 | active | — | — | common | — |
 | `skill-lifecycle-audit.ts` | L0 | 1.3.0 | active | — | — | common | — |
 | `sync-agent-status.ts` | L0 | 1.0.1 | active | — | — | common | — |
 | `sync-md.ts` | L0 | 1.3.0 | active | — | — | common | — |
