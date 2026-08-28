@@ -4,6 +4,7 @@
 
 | Date | Summary |
 |------|---------|
+| [2026-08-28](2026-08-28.md) | chore: remove leaked sound-synth skill --spec-exempt=E5 |
 | [2026-08-21](2026-08-21.md) | chore(upgrade): sync template infra and backfill agent lifecycle governance |
 
 | Date | Summary |

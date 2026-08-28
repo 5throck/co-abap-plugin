@@ -51,8 +51,6 @@ Thumbs.db
 *.sqlite
 *.db
 
-# CodeGraph Index
-.codegraph/
 
 
 <!-- WORKSPACE-MANAGED: Git ignore patterns. Content outside this block is preserved during project upgrades. -->
@@ -112,8 +110,6 @@ NUL
 *.sqlite
 *.db
 
-# CodeGraph Index
-.codegraph/
 
 # Antigravity/ZCode session-local state (plans, config — never shared)
 .zcode/
