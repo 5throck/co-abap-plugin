@@ -9,13 +9,13 @@
 | Skill | Layer | Required-by Agents | Phases | Relates-to | Inputs | Outputs |
 |-------|-------|-------------------|--------|------------|--------|---------|
 | `abap-code-review` | L3 | code-writer, test-runner | — | abap-dev (composes_with), abap-dev (follows) | — | — |
-| `abap-dev` | L3 | — | — | — | — | — |
+| `abap-dev` | L3 | — | — | dump-monitor (composes_with), research-analysis (composes_with), sap-co (composes_with), sap-co (composes_with), sap-fi (composes_with), sap-fi (follows), sap-le (composes_with), sap-le (composes_with), sap-mm (composes_with), sap-mm (composes_with), sap-pp (composes_with), sap-pp (composes_with), sap-sd (composes_with), sap-sd (composes_with) | — | — |
 | `agent-lifecycle-manager` | L3 | — | — | skill-lifecycle-manager (composes_with) | — | — |
 | `api-documentation` | L3 | — | — | — | — | — |
 | `decision-record` | L3 | — | — | — | — | — |
 | `desktop-app-fallback` | L3 | — | — | — | — | — |
 | `documentation-writing` | L3 | — | — | — | — | — |
-| `dump-monitor` | L3 | — | — | — | — | — |
+| `dump-monitor` | L3 | — | — | abap-dev (follows), research-analysis (composes_with), sap-co (composes_with), sap-fi (composes_with), sap-le (composes_with), sap-mm (composes_with), sap-sd (composes_with) | — | — |
 | `evidence-ledger` | L3 | — | — | — | — | — |
 | `explain-me` | L3 | — | — | — | — | — |
 | `gateguard` | L3 | — | — | — | — | — |
@@ -27,13 +27,13 @@
 | `performance-tuning` | L3 | — | — | — | — | — |
 | `post-write-chain` | L3 | — | — | — | — | — |
 | `project-review` | L3 | — | — | — | — | — |
-| `research-analysis` | L3 | — | — | documentation-writing (enables) | — | — |
-| `sap-co` | L3 | — | — | — | — | — |
-| `sap-fi` | L3 | — | — | — | — | — |
-| `sap-le` | L3 | — | — | — | — | — |
-| `sap-mm` | L3 | — | — | — | — | — |
-| `sap-pp` | L3 | — | — | — | — | — |
-| `sap-sd` | L3 | — | — | — | — | — |
+| `research-analysis` | L3 | — | — | documentation-writing (enables), sap-co (composes_with), sap-fi (composes_with), sap-le (composes_with), sap-mm (composes_with), sap-pp (composes_with), sap-sd (composes_with) | — | — |
+| `sap-co` | L3 | — | — | sap-le (composes_with), sap-mm (composes_with), sap-pp (composes_with), sap-sd (follows) | — | — |
+| `sap-fi` | L3 | — | — | sap-co (follows), sap-le (composes_with), sap-mm (composes_with), sap-pp (composes_with), sap-sd (composes_with) | — | — |
+| `sap-le` | L3 | — | — | sap-pp (follows), sap-sd (composes_with) | — | — |
+| `sap-mm` | L3 | — | — | sap-le (follows), sap-pp (composes_with) | — | — |
+| `sap-pp` | L3 | — | — | dump-monitor (follows), sap-sd (composes_with) | — | — |
+| `sap-sd` | L3 | — | — | sap-mm (follows) | — | — |
 | `script-lifecycle-manager` | L3 | — | — | — | — | — |
 | `security-scan` | L3 | — | — | — | — | — |
 | `skill-lifecycle-manager` | L3 | — | — | script-lifecycle-manager (composes_with) | — | — |
