@@ -4,10 +4,24 @@ description: Use when checking SAP system health, investigating reported errors,
 version: 1.0.0
 last_reviewed: 2026-08-15
 status: active
-scope: variant
-l2_propagate: false
+scope: co-abap
 owner: devops-admin
 prerequisites: vsp MCP server
+relates_to:
+  - skill: sap-fi
+    type: composes_with
+  - skill: sap-co
+    type: composes_with
+  - skill: sap-sd
+    type: composes_with
+  - skill: sap-mm
+    type: composes_with
+  - skill: sap-le
+    type: composes_with
+  - skill: abap-dev
+    type: follows
+  - skill: research-analysis
+    type: composes_with
 metadata:
   type: core
   triggers:

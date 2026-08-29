@@ -4,10 +4,14 @@ description: Use when working on LE module tasks — shipping, transport, wareho
 version: 1.0.0
 last_reviewed: 2026-08-15
 status: active
-scope: variant
-l2_propagate: false
+scope: co-abap
 owner: le-analyst
 prerequisites: vsp MCP server
+relates_to:
+  - skill: sap-sd
+    type: composes_with
+  - skill: sap-pp
+    type: follows
 metadata:
   type: module
   triggers:

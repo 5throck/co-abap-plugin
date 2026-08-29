@@ -1,9 +1,15 @@
 ---
 name: dba
+phases: [2]
+role: SAP DBA (Database Agent)
 model: inherit
 color: magenta
 status: active
-tier: medium
+tier:
+  claude: medium
+  gemini: medium
+  antigravity: medium
+  gemini-cli: medium
 description: 'SAP DBA (Database Agent) — handles data modeling, ERD design, Normalization (1NF to 3NF), index optimization, SQL performance tuning, and performance trace analysis. Dispatch for data modeling, complex SQL query analysis, or slow-program investigation. Use when: "design tables", "normalize database", "create index", "tune SQL performance", "DBA review", "CDS view structure design", "why is this program slow", "performance analysis".'
 
 examples:
@@ -11,6 +17,12 @@ examples:
     assistant: "I'll dispatch the dba agent to design the table and optimize the indexes."
   - user: "Tune this slow SQL query querying BSEG/ACDOCA"
     assistant: "Let me use the dba agent to analyze index utilization and rewrite the SQL."
+lifecycle:
+  phase: production
+  created: "2026-08-15"
+  last_updated: "2026-08-21"
+  governance: docs/lifecycle/agents/dba.md
+version: "1.0.0"
 lifecycle:
   phase: production
   created: 2026-08-21

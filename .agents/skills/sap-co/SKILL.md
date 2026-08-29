@@ -4,10 +4,18 @@ description: Use when working on CO module tasks — cost center accounting, int
 version: 1.0.0
 last_reviewed: 2026-08-15
 status: active
-scope: variant
-l2_propagate: false
+scope: co-abap
 owner: co-analyst
 prerequisites: vsp MCP server
+relates_to:
+  - skill: sap-sd
+    type: follows
+  - skill: sap-mm
+    type: composes_with
+  - skill: sap-le
+    type: composes_with
+  - skill: sap-pp
+    type: composes_with
 metadata:
   type: module
   triggers:

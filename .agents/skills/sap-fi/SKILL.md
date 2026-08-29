@@ -4,10 +4,20 @@ description: Use when working on FI module tasks — journal entries, account de
 version: 1.0.0
 last_reviewed: 2026-08-15
 status: active
-scope: variant
-l2_propagate: false
+scope: co-abap
 owner: fi-analyst
 prerequisites: vsp MCP server
+relates_to:
+  - skill: sap-co
+    type: follows
+  - skill: sap-sd
+    type: composes_with
+  - skill: sap-mm
+    type: composes_with
+  - skill: sap-le
+    type: composes_with
+  - skill: sap-pp
+    type: composes_with
 metadata:
   type: module
   triggers:

@@ -4,10 +4,38 @@ description: Use when working on SAP ABAP development tasks — provides special
 version: 1.1.0
 last_reviewed: 2026-08-15
 status: active
-scope: variant
-l2_propagate: false
+scope: co-abap
 owner: code-writer
 prerequisites: vsp MCP server
+relates_to:
+  - skill: sap-fi
+    type: follows
+  - skill: sap-co
+    type: composes_with
+  - skill: sap-sd
+    type: composes_with
+  - skill: sap-mm
+    type: composes_with
+  - skill: sap-le
+    type: composes_with
+  - skill: sap-pp
+    type: composes_with
+  - skill: dump-monitor
+    type: composes_with
+  - skill: research-analysis
+    type: composes_with
+  - skill: sap-fi
+    type: composes_with
+  - skill: sap-co
+    type: composes_with
+  - skill: sap-sd
+    type: composes_with
+  - skill: sap-mm
+    type: composes_with
+  - skill: sap-le
+    type: composes_with
+  - skill: sap-pp
+    type: composes_with
 metadata:
   type: core
   triggers:

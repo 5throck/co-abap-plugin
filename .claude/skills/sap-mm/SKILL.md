@@ -4,10 +4,14 @@ description: Use when working on MM module tasks — purchasing, goods receipt, 
 version: 1.0.0
 last_reviewed: 2026-08-15
 status: active
-scope: variant
-l2_propagate: false
+scope: co-abap
 owner: mm-analyst
 prerequisites: vsp MCP server
+relates_to:
+  - skill: sap-le
+    type: follows
+  - skill: sap-pp
+    type: composes_with
 metadata:
   type: module
   triggers:

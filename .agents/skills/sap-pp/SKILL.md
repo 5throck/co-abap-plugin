@@ -4,10 +4,14 @@ description: Use when working on PP module tasks — BOM, routing, production or
 version: 1.0.0
 last_reviewed: 2026-08-15
 status: active
-scope: variant
-l2_propagate: false
+scope: co-abap
 owner: pp-analyst
 prerequisites: vsp MCP server
+relates_to:
+  - skill: sap-sd
+    type: composes_with
+  - skill: dump-monitor
+    type: follows
 metadata:
   type: module
   triggers:
