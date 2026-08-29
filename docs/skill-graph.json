@@ -112,6 +112,26 @@
       "layer": "L3"
     },
     {
+      "id": "i18n-audit",
+      "type": "skill",
+      "layer": "L3"
+    },
+    {
+      "id": "i18n-formatting",
+      "type": "skill",
+      "layer": "L3"
+    },
+    {
+      "id": "i18n-layout",
+      "type": "skill",
+      "layer": "L3"
+    },
+    {
+      "id": "i18n-locale-config",
+      "type": "skill",
+      "layer": "L3"
+    },
+    {
       "id": "interface-expert",
       "type": "agent",
       "layer": "L3"
@@ -528,6 +548,78 @@
       "type": "references",
       "from": "evidence-ledger",
       "to": "decision-record",
+      "source": "prose"
+    },
+    {
+      "type": "references",
+      "from": "i18n-audit",
+      "to": "i18n-formatting",
+      "source": "prose"
+    },
+    {
+      "type": "references",
+      "from": "i18n-audit",
+      "to": "i18n-layout",
+      "source": "prose"
+    },
+    {
+      "type": "references",
+      "from": "i18n-audit",
+      "to": "i18n-locale-config",
+      "source": "prose"
+    },
+    {
+      "type": "references",
+      "from": "i18n-formatting",
+      "to": "i18n-layout",
+      "source": "prose"
+    },
+    {
+      "type": "references",
+      "from": "i18n-formatting",
+      "to": "i18n-locale-config",
+      "source": "prose"
+    },
+    {
+      "type": "references",
+      "from": "i18n-formatting",
+      "to": "translate",
+      "source": "prose"
+    },
+    {
+      "type": "references",
+      "from": "i18n-layout",
+      "to": "i18n-formatting",
+      "source": "prose"
+    },
+    {
+      "type": "references",
+      "from": "i18n-layout",
+      "to": "i18n-locale-config",
+      "source": "prose"
+    },
+    {
+      "type": "references",
+      "from": "i18n-layout",
+      "to": "translate",
+      "source": "prose"
+    },
+    {
+      "type": "references",
+      "from": "i18n-locale-config",
+      "to": "i18n-formatting",
+      "source": "prose"
+    },
+    {
+      "type": "references",
+      "from": "i18n-locale-config",
+      "to": "i18n-layout",
+      "source": "prose"
+    },
+    {
+      "type": "references",
+      "from": "i18n-locale-config",
+      "to": "translate",
       "source": "prose"
     },
     {
