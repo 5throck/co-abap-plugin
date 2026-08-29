@@ -15,11 +15,11 @@
 | `agent-verify.ts` | L0 | 1.0.2 | active | — | — | common | — |
 | `analyze-git-history.ts` | L0 | 1.0.2 | active | — | — | common | — |
 | `archive-memory.ts` | L0 | 1.0.0 | active | — | — | common | — |
-| `audit.ts` | L0 | 2.14.1 | active | — | — | common | — |
+| `audit.ts` | L0 | 2.27.0 | active | — | — | common | — |
 | `cleanup-completed-md.ts` | L0 | 1.1.0 | active | — | — | common | — |
 | `clear-pm-approval.ts` | L0 | 1.0.0 | active | — | — | common | — |
-| `compile-tokens.ts` | L0 | 1.0.0 | active | — | — | common | — |
-| `dev-sync.ts` | L0 | 1.5.5 | active | — | — | common | — |
+| `compile-tokens.ts` | L0 | 1.1.0 | active | — | — | common | — |
+| `dev-sync.ts` | L0 | 1.8.0 | active | — | — | common | — |
 | `dispatch-parallel.ts` | L0 | 1.0.1 | active | — | — | common | — |
 | `dispatch-serial.ts` | L0 | 1.0.1 | active | — | — | common | — |
 | `dispatch.ts` | L0 | 1.0.1 | active | — | — | common | — |
@@ -48,8 +48,8 @@
 | `lib/pipeline-state.ts` | L0 | 1.1.1 | active | — | — | common | — |
 | `lib/platform-context.ts` | L0 | 1.0.0 | active | — | — | common | — |
 | `lib/ssrf.ts` | L0 | 1.1.0 | active | — | — | common | — |
-| `lifecycle-sync-audit.ts` | L0 | 1.4.6 | active | — | — | common | — |
-| `md-to-ooxml.ts` | L0 | 1.1.0 | active | — | — | common | — |
+| `lifecycle-sync-audit.ts` | L0 | 1.5.0 | active | — | — | common | — |
+| `md-to-ooxml.ts` | L0 | 1.2.0 | active | — | — | common | — |
 | `new-requirement.test.ts` | L0 | 1.0.0 | active | — | — | common | — |
 | `new-requirement.ts` | L0 | 1.0.0 | active | — | — | common | — |
 | `qa-gate.ts` | L0 | 1.2.0 | active | — | — | common | — |
@@ -59,7 +59,7 @@
 | `scratch-cleanup.ts` | L0 | 1.0.0 | active | — | — | common | — |
 | `setup-github-branch-protection.ts` | L0 | 1.0.1 | active | — | — | common | — |
 | `setup.ts` | L0 | 1.0.1 | active | — | — | common | — |
-| `co-abap/setup.ts` | L0 | 1.0.1 | active | — | — | common | — |
+| `co-abap/setup.ts` | L0 | 1.0.2 | active | — | — | common | — |
 | `skill-lifecycle-audit.ts` | L0 | 1.3.0 | active | — | — | common | — |
 | `sync-agent-status.ts` | L0 | 1.0.1 | active | — | — | common | — |
 | `sync-md.ts` | L0 | 1.3.0 | active | — | — | common | — |
@@ -71,19 +71,24 @@
 | `validate-agents.ts` | L0 | 1.0.5 | active | — | — | common | — |
 | `validate-doc-folder.ts` | L0 | 1.1.0 | active | — | — | common | — |
 | `validate-docs-links.ts` | L0 | 1.0.0 | active | — | — | common | — |
-| `validate-md-language.ts` | L0 | 1.6.0 | active | — | — | common | — |
+| `validate-md-language.ts` | L0 | 1.8.0 | active | — | — | common | — |
 | `validate-model-registry.ts` | L0 | 1.1.0 | active | — | — | common | — |
 | `validate-pm-extends.ts` | L0 | 0.3.1 | active | — | — | common | — |
-| `validate-skills.ts` | L0 | 1.0.3 | active | — | — | common | — |
+| `validate-skills.ts` | L0 | 1.3.1 | active | — | — | common | — |
 | `verify-agent-deliverables.ts` | L0 | 1.0.1 | active | — | — | common | — |
 | `verify-memory.ts` | L0 | 1.1.0 | active | — | — | common | — |
 | `verify-platform-lifecycle.ts` | L0 | 1.1.2 | active | — | — | common | — |
-| `verify-readme-sync.ts` | L0 | 1.1.1 | active | — | — | common | — |
-| `verify-scripts.ts` | L0 | 1.4.0 | active | — | — | common | — |
-| `verify-skills.ts` | L0 | 1.2.0 | active | — | — | common | — |
+| `verify-readme-sync.ts` | L0 | 1.4.0 | active | — | — | common | — |
+| `verify-scripts.ts` | L0 | 1.4.1 | active | — | — | common | — |
+| `verify-skills.ts` | L0 | 1.3.0 | active | — | — | common | — |
 | `vsp-audit.ts` | L0 | 1.0.0 | active | — | — | common | — |
 | `vsp-publish.ts` | L0 | 1.0.0 | active | — | — | common | — |
 | `vsp-task.ts` | L0 | 1.0.0 | active | — | — | common | — |
+| `generate-skill-graph.ts` | L0 | 1.8.3 | active | —| —| L0+L1 | —|
+| `validate-decisions.ts` | L0 | 1.0.0 | active | —| —| L0+L1 | —|
+| `validate-procedures.ts` | L0 | 1.1.0 | active | —| —| L0+L1 | —|
+| `verify-skill-graph.ts` | L0 | 1.5.0 | active | —| —| L0+L1 | —|
+| `lib/context-md-schema.ts` | L0 | 1.0.1 | active | —| —| L0+L1 | —|
 
 ---
 
