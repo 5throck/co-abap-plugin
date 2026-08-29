@@ -15,7 +15,7 @@
 | `agent-verify.ts` | L0 | 1.0.2 | active | — | — | common | — |
 | `analyze-git-history.ts` | L0 | 1.0.2 | active | — | — | common | — |
 | `archive-memory.ts` | L0 | 1.0.0 | active | — | — | common | — |
-| `audit.ts` | L0 | 2.27.0 | active | — | — | common | — |
+| `audit.ts` | L0 | 2.28.0 | active | — | — | common | — |
 | `cleanup-completed-md.ts` | L0 | 1.1.0 | active | — | — | common | — |
 | `clear-pm-approval.ts` | L0 | 1.0.0 | active | — | — | common | — |
 | `compile-tokens.ts` | L0 | 1.1.0 | active | — | — | common | — |
@@ -79,7 +79,7 @@
 | `verify-memory.ts` | L0 | 1.1.0 | active | — | — | common | — |
 | `verify-platform-lifecycle.ts` | L0 | 1.1.2 | active | — | — | common | — |
 | `verify-readme-sync.ts` | L0 | 1.4.0 | active | — | — | common | — |
-| `verify-scripts.ts` | L0 | 1.4.1 | active | — | — | common | — |
+| `verify-scripts.ts` | L0 | 1.4.2 | active | — | — | common | — |
 | `verify-skills.ts` | L0 | 1.3.0 | active | — | — | common | — |
 | `vsp-audit.ts` | L0 | 1.0.0 | active | — | — | common | — |
 | `vsp-publish.ts` | L0 | 1.0.0 | active | — | — | common | — |

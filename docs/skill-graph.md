@@ -19,6 +19,10 @@
 | `evidence-ledger` | L3 | — | — | — | — | — |
 | `explain-me` | L3 | — | — | — | — | — |
 | `gateguard` | L3 | — | — | — | — | — |
+| `i18n-audit` | L3 | — | — | — | — | — |
+| `i18n-formatting` | L3 | — | — | — | — | — |
+| `i18n-layout` | L3 | — | — | — | — | — |
+| `i18n-locale-config` | L3 | — | — | — | — | — |
 | `meeting-facilitation` | L3 | — | — | — | — | — |
 | `performance-tuning` | L3 | — | — | — | — | — |
 | `post-write-chain` | L3 | — | — | — | — | — |
