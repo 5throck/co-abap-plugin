@@ -1,9 +1,15 @@
 ---
 name: fiori-developer
+phases: [3]
+role: SAP Fiori & UI5 Implementation Specialist
 model: inherit
 color: cyan
 status: active
-tier: medium
+tier:
+  claude: medium
+  gemini: medium
+  antigravity: medium
+  gemini-cli: medium
 description: 'SAP Fiori & UI5 Implementation Specialist — design and implementation of SAP Fiori / SAPUI5 applications following SAP Fiori Design Guidelines. Use when: "build a Fiori app", "create UI5 application", "modify OData service", "design the Fiori UI", "fix Fiori tile", "update CDS exposure for OData".'
 
 examples:
@@ -13,6 +19,12 @@ examples:
     assistant: "Let me use the fiori-developer agent to investigate and fix the OData layer."
   - user: "Create a mockup for the new Fiori screen"
     assistant: "I'll dispatch the fiori-developer agent to produce an HTML prototype."
+lifecycle:
+  phase: production
+  created: "2026-08-15"
+  last_updated: "2026-08-21"
+  governance: docs/lifecycle/agents/fiori-developer.md
+version: "1.0.0"
 lifecycle:
   phase: production
   created: 2026-08-21
