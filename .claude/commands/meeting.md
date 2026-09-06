@@ -7,8 +7,9 @@ description: >
   decision-making and problem resolution. Use when: running agent meetings, coordinating
   multi-agent discussions, or facilitating collaborative problem-solving sessions.
 owner: pm
-version: 1.4.0
-last_reviewed: 2026-07-08
+version: 1.4.1
+last_reviewed: 2026-09-05
+prerequisites: []
 metadata:
   type: process
   triggers:
@@ -19,81 +20,40 @@ metadata:
     - facilitate meeting
 ---
 
-## Meeting Facilitation
+## Context
 
-Structured multi-agent meeting orchestration for collaborative decision-making and problem resolution.
+This skill is a registration stub for the meeting-facilitation capability. The actual implementation resides in `.claude/commands/meeting.md` and `.gemini/commands/meeting.md`. This file exists to make the skill discoverable via `.agents/skills.json` at Priority 1.
 
-### Execution
+## When to Use
 
-```bash
-/meeting "meeting topic" --agents agent1,agent2 --rounds 2 --language ko --dialogue
-```
+Invoke this skill when the user requests:
+- `/meeting "topic"` — structured multi-agent discussion
+- Facilitating collaborative decision-making across specialist agents
+- Coordinating agent discussions for design reviews, problem-solving, or planning
 
-**Parameters**:
-- **Topic** (required): Clear meeting agenda
-- **Participants** (optional): Agent names, or empty for all
-- **Rounds** (optional): 1-3, default 2
-- **Language** (optional): `ko` (default) or `en`
-- **Mode** (optional): `--dialogue` for full transparency, default silent
+## Execution Steps
 
-### Meeting Process
+This skill delegates entirely to the platform-specific command files:
+1. **Claude Code**: `.claude/commands/meeting.md` handles the full facilitation flow
+2. **Gemini CLI**: `.gemini/commands/meeting.md` handles the full facilitation flow
+3. Both implementations support: agenda setting, round-robin dialogue, outcome synthesis, and transcript logging to `memory/meeting-YYYY-MM-DD-[slug].md`
 
-#### Step 1: Setup
+## Output Format
 
-Detect available agents from `agents/*.md`. Filter to `--agents` list if specified. Validate at least one agent exists.
+Meeting transcript written to `memory/meeting-YYYY-MM-DD-[slug].md` containing:
+- Agenda and objectives
+- Per-agent contributions (round-by-round)
+- Synthesized outcomes and decisions
+- Action items with owner assignments
 
-#### Step 2: Open Meeting
+## Governance Rules
 
-```
----------------------------------------- MEETING STARTED
-Topic   : [topic]
-Present : [agents]
-Rounds  : [N]
-Mode    : [Silent | Dialogue]
-----------------------------------------
-```
+All meetings facilitated through this skill MUST uphold three invariants:
+1. **Dissent seat**: at least one participant is designated as a red-team / dissenting role whose duty is to challenge the emerging consensus.
+2. **PROPOSAL, never decision**: the synthesized outcome is a proposal for the user's approval — the meeting itself does not decide.
+3. **Dissent preserved verbatim**: recorded disagreements are transcribed as stated — never summarized away or averaged into consensus.
 
-#### Step 3: Discussion Rounds
+## Related Skills
 
-- PM acts as facilitator only — does NOT contribute opinions
-- Each agent adopts persona and contributes 2-3 paragraphs per turn
-- Must reference prior speakers by name and their specific points
-- Agree, build on, or respectfully challenge — like real conversation
-- End with concrete proposal or question to a named colleague
-- Stop early if consensus reached (max 3 rounds)
-
-#### Step 4: Synthesis
-
-Cross-domain agent summarizes:
-1. **Points of Agreement** (specific)
-2. **Open Disagreements or Unresolved Questions**
-3. **Action Items** (max 5) — owner + deliverable + tier
-
-**Platform Parity Check (MANDATORY)**: Every action item affecting platform-specific files must have a paired counterpart or explicit platform declaration (`Claude` / `Antigravity` / `Both`).
-
-#### Step 5: Archive Transcript — MANDATORY
-
-Write to `memory/meeting-YYYY-MM-DD-[slug].md` in English, then:
-
-```bash
-bun "${CLAUDE_PLUGIN_ROOT:-.}/scripts/sync-md.ts" "YYYY-MM-DD" "[topic]" 2>/dev/null || true
-```
-
-#### Step 6: Close Meeting
-
-```
----------------------------------------- MEETING CLOSED
-----------------------------------------
-Transcript path: memory/meeting-YYYY-MM-DD-[slug].md
-```
-
-#### Step 7: Task Conversion (Optional with --tasks)
-
-Convert action items into tracked tasks if `--tasks` flag set.
-
-### Quality Indicators
-
-- Agents stay in character throughout
-- Each agent references prior speakers by name
-- Discussion converges or identifies clear blockers
-- Action items have specific owners and deliverables
+- `project-review` — uses meeting-facilitation for Gemini CLI parallel dispatch
+- `team-builder` — may invoke meetings during team assembly (Phase 0)
