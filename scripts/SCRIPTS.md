@@ -16,6 +16,7 @@
 | `analyze-git-history.ts` | L0 | 1.0.2 | active | — | — | common | — |
 | `archive-memory.ts` | L0 | 1.0.0 | active | — | — | common | — |
 | `audit.ts` | L0 | 2.29.2 | active | — | — | common | — |
+| `audit-variant.ts` | L0 | 1.0.0 | active | — | — | variant | variant-specific audit hook (skill-graph drift gate) |
 | `cleanup-completed-md.ts` | L0 | 1.1.0 | active | — | — | common | — |
 | `clear-pm-approval.ts` | L0 | 1.0.0 | active | — | — | common | — |
 | `compile-tokens.ts` | L0 | 1.2.0 | active | — | — | common | — |
