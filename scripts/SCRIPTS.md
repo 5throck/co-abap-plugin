@@ -15,23 +15,23 @@
 | `agent-verify.ts` | L0 | 1.0.2 | active | — | — | common | — |
 | `analyze-git-history.ts` | L0 | 1.0.2 | active | — | — | common | — |
 | `archive-memory.ts` | L0 | 1.0.0 | active | — | — | common | — |
-| `audit.ts` | L0 | 2.28.0 | active | — | — | common | — |
+| `audit.ts` | L0 | 2.29.2 | active | — | — | common | — |
 | `cleanup-completed-md.ts` | L0 | 1.1.0 | active | — | — | common | — |
 | `clear-pm-approval.ts` | L0 | 1.0.0 | active | — | — | common | — |
-| `compile-tokens.ts` | L0 | 1.1.0 | active | — | — | common | — |
-| `dev-sync.ts` | L0 | 1.8.0 | active | — | — | common | — |
-| `dispatch-parallel.ts` | L0 | 1.0.1 | active | — | — | common | — |
-| `dispatch-serial.ts` | L0 | 1.0.1 | active | — | — | common | — |
-| `dispatch.ts` | L0 | 1.0.1 | active | — | — | common | — |
+| `compile-tokens.ts` | L0 | 1.2.0 | active | — | — | common | — |
+| `dev-sync.ts` | L0 | 1.9.0 | active | — | — | common | — |
+| `dispatch-parallel.ts` | L0 | 1.1.0 | active | — | — | common | — |
+| `dispatch-serial.ts` | L0 | 1.1.0 | active | — | — | common | — |
+| `dispatch.ts` | L0 | 1.1.0 | active | — | — | common | — |
 | `gen-pr-body.ts` | L0 | 1.2.0 | active | — | — | common | — |
 | `generate-ide-rules.ts` | L0 | 1.0.0 | active | — | — | common | — |
 | `helpers/context-sections.ts` | L0 | 1.0.0 | active | — | — | common | — |
 | `helpers/extends-validator.ts` | L0 | 1.0.1 | active | — | — | common | — |
 | `helpers/merge-frontmatter.ts` | L0 | 1.8.6 | active | — | — | common | — |
 | `helpers/pm-md-parser.ts` | L0 | 1.1.0 | active | — | — | common | — |
-| `helpers/security-validator.ts` | L0 | 1.1.0 | active | — | — | common | — |
+| `helpers/security-validator.ts` | L0 | 1.1.1 | active | — | — | common | — |
 | `helpers/template-utils.ts` | L0 | 1.1.1 | active | — | — | common | — |
-| `hooks/gateguard-fact-force.ts` | L0 | 1.2.0 | active | — | — | common | — |
+| `hooks/gateguard-fact-force.ts` | L0 | 1.3.0 | active | — | — | common | — |
 | `hooks/post-write-lifecycle-check.ts` | L0 | 1.1.0 | active | — | — | common | — |
 | `hooks/pre-commit.ts` | L0 | 1.5.10 | active | — | — | common | — |
 | `hooks/pre-push.ts` | L0 | 1.2.9 | active | — | — | common | — |
@@ -42,20 +42,20 @@
 | `install-vsp.sh` | L0 | 1.0.0 | active | — | — | common | — |
 | `install-vsp.ts` | L0 | 1.0.0 | active | — | — | common | — |
 | `lib/auth.ts` | L0 | 1.0.0 | active | — | — | common | — |
-| `lib/encoding-utils.ts` | L0 | 1.1.0 | active | — | — | common | — |
+| `lib/encoding-utils.ts` | L0 | 1.2.0 | active | — | — | common | — |
 | `lib/error-handling.ts` | L0 | 1.3.0 | active | — | — | common | — |
 | `lib/language-guard.ts` | L0 | 1.0.0 | active | — | — | common | — |
 | `lib/pipeline-state.ts` | L0 | 1.1.1 | active | — | — | common | — |
 | `lib/platform-context.ts` | L0 | 1.0.0 | active | — | — | common | — |
 | `lib/ssrf.ts` | L0 | 1.1.0 | active | — | — | common | — |
-| `lifecycle-sync-audit.ts` | L0 | 1.5.0 | active | — | — | common | — |
+| `lifecycle-sync-audit.ts` | L0 | 1.6.0 | active | — | — | common | — |
 | `md-to-ooxml.ts` | L0 | 1.2.0 | active | — | — | common | — |
 | `new-requirement.test.ts` | L0 | 1.0.0 | active | — | — | common | — |
 | `new-requirement.ts` | L0 | 1.0.0 | active | — | — | common | — |
 | `qa-gate.ts` | L0 | 1.2.0 | active | — | — | common | — |
 | `readme-lifecycle-audit.ts` | L0 | 1.0.4 | active | — | — | common | — |
 | `render-pdf-deck.ts` | L0 | 1.0.0 | active | — | — | common | — |
-| `retry-handler.ts` | L0 | 1.0.2 | active | — | — | common | — |
+| `retry-handler.ts` | L0 | 1.1.0 | active | — | — | common | — |
 | `scratch-cleanup.ts` | L0 | 1.0.0 | active | — | — | common | — |
 | `setup-github-branch-protection.ts` | L0 | 1.0.1 | active | — | — | common | — |
 | `setup.ts` | L0 | 1.0.1 | active | — | — | common | — |
@@ -71,7 +71,7 @@
 | `validate-agents.ts` | L0 | 1.0.5 | active | — | — | common | — |
 | `validate-doc-folder.ts` | L0 | 1.1.0 | active | — | — | common | — |
 | `validate-docs-links.ts` | L0 | 1.0.0 | active | — | — | common | — |
-| `validate-md-language.ts` | L0 | 1.8.0 | active | — | — | common | — |
+| `validate-md-language.ts` | L0 | 1.9.0 | active | — | — | common | — |
 | `validate-model-registry.ts` | L0 | 1.1.0 | active | — | — | common | — |
 | `validate-pm-extends.ts` | L0 | 0.3.1 | active | — | — | common | — |
 | `validate-skills.ts` | L0 | 1.3.1 | active | — | — | common | — |
@@ -89,6 +89,35 @@
 | `validate-procedures.ts` | L0 | 1.1.0 | active | —| —| L0+L1 | —|
 | `verify-skill-graph.ts` | L0 | 1.5.0 | active | —| —| L0+L1 | —|
 | `lib/context-md-schema.ts` | L0 | 1.0.1 | active | —| —| L0+L1 | —|
+| `design-lint.ts` | L0 | 1.0.0 | active | —| —| L0+L1 | —|
+| `skill-session-review.ts` | L0 | 1.0.0 | active | `--date`, `--json`, `--dry-run` | —| L0+L1 | —|
+| `upgrade-project.ts` | L0 | 1.18.0 | active | `--variant`, `--platform`, `--dry-run`, `--prune-removed`, `--rollback`, `--yes` | —| L3 | —|
+| `handbook/apply-handbook-theme.ts` | L0 | 1.0.0 | active | — | — | common | — |
+| `handbook/build-search-index.ts` | L0 | 1.0.0 | active | — | — | common | — |
+| `handbook/check-a11y.ts` | L0 | 1.0.0 | active | — | — | common | — |
+| `handbook/check-authoring.ts` | L0 | 1.2.0 | active | — | — | common | — |
+| `handbook/check-external-links.ts` | L0 | 1.2.0 | active | — | — | common | — |
+| `handbook/check-i18n-parity.ts` | L0 | 1.0.0 | active | — | — | common | — |
+| `handbook/check-labels.ts` | L0 | 1.0.0 | active | — | — | common | — |
+| `handbook/check-links.ts` | L0 | 1.0.0 | active | — | — | common | — |
+| `handbook/check-lint.ts` | L0 | 1.0.0 | active | — | — | common | — |
+| `handbook/check-search.ts` | L0 | 2.0.0 | active | — | — | common | — |
+| `handbook/check-spell.ts` | L0 | 1.0.0 | active | — | — | common | — |
+| `handbook/check-structure.ts` | L0 | 1.0.0 | active | — | — | common | — |
+| `handbook/check-symmetry.ts` | L0 | 1.0.0 | active | — | — | common | — |
+| `handbook/check-tables.ts` | L0 | 1.0.0 | active | — | — | common | — |
+| `handbook/deploy-handbook.ts` | L0 | 1.1.0 | active | — | — | common | — |
+| `handbook/extract-copycode.ts` | L0 | 1.0.0 | active | — | — | common | — |
+| `handbook/handbook-doctor.ts` | L0 | 1.0.0 | active | — | — | common | — |
+| `handbook/handbook-sync-audit.ts` | L0 | 1.0.0 | active | — | — | common | — |
+| `handbook/nav-utils.ts` | L0 | 1.0.0 | active | — | — | common | — |
+| `handbook/scaffold-handbook.ts` | L0 | 1.2.0 | active | — | — | common | — |
+| `handbook/update-footers.ts` | L0 | 1.0.0 | active | — | — | common | — |
+| `handbook/validate-handbook.ts` | L0 | 1.1.0 | active | — | — | common | — |
+| `handbook/validate-nav.ts` | L0 | 1.0.0 | active | — | — | common | — |
+| `tests/apply-handbook-theme.test.ts` | L0 | 1.0.1 | active | — | — | common | — |
+| `tests/check-structure.test.ts` | L0 | 1.0.0 | active | — | — | common | — |
+| `tests/deploy-readme-patch.test.ts` | L0 | 1.0.0 | active | — | — | common | — |
 
 ---
 
