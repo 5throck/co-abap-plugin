@@ -1,7 +1,7 @@
 #!/usr/bin/env bun
 /**
  * Skill Lifecycle Validation Script
- * @version 1.3.1
+ * @version 1.5.1
  */
 // Validates skills/*/SKILL.md files for required frontmatter
 // and checks governance records in docs/lifecycle/skills/*.md
@@ -10,8 +10,15 @@
 //   bun scripts/validate-skills.ts
 //   bun scripts/validate-skills.ts --json
 
-import { readFileSync, existsSync, readdirSync } from 'node:fs';
+import { readFileSync, existsSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
+// v1.5.1: ./validators/ is L0-only; the L1/L3 project copies of this script must not crash
+// at import time — the schema sweep degrades to a skip when the validators are absent
+// (the workspace-side sweep covers those checks).
+const schemaValidatorAvailable = existsSync(join(import.meta.dir, 'validators', 'schema-validator.ts'));
+const schemaValidator = schemaValidatorAvailable ? await import('./validators/schema-validator.ts') : null;
+const parseFrontmatterYaml = schemaValidator?.parseFrontmatter;
+const validateSkillFrontmatter = schemaValidator?.validateSkillFrontmatter;
 import { cwd } from 'node:process';
 
 interface ValidationIssue {
@@ -406,6 +413,72 @@ function collectKnownSkillNames(): Set<string> {
 }
 
 // Main
+// Part 1c: Security holds — a skill flagged with security_hold: true must be
+// quarantined immediately (constitution 06 Security Protocol): non-deprecated
+// status or a missing removal-date is a hard error, not a warning.
+function validateSecurityHolds(): void {
+  if (!JSON_MODE) console.log(`\n${colors.cyan}🛡️  Part 1c: Security Hold Validation (security_hold: true requires quarantine)${colors.reset}`);
+
+  const skillDirs = readdirSync(SKILLS_DIR, { withFileTypes: true })
+    .filter(dirent => dirent.isDirectory())
+    .map(dirent => dirent.name);
+
+  for (const skillDir of skillDirs) {
+    const skillFile = join(SKILLS_DIR, skillDir, 'SKILL.md');
+    if (!existsSync(skillFile)) continue;
+    const raw = readFileSync(skillFile, 'utf-8');
+    const fm = raw.match(/^---\r?\n([\s\S]*?)\r?\n---/);
+    if (!fm) continue;
+    const body = fm[1];
+    if (!/^security_hold:\s*true\b/m.test(body)) continue;
+
+    const isDeprecated = /^status:\s*deprecated\b/m.test(body);
+    const hasRemovalDate = /^removal[-_]date:/m.test(body);
+    if (!isDeprecated) {
+      fail(
+        skillDir,
+        'security-hold-active',
+        skillDir + ': security_hold: true but status is not deprecated — quarantine immediately',
+        'Set status: deprecated and open the remediation PR now (constitution 06 Security Protocol).'
+      );
+    }
+    if (!hasRemovalDate) {
+      fail(
+        skillDir,
+        'security-hold-no-removal-date',
+        skillDir + ': security_hold: true without a removal-date — held skills must be scheduled for removal (≤ 30 days)',
+        'Add removal-date: YYYY-MM-DD to the SKILL.md frontmatter.'
+      );
+    }
+  }
+}
+
+// T-20260910-017: run the schema-validator rule set over workspace-root skills/ frontmatter.
+// CONSTITUTION 11.4 previously only exercised these rules per-variant (templates/co-*) via
+// runAllValidators(); root skills/*/SKILL.md now get the identical required-field /
+// status-enum / semver / metadata checks through the same exported rule functions.
+function validateSkillSchema(): void {
+  if (!existsSync(SKILLS_DIR)) return;
+  for (const entry of readdirSync(SKILLS_DIR)) {
+    const skillPath = join(SKILLS_DIR, entry, 'SKILL.md');
+    try {
+      if (!statSync(join(SKILLS_DIR, entry)).isDirectory() || !existsSync(skillPath)) continue;
+    } catch { continue; }
+    if (!parseFrontmatterYaml || !validateSkillFrontmatter) continue; // validators absent in L1/L3 — workspace sweep covers schema checks
+    const fm = parseFrontmatterYaml(readFileSync(skillPath, 'utf-8'));
+    if (Object.keys(fm).length === 0) continue; // no frontmatter — existing checks cover that
+    for (const issue of validateSkillFrontmatter(fm, entry)) {
+      // Downgrade status-enum violations to WARN at the L0 sweep only: the single known
+      // offender (skills/explain-me, `status: experimental`) is awaiting adjudication by
+      // T-20260910-021 (reclassify vs extend the enum). Revisit once that ticket lands.
+      const downgraded = issue.severity === 'error' && issue.category === 'invalid-enum';
+      const msg = `schema-validator: ${issue.message}${downgraded ? ' (adjudication pending: T-20260910-021)' : ''}`;
+      if (issue.severity === 'error' && !downgraded) fail(entry, 'schema-skill', msg);
+      else warn(entry, 'schema-skill', msg);
+    }
+  }
+}
+
 function main() {
   if (!JSON_MODE) {
     console.log(`${colors.cyan}🔍 Validating skill lifecycle documentation...${colors.reset}`);
@@ -414,8 +487,10 @@ function main() {
 
   validateRuntimeDefinitions();
   validateLayerPlacement();
+  validateSecurityHolds();
   validateRelationMetadata(collectKnownSkillNames());
   validateGovernanceRecords();
+  validateSkillSchema();
 
   const errors = issues.filter(i => i.level === 'error');
   const warnings = issues.filter(i => i.level === 'warning');

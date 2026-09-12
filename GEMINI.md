@@ -171,11 +171,19 @@ The PM agent MUST leverage the **`superpowers`** plugin (e.g., `subagent-driven-
 
 ---
 
-*Last Updated: 2026-09-06*
+*Last Updated: 2026-09-12*
 
 
 
 
+
+<!-- COMMON-GEMINI:START -->
+#### Cost Optimization (3-Tier Model Strategy)
+The High/Medium/Low tier concept and its usage rules are the Single Source of Truth in [AGENTS.md §3.6 3-Tier Strategy](AGENTS.md#36-3-tier-strategy). Gemini/Antigravity's model-ID mapping (overridden per subagent invocation when appropriate):
+- **High-tier** → `gemini-3.1-pro` (Parameter: `thinking_level="medium"`)
+- **Medium-tier** → `gemini-3.8-flash` (no thinking parameter)
+- **Low-tier** → `gemini-3.8-flash` (no thinking parameter)
+<!-- COMMON-GEMINI:END -->
 
 <!-- COMMON-GEMINI:START -->
 ### 4. Language Policy for Documentation
@@ -195,6 +203,9 @@ lang: ko
 lang_reason: legal # legal | source-material | proper-noun
 ```
 *(Not available for: context.md, CLAUDE.md, GEMINI.md, AGENTS.md, or any variant context.md)*
+
+#### Korean Plain-Language Preference (`순우리말`-First)
+When writing Korean documentation or Korean translation output, prefer native Korean words (`순우리말`) over loanwords (`외래어`) whenever a natural, widely-understood native equivalent exists — e.g. prefer `만들기` over `크리에이션`, `알림` over `노티피케이션`. Loanwords effectively settled in Korean (`컴퓨터`, `데이터`, `소프트웨어`, `파일`) and established technical terms remain permitted; clarity takes precedence over forced nativization. New Korean content applies this immediately; existing Korean documents are nativized incrementally (touched sections only, no bulk rewrites).
 <!-- COMMON-GEMINI:END -->
 
 <!-- COMMON-GEMINI:START -->
@@ -242,6 +253,8 @@ Before editing any file for the **FIRST time in a session**, the agent MUST:
 |----------|:-----------:|---------|
 | Gemini CLI | ✅ Hook (automatic) | BeforeTool `deny` mode — blocked until agent investigates |
 | Antigravity | ✅ Prompt (manual) | Hooks do not fire — agent self-enforces |
+| Codex CLI | ✅ Prompt (manual) | Hooks not wired in Phase 1 — agent self-enforces (ADR-0077) |
+| Codex Desktop App | ✅ Prompt (manual) | Hooks not wired in Phase 1 — agent self-enforces (ADR-0077) |
 
 If the hook is not active (Antigravity), agents must still follow the 4-step process before making first edits.
 <!-- COMMON-GEMINI:END -->

@@ -274,7 +274,7 @@ MANDT = '001'                    -- never hardcode client
 
 ### Developer Quick Start (Task Lifecycle)
 
-For full project governance and role-based orchestration, refer to [AGENTS.md — Collaborative Workflow](../AGENTS.md#agent-coordination-workflow-harness-advanced).
+For full project governance and role-based orchestration, refer to [AGENTS.md — Collaborative Workflow](../AGENTS.md).
 
 ```powershell
 # 1. Initialize Task
@@ -468,8 +468,6 @@ For a full comparison of tool capabilities (Claude Code CLI vs Desktop App vs An
 
 <!-- VARIANT-INJECT: guidelines [REQUIRED] -->
 ## Coding Guidelines (ABAP Supplement)
-
-<!-- intentional-duplicate: workspace standards §8 — maintained locally for AI context proximity; source: docs/constitution/08-coding-guidelines.md; hash: 3a0b3968 -->
 
 ### 1. Think Before Coding
 - State assumptions explicitly before implementing. If uncertain, ask — don't guess silently.

@@ -13,6 +13,7 @@
 | `accessibility-audit` | L3 | — | — | — | — | — |
 | `agent-lifecycle-manager` | L3 | — | — | skill-lifecycle-manager (composes_with) | — | — |
 | `api-documentation` | L3 | — | — | — | — | — |
+| `ci-triage` | L3 | — | — | — | — | — |
 | `decision-record` | L3 | — | — | — | — | — |
 | `desktop-app-fallback` | L3 | — | — | — | — | — |
 | `documentation-writing` | L3 | — | — | — | — | — |
@@ -27,7 +28,6 @@
 | `i18n-formatting` | L3 | i18n-specialist | — | — | — | — |
 | `i18n-layout` | L3 | i18n-specialist | — | — | — | — |
 | `i18n-locale-config` | L3 | i18n-specialist | — | — | — | — |
-| `meeting` | L3 | — | — | — | — | — |
 | `meeting-facilitation` | L3 | — | — | — | — | — |
 | `performance-tuning` | L3 | — | — | — | — | — |
 | `platform-command-lifecycle-manager` | L3 | — | — | — | — | — |
@@ -53,7 +53,6 @@
 | `translate` | L3 | — | — | documentation-writing (composes_with) | — | — |
 | `ui-ux-design-intelligence` | L3 | — | — | documentation-writing (follows) | — | — |
 | `update-bun-packages` | L3 | — | — | — | — | — |
-| `validate-docs-links` | L3 | — | — | — | — | — |
 | `zod-contract-gate` | L3 | — | — | — | — | — |
 
 ## Lifecycle Phase Grouping
@@ -70,7 +69,7 @@ Skills used in specific lifecycle phases (from `variant.json` `skill_manifest`):
 | `used_by` | Agent ↔ skill relation (from `required_skills` or `used_by_agents`) |
 | `phase` | Skill used in a lifecycle phase (from `variant.json` `skill_manifest.phases`) |
 | `supersedes` | Supersession — overrides (manual) or decision-record prose labels |
-| `references` | Backtick reference in SKILL.md/agent/ADR body prose, or DEC `knowledge_refs[]` naming an ADR |
+| `references` | Backtick reference in SKILL.md/agent/ADR body prose, DEC `knowledge_refs[]` naming an ADR, or skill → `term:` node from references/terms-ko.json (ADR-0072) |
 | `cites_skill` | Decision record `skills_used[]` validated against the skill set (ADR-0061 amendment 2026-08-25) |
 | `composes_with` | Typed `relates_to` entry — symmetric, used together in the same phase/workflow (ADR-0060 Amendment 3) |
 | `follows` | Typed `relates_to` entry — sequential/ordering relation, no dependency implication (ADR-0060 Amendment 3) |

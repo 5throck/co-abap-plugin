@@ -2,7 +2,10 @@
   "mcpServers": {
     "abap": {
       "command": "vsp",
-      "args": ["--mode", "hyperfocused"],
+      "args": [
+        "--mode",
+        "hyperfocused"
+      ],
       "env": {
         "SAP_URL": "${sap_url}",
         "SAP_USER": "${sap_user}",
@@ -24,6 +27,13 @@
     "sap-docs": {
       "type": "http",
       "url": "https://mcp-sap-docs.marianzeis.de/mcp"
+    },
+    "graft": {
+      "command": "bunx",
+      "args": [
+        "@nanonets/graft",
+        "mcp"
+      ]
     }
   },
   "note": "Single Source of Truth for MCP configuration. plugin.json uses userConfig for marketplace installs."
