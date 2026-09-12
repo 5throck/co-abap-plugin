@@ -4,6 +4,7 @@
 
 | Date | Summary |
 |------|---------|
+| [2026-09-12](2026-09-12.md) | chore: sync project-review skill updates |
 | [2026-09-06](2026-09-06.md) | chore: upgrade template to 0.6.0 |
 | [2026-08-29](2026-08-29.md) | fix(skills): align SKILL.md name field with directory names |
 | [2026-08-28](2026-08-28.md) | chore: remove leaked sound-synth skill --spec-exempt=E5 |
