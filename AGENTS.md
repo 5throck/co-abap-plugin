@@ -373,7 +373,7 @@ If the cross-module analysis reveals conflicting ACs (e.g., SD wants field X, FI
 
 ---
 
-*Last Updated: 2026-08-21 (rev 3)*
+*Last Updated: 2026-09-12 (rev 3)*
 
 
 ## Universal Baseline Behaviors
@@ -531,7 +531,13 @@ lang_reason: legal   # legal | source-material | proper-noun
 - `source-material`: Primary source quotations where English translation would compromise academic accuracy or meaning.
 - `proper-noun`: Files dominated by Korean proper nouns (institution/place/person names).
 
-*Note: Exception is NOT available for: agents/*.md, skills/*.md, context.md, CLAUDE.md, GEMINI.md, AGENTS.md, or any variant context.md file.*
+*Note: Exception is NOT available for: context.md, CLAUDE.md, GEMINI.md, AGENTS.md, or any variant context.md file. It IS available for `agents/*.md` and `skills/*.md` (with `lang_reason` declared).*
+
+### Korean Plain-Language Preference (`순우리말`-First)
+When writing Korean documentation or Korean translation output, prefer native Korean words (`순우리말`) over loanwords (`외래어`) whenever a natural, widely-understood native equivalent exists — e.g. prefer `만들기` over `크리에이션`, `알림` over `노티피케이션`, `모음` over `컬렉션` in general prose.
+- Loanwords effectively settled in Korean (`컴퓨터`, `데이터`, `소프트웨어`, `파일`) and established international technical terms remain permitted — clarity and standard terminology take precedence over forced nativization.
+- Applies immediately to new Korean-language content (including `ko/`, `locales/ko/`, `*_ko.md`, and `lang: ko` exception files).
+- Existing Korean documents are nativized incrementally: apply the preference to touched sections whenever a document is edited for other reasons; no bulk rewrites.
 
 ### Enforcement
 - Pre-commit audit checks for Korean content outside ko/ and locales/ko/
@@ -549,4 +555,53 @@ lang_reason: legal   # legal | source-material | proper-noun
 - **Core Script Standardization**: The core synchronization and validation scripts (`scripts/dev-sync.ts` and `scripts/audit.ts`) must remain standardized and identical across all templates and variants. Direct modification of these core scripts in L2 projects is strictly forbidden.
 - **Variant-Specific Audit Hook**: Variant projects requiring custom verification checks must implement them in a pluggable hook script located at `scripts/audit-variant.ts`.
 - **Integrity Enforcement**: During template reconciliation (`l3-to-variant-pipeline.ts`), any modified core scripts will be automatically detected and will fail the reconciliation.
+
+### Universal Design Gate (ADR-0074)
+
+Every code change at any tier (L0–L3) must carry spec activity: create/update a design doc at `docs/designs/<spec-id>-design.md` and register it (`bun scripts/spec-register.ts --file <design-doc> --source manual --status implemented`) before `/sync`. The sync-time spec-check (`audit.ts --spec-check`, dev-sync step 3.9) blocks commits without it; trivial changes use `--spec-exempt=E1..E5` (AGENTS.md §5.1.1). Project registries (`docs/specs/registry.json`) are add-if-missing seeds — upgrades never overwrite or prune project entries.
 <!-- COMMON-AGENTS:END -->
+
+
+<!-- WORKSPACE-MANAGED: graft repo context graph -->
+<!-- graft:start -->
+## Graft — repo context graph
+
+This repo is indexed in `graft/`: small linked markdown nodes that explain each
+system and carry exact file:line spans, kept in sync with the code through git.
+
+For ANY task here — understanding how something works, finding where code lives,
+or scoping a change — get context from the graph before grepping or opening
+source files. Re-ask freely (it's cheap) and reuse literal identifiers you
+already have (symbol, error string, file name) as the query. New to this repo?
+Run `graft map` first — a token-budgeted orientation (dir clusters, hubs,
+hotspots), no LLM, no key.
+
+- Run `graft ask "<your question>" --source` → ranked nodes with the relevant
+  code spans inlined (each hit's ≤8-line crux by default; `--full` for whole
+  definitions when the crux isn't enough). Match the tool to the task shape:
+  for understanding or editing, the top node IS the answer — cite its
+  `covers:` file:line spans and edit straight from `--source`. For
+  exhaustive tasks ("every occurrence / every caller of this pattern"), ranked
+  results are top-N, not complete — run `graft grep "<literal>"` instead
+  (exhaustive over indexed files, grouped by enclosing symbol), falling back
+  to raw `grep -rn` only for unindexed files.
+- `graft skeleton <file>` → every definition's signature + span, ~10× cheaper
+  than reading the file; use it to skim an API surface.
+- `graft callers <symbol>` gives precomputed, exact edges — who calls this.
+  Add `--direction out` for what it calls, or `--depth N` to walk
+  transitively for the full blast radius. For structural questions, skip
+  ranking and use this directly.
+- Or browse: `graft/INDEX.md` lists every node; follow the links.
+- Monorepos and folders of multiple repos rank fairly across sub-projects —
+  hits carry `[scope/]` labels naming which one they're from. Narrow with
+  `graft ask "<task>" --in <scope>/` once you know where you're working.
+
+If a returned span is truncated ("+N more lines"), open the file at that exact
+range before finalizing. Only open source files when a node genuinely lacks a
+needed detail, and then at the exact file:line the node points to — never
+re-read whole files.
+
+After big code changes, refresh the graph with `graft build` (deterministic,
+no API key, $0).
+<!-- graft:end -->
+<!-- /WORKSPACE-MANAGED -->

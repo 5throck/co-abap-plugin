@@ -1,8 +1,16 @@
 #!/usr/bin/env bun
 /**
  * verify-scripts.ts — Script Lifecycle Registry Verifier
- * @version 1.4.2
+ * @version 1.6.1
  *
+ * v1.6.1: walkScripts() now skips node_modules directories — a scripts/-local
+ *         `bun install` (fresh CI runners) materialized dependency files that
+ *         were flagged as unregistered scripts (207 false positives), failing
+ *         the audit gate on every CI run.
+ * v1.6.0: SCRIPT_EXTENSIONS now includes .bat (T-20260909-003) — Windows batch
+ *         helpers under scripts/ are registry-governed like .sh/.ps1/.ts and can
+ *         no longer escape the unregistered-script check. CLI dispatch is
+ *         import-guarded so unit tests can import the module safely.
  * Validates that scripts/SCRIPTS.md Registry is in sync with actual script files,
  * enforces deprecation removal dates, and blocks on security advisories.
  *
@@ -27,7 +35,10 @@ import { join, dirname, relative } from "path";
 
 // ── Configuration ────────────────────────────────────────────────────────────
 
-const SCRIPT_EXTENSIONS = [".sh", ".ps1", ".ts"];
+// .bat is governed too: Windows setup/batch helpers shipped under scripts/ must be
+// registered like any other script (T-20260909-003 — unregistered setup.bat escaped
+// every registry check because the scanner ignored the extension).
+export const SCRIPT_EXTENSIONS = [".sh", ".ps1", ".ts", ".bat"];
 const SCRIPTS_MD_FILENAME = "SCRIPTS.md";
 
 // Resolve workspace root (this script lives in scripts/ or templates/common/scripts/,
@@ -188,6 +199,9 @@ function parseRegistry(content: string): RegistryEntry[] {
 function walkScripts(dir: string): string[] {
   return fs.readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
     if (entry.isDirectory()) {
+      // Dependency installs (scripts/-local bun install on CI runners) are not
+      // workspace scripts — their files must not be flagged as unregistered.
+      if (entry.name === "node_modules") return [];
       // A variant directory with its OWN SCRIPTS.md sub-registry governs itself
       // (the main registry doesn't list its files). Without a sub-registry, the
       // variant's scripts belong to the main registry via their `co-*/…` relative
@@ -466,6 +480,33 @@ function verify(): boolean {
     }
   }
 
+  // Check 7: Template propagation sanity (L0 only)
+  // A script file shipped in templates/common/scripts/ must be registered in the
+  // template SCRIPTS.md with a propagation tag other than L0-only — otherwise every
+  // scaffolded L3 project fails its own audit with "Unregistered script" (the
+  // upgrade-project.ts regression of 2026-09-07).
+  const templateScriptsDir = join(workspaceRoot, "templates", "common", "scripts");
+  const templateScriptsMd = join(templateScriptsDir, SCRIPTS_MD_FILENAME);
+  if (contextLayer === "L0" && existsSync(templateScriptsMd)) {
+    const templateRegistry = parseRegistry(readFileSync(templateScriptsMd, "utf-8"));
+    const templateRegistered = new Map(templateRegistry.map(e => [e.script, e]));
+    const templateFiles = walkScripts(templateScriptsDir)
+      .map((absPath) => relative(templateScriptsDir, absPath).replace(/\\/g, "/"))
+      .sort();
+    for (const file of templateFiles) {
+      const entry = templateRegistered.get(file);
+      if (!entry) {
+        errors.push(
+          `Template registry gap: \`${file}\` ships in templates/common/scripts/ but has no row in its SCRIPTS.md Registry — add a row or remove the file`
+        );
+      } else if (L0_ONLY_LAYERS.has(entry.layer)) {
+        errors.push(
+          `Template propagation mismatch: \`${file}\` ships in templates/common/scripts/ but its template-registry row is tagged \`${entry.layer}\` — fix the propagation tag to L0+L1 or remove the file from the template`
+        );
+      }
+    }
+  }
+
   // Output
   console.log(`\n=== verify-scripts.ts ===`);
   const contextDescriptions: Record<ContextLayer, string> = {
@@ -626,20 +667,20 @@ function report(): void {
 
 const args = process.argv.slice(2);
 
-if (args.includes("--generate")) {
-  generate();
-} else if (args.includes("--report")) {
-  report();
-} else if (args.includes("--check-drift")) {
-  checkDriftReport();
-} else if (args.includes("--verify") || args.length === 0) {
-  const ok = verify();
-  if (import.meta.main) {
+// Dispatch is import-guarded so unit tests can import the scanner helpers without
+// triggering a full verification run.
+if (import.meta.main) {
+  if (args.includes("--generate")) {
+    generate();
+  } else if (args.includes("--report")) {
+    report();
+  } else if (args.includes("--check-drift")) {
+    checkDriftReport();
+  } else if (args.includes("--verify") || args.length === 0) {
+    const ok = verify();
     process.exit(ok ? 0 : 1);
-  }
-} else {
-  console.error(`Usage: bun scripts/verify-scripts.ts [--verify | --generate | --report | --check-drift]`);
-  if (import.meta.main) {
+  } else {
+    console.error(`Usage: bun scripts/verify-scripts.ts [--verify | --generate | --report | --check-drift]`);
     process.exit(1);
   }
 }

@@ -9,14 +9,20 @@
  *   bun scripts/agent-lifecycle-audit.ts
  *   bun scripts/agent-lifecycle-audit.ts --json   # JSON output
  *
- * @version 1.1.5
+ * @version 1.2.1
  * @l2-propagate false
- * @last_updated 2026-06-02
+ * @last_updated 2026-09-09
  * @license MIT
+ *
+ * v1.2.0: New Check 11 (T-20260909-004) — WARN when an agent's frontmatter
+ *         last_updated is older than the file's last git commit date (archived
+ *         agents exempt). CLI dispatch is import-guarded so unit tests can
+ *         import the helper functions safely.
  */
 
 import { readFileSync, existsSync, readdirSync, statSync } from 'node:fs';
 import { join, relative, dirname, basename } from 'node:path';
+import { spawnSync } from 'node:child_process';
 import { cwd } from 'node:process';
 
 interface AgentFrontmatter {
@@ -148,23 +154,24 @@ function parseAgentFrontmatter(filePath: string): AgentFrontmatter | null {
         }
         // Strip comments and clean the value
         const cleanValue = value.split('#')[0].trim().replace(/^['"]|['"]$/g, '');
-        frontmatter['tier'][key] = cleanValue;
+        (frontmatter['tier'] as Record<string, string>)[key] = cleanValue;
       } else {
         frontmatter[key] = value.replace(/^['"]|['"]$/g, '');
       }
     }
 
-    return frontmatter as AgentFrontmatter;
+    return frontmatter as unknown as AgentFrontmatter;
   } catch {
     return null;
   }
 }
 
 // Recursively find all agent files
-function findAgentFiles(dir: string): string[] {
+function findAgentFiles(dir: string, depth = 0): string[] {
   const agents: string[] = [];
 
   if (!existsSync(dir)) return agents;
+  if (depth > 8) return agents; // symlink-cycle / runaway-recursion bound (T-20260910-026)
 
   // If project root has an agents/ directory, only scan that (avoids false positives in docs/, etc.)
   if (dir === ROOT) {
@@ -179,12 +186,13 @@ function findAgentFiles(dir: string): string[] {
   const entries = readdirSync(dir, { withFileTypes: true });
 
   for (const entry of entries) {
+    if (entry.isSymbolicLink()) continue; // never follow links: cycle-safe, no duplicate visits (T-20260910-026)
     const fullPath = join(dir, entry.name);
 
     if (entry.isDirectory()) {
       if (entry.name === 'node_modules' || entry.name === '_archive' ||
           entry.name === 'skills' || entry.name === 'commands') continue;
-      agents.push(...findAgentFiles(fullPath));
+      agents.push(...findAgentFiles(fullPath, depth + 1));
     } else if (entry.name.endsWith('.md') &&
                entry.name !== 'AGENTS.md' &&
                entry.name !== 'README.md' &&
@@ -223,11 +231,12 @@ function getSkillOwnerReferences(): Map<string, string[]> {
 }
 
 // Find all skill files
-function findSkillFiles(dir: string): string[] {
+function findSkillFiles(dir: string, depth = 0): string[] {
   const skills: string[] = [];
 
   if (!existsSync(dir)) return skills;
 
+  if (depth > 8) return skills; // symlink-cycle / runaway-recursion bound (T-20260910-026)
   let entries;
   try {
     entries = readdirSync(dir, { withFileTypes: true });
@@ -238,11 +247,12 @@ function findSkillFiles(dir: string): string[] {
   }
 
   for (const entry of entries) {
+    if (entry.isSymbolicLink()) continue; // never follow links: cycle-safe, no duplicate visits (T-20260910-026)
     const fullPath = join(dir, entry.name);
 
     if (entry.isDirectory()) {
       if (entry.name === 'node_modules' || entry.name.startsWith('.')) continue;
-      skills.push(...findSkillFiles(fullPath));
+      skills.push(...findSkillFiles(fullPath, depth + 1));
     } else if (entry.name === 'SKILL.md') {
       skills.push(fullPath);
     }
@@ -263,6 +273,47 @@ function parseSkillFrontmatter(filePath: string): { owner?: string } | null {
       return { owner: ownerMatch[1].trim() };
     }
     return null;
+  } catch {
+    return null;
+  }
+}
+
+// Normalize a frontmatter date value ("2026-08-24", "2026-08-24T00:00:00.000Z")
+// to YYYY-MM-DD; null when the value is not calendar-date shaped.
+export function parseFrontmatterDate(value: unknown): string | null {
+  if (typeof value !== 'string') return null;
+  const unquoted = value.replace(/^['"]|['"]$/g, '');
+  const m = unquoted.match(/^(\d{4}-\d{2}-\d{2})/);
+  return m ? m[1] : null;
+}
+
+// ISO YYYY-MM-DD dates compare correctly as plain strings.
+export function isFrontmatterStale(frontmatterDate: string, lastCommitDate: string): boolean {
+  return frontmatterDate < lastCommitDate;
+}
+
+// Read a date-ish frontmatter field directly from the raw frontmatter text. The
+// generic parser above only keeps top-level keys, but `last_updated` legitimately
+// nests under `lifecycle:` in agent files — a targeted regex catches both layouts.
+function extractFrontmatterDate(filePath: string, field: string): string | null {
+  try {
+    const content = readFileSync(filePath, 'utf-8');
+    const frontmatterMatch = content.match(/^---\n([\s\S]*?)\n---/);
+    if (!frontmatterMatch) return null;
+    const m = frontmatterMatch[1].match(new RegExp(`^\\s*${field}:\\s*['"]?(\\S+)`, 'm'));
+    return m ? m[1] : null;
+  } catch {
+    return null;
+  }
+}
+
+// Last git commit date (YYYY-MM-DD) for a file; null when git is unavailable or the
+// file has no commits yet (freshly added, uncommitted).
+function lastCommitDate(filePath: string): string | null {
+  try {
+    const result = spawnSync('git', ['log', '-1', '--format=%cs', '--', filePath], { encoding: 'utf-8' });
+    const date = (result.stdout || '').trim();
+    return /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : null;
   } catch {
     return null;
   }
@@ -369,6 +420,22 @@ function auditAgents(jsonMode = false): AuditResult {
       });
     }
 
+    // Check 11: Stale last_updated (T-20260909-004) — the file's git history moved
+    // past its declared last_updated without the lifecycle metadata being refreshed.
+    // Archived agents are exempt: stale metadata is expected there by definition.
+    if (frontmatter.status !== 'archived' && !relPath.includes('_archive')) {
+      const fmDate = parseFrontmatterDate(extractFrontmatterDate(agentFile, 'last_updated'));
+      const commitDate = lastCommitDate(agentFile);
+      if (fmDate && commitDate && isFrontmatterStale(fmDate, commitDate)) {
+        warnings.push({
+          level: 'warning',
+          file: relPath,
+          message: `frontmatter last_updated (${fmDate}) is older than the last git commit (${commitDate})`,
+          fix: "Update 'last_updated' in frontmatter to reflect the latest change",
+        });
+      }
+    }
+
     // Check 8: Tier validation - missing tier field
     if (!frontmatter.tier) {
       errors.push({
@@ -379,7 +446,7 @@ function auditAgents(jsonMode = false): AuditResult {
       });
     } else {
       // Check 9: Tier validation - missing platforms
-      const requiredPlatforms = ['claude', 'antigravity', 'gemini-cli'];
+      const requiredPlatforms = ['claude', 'antigravity', 'gemini-cli'] as const;
       for (const platform of requiredPlatforms) {
         if (!frontmatter.tier[platform]) {
           errors.push({
@@ -481,9 +548,12 @@ const args = process.argv.slice(2);
 const jsonMode = args.includes('--json');
 const helpMode = args.includes('--help') || args.includes('-h');
 
-if (helpMode) {
-  console.log(`
-Agent Lifecycle Audit v1.0.0
+// Dispatch is import-guarded so unit tests can import the helper functions without
+// triggering a full audit run.
+if (import.meta.main) {
+  if (helpMode) {
+    console.log(`
+Agent Lifecycle Audit v1.2.0
 
 Usage:
   bun scripts/agent-lifecycle-audit.ts          # Run audit
@@ -497,23 +567,21 @@ Checks:
   ✓ Deprecated agents with active skill references
   ✓ Archive location vs status consistency
   ✓ Tier field validation (all platforms present, valid values)
+  ✓ Stale frontmatter last_updated vs last git commit date (warn)
 
 Platform: ${PLATFORM}
   `);
-  if (import.meta.main) {
     process.exit(0);
   }
-}
 
-const result = auditAgents(jsonMode);
+  const result = auditAgents(jsonMode);
 
-if (jsonMode) {
-  printJsonResults(result);
-} else {
-  printResults(result);
-}
+  if (jsonMode) {
+    printJsonResults(result);
+  } else {
+    printResults(result);
+  }
 
-if (import.meta.main) {
   process.exit(result.errors.length > 0 ? 1 : 0);
 }
 

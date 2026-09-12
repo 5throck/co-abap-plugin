@@ -37,6 +37,11 @@
       "layer": "L3"
     },
     {
+      "id": "ci-triage",
+      "type": "skill",
+      "layer": "L3"
+    },
+    {
       "id": "co-analyst",
       "type": "agent",
       "layer": "L3"
@@ -127,11 +132,6 @@
       "layer": "L3"
     },
     {
-      "id": "handoff-spec_ko",
-      "type": "agent",
-      "layer": "L3"
-    },
-    {
       "id": "i18n-audit",
       "type": "skill",
       "layer": "L3"
@@ -164,11 +164,6 @@
     {
       "id": "le-analyst",
       "type": "agent",
-      "layer": "L3"
-    },
-    {
-      "id": "meeting",
-      "type": "skill",
       "layer": "L3"
     },
     {
@@ -303,6 +298,16 @@
     },
     {
       "id": "procedure.co-abap.requirements-analysis",
+      "type": "procedure",
+      "layer": "L3"
+    },
+    {
+      "id": "procedure.co-abap.security-closeout-review",
+      "type": "procedure",
+      "layer": "L3"
+    },
+    {
+      "id": "procedure.co-abap.security-readiness-baseline",
       "type": "procedure",
       "layer": "L3"
     },
@@ -443,11 +448,6 @@
     },
     {
       "id": "update-bun-packages",
-      "type": "skill",
-      "layer": "L3"
-    },
-    {
-      "id": "validate-docs-links",
       "type": "skill",
       "layer": "L3"
     },
@@ -756,6 +756,12 @@
     },
     {
       "type": "references",
+      "from": "ci-triage",
+      "to": "project-review",
+      "source": "prose"
+    },
+    {
+      "type": "references",
       "from": "decision-record",
       "to": "evidence-ledger",
       "source": "prose"
@@ -865,12 +871,6 @@
       "type": "references",
       "from": "handbook-sync-audit",
       "to": "project-review",
-      "source": "prose"
-    },
-    {
-      "type": "references",
-      "from": "handbook-sync-audit",
-      "to": "validate-docs-links",
       "source": "prose"
     },
     {
@@ -1017,12 +1017,6 @@
       "type": "references",
       "from": "i18n-specialist",
       "to": "translate",
-      "source": "prose"
-    },
-    {
-      "type": "references",
-      "from": "meeting",
-      "to": "meeting-facilitation",
       "source": "prose"
     },
     {
@@ -1273,6 +1267,54 @@
     },
     {
       "type": "step_uses_skill",
+      "from": "procedure.co-abap.security-closeout-review",
+      "to": "abap-code-review",
+      "source": "procedure_schema"
+    },
+    {
+      "type": "produces",
+      "from": "procedure.co-abap.security-closeout-review",
+      "to": "output_type.review_findings",
+      "source": "procedure_schema"
+    },
+    {
+      "type": "follows",
+      "from": "procedure.co-abap.security-closeout-review",
+      "to": "procedure.co-abap.transport-release",
+      "source": "procedure_schema"
+    },
+    {
+      "type": "step_by_agent",
+      "from": "procedure.co-abap.security-closeout-review",
+      "to": "security-monitor",
+      "source": "procedure_schema"
+    },
+    {
+      "type": "step_uses_skill",
+      "from": "procedure.co-abap.security-readiness-baseline",
+      "to": "abap-code-review",
+      "source": "procedure_schema"
+    },
+    {
+      "type": "produces",
+      "from": "procedure.co-abap.security-readiness-baseline",
+      "to": "output_type.review_findings",
+      "source": "procedure_schema"
+    },
+    {
+      "type": "enables",
+      "from": "procedure.co-abap.security-readiness-baseline",
+      "to": "procedure.co-abap.requirements-analysis",
+      "source": "procedure_schema"
+    },
+    {
+      "type": "step_by_agent",
+      "from": "procedure.co-abap.security-readiness-baseline",
+      "to": "security-monitor",
+      "source": "procedure_schema"
+    },
+    {
+      "type": "step_uses_skill",
       "from": "procedure.co-abap.solution-blueprint",
       "to": "abap-dev",
       "source": "procedure_schema"
@@ -1360,12 +1402,6 @@
       "from": "procedure.co-abap.transport-release",
       "to": "test-runner",
       "source": "procedure_schema"
-    },
-    {
-      "type": "references",
-      "from": "project-review",
-      "to": "validate-docs-links",
-      "source": "prose"
     },
     {
       "type": "enables",

@@ -1,4 +1,34 @@
-// @version 1.9.0
+// @version 1.14.0
+// v1.14.0: fix(pipeline): two fail-open gates become fail-closed (T-20260912-009 /
+//           T-20260912-007). (1) Step 3.7 discarded verify-scripts --check-drift's exit
+//           code behind .quiet().nothrow() — L0/L1 script drift neither failed the
+//           pipeline nor printed; the result is now checked, the drift table stays
+//           visible (.quiet() dropped), and non-zero exits abort before step 4 (step 3.9
+//           idiom). (2) Step 5 branch creation ran the show-ref probe and both checkout
+//           forms under .nothrow() without checking .exitCode, so a refused checkout
+//           (e.g. "local changes would be overwritten") fell through to
+//           staging + commit + push ON MAIN; probe and checkout results are now
+//           exit-code-checked and abort BEFORE any staging (same contract as the step 6
+//           sensitive-file guard).
+// v1.12.0: feat(design-gate): step 3.9 registry-absent skip becomes a loud WARN — a missing
+//           docs/specs/registry.json means the Universal Design Gate (ADR-0074) spec-check is
+//           INACTIVE, which must be visible instead of a buried one-line log. Pairs with the
+//           registry seed now shipping via templates/common (add-if-missing, ADR-0073
+//           Amendment 2) and spec-register.ts mirrored L0+L1.
+// v1.11.0: feat(pipeline): scoped staging, WARN phase — step 6 no longer blindly trusts
+//           git add -A to carry only task files. The pipeline snapshots the working tree
+//           before any step mutates it (S0) and again at commit time (S1); S1\S0 is the
+//           pipeline's own output (memory log, MEMORY.md index, propagation output,
+//           VERSION_MANIFEST, skill platform copies), and everything else must have been
+//           explicitly `git add`-ed by the invoking agent. During the ADR-0055 WARN soak
+//           the commit still runs git add -A but names every swept file that was neither
+//           task-staged nor pipeline-generated; SYNC_SCOPED_STAGING=1 (or --scoped-staging)
+//           previews the promoted behavior — stage only committable paths, leave residual
+//           dirt uncommitted. Fixes the sweep class where unrelated working-tree changes
+//           landed under a sync message that did not describe them (e.g. 75f98784 pulled
+//           the co-price plan relocation into a memory-log commit).
+//           Parser: scripts/lib/git-status.ts (unit-tested in tests/unit/git-status.test.ts).
+//           Design doc: docs/designs/2026-09-12-dev-sync-scoped-staging-design.md
 // v1.9.0: feat(skill-review): step 3.96c session-evidence skill review (SkillHone-inspired) —
 //           runs skill-session-review.ts (non-fatal) after 3.96a/3.96b to accumulate
 //           Observed Symptom + Evidence records into memory/skill-review/, plus a
@@ -38,6 +68,7 @@ import * as path from 'node:path';
 import * as crypto from 'node:crypto';
 import { withRetry, DEFAULT_CONFIG } from './retry-handler.ts';
 import { hasNonEnglish } from './lib/language-guard.ts';
+import { parseStatusPorcelain } from './lib/git-status.ts';
 
 const GREEN = '\x1b[32m';
 const RED = '\x1b[31m';
@@ -67,6 +98,10 @@ if (path.resolve(actualCwd) !== expectedRoot) {
 const rawArgs = process.argv.slice(2);
 let bodyFilePath = '';
 let specExempt = '';
+// Scoped staging (design: docs/designs/2026-09-12-dev-sync-scoped-staging-design.md).
+// Default is the ADR-0055 WARN soak; SYNC_SCOPED_STAGING=1 / --scoped-staging
+// previews the promoted exclude-behavior.
+let scopedStaging = process.env.SYNC_SCOPED_STAGING === '1';
 const msgArgs: string[] = [];
 for (let i = 0; i < rawArgs.length; i++) {
   const arg = rawArgs[i];
@@ -76,6 +111,8 @@ for (let i = 0; i < rawArgs.length; i++) {
     bodyFilePath = arg.slice('--body-file='.length);
   } else if (arg.startsWith('--spec-exempt=')) {
     specExempt = arg.slice('--spec-exempt='.length);
+  } else if (arg === '--scoped-staging') {
+    scopedStaging = true;
   } else {
     msgArgs.push(arg);
   }
@@ -97,6 +134,25 @@ if (hasNonEnglish(msg)) {
     if (import.meta.main) {
       process.exit(1);
     }
+}
+
+// ── Pre-flight working-tree snapshot (S0) ─────────────────────────────────────
+// Captures the agent-made working-tree state BEFORE any pipeline step mutates
+// files (memory session entry, propagation, manifests, ...). Step 6 re-snapshots
+// (S1); S1∖S0 is then the pipeline's own output — the only generated files that
+// may join the commit without explicit task staging.
+// Design: docs/designs/2026-09-12-dev-sync-scoped-staging-design.md
+let s0Paths = new Set<string>();
+let snapshotFailed = false;
+try {
+    const s0Res = await $`git status --porcelain=v1 -z -uall`.quiet().nothrow();
+    if (s0Res.exitCode !== 0) throw new Error(s0Res.stderr.toString());
+    s0Paths = parseStatusPorcelain(s0Res.stdout.toString());
+} catch {
+    // WARN mode fails open (empty S0 ⇒ every S1 change classifies as pipeline
+    // output — today's behavior). Scoped mode must not misclassify agent files
+    // as generated, so it aborts at step 6 via snapshotFailed.
+    snapshotFailed = true;
 }
 
 // Pre-flight Link Validation Gate — ensures markdown documentation links resolve.
@@ -266,12 +322,23 @@ if (fs.existsSync(path.join('scripts', 'SCRIPTS.md'))) {
     }
 }
 
-// 3.7 L0/L1 script drift check
+// 3.7 L0/L1 script drift check (BLOCKING — T-20260912-009): the verify-scripts exit
+// code used to be discarded behind .quiet().nothrow(), so template drift neither
+// failed the pipeline nor printed. Output is intentionally visible (no .quiet()) so
+// the drift table shows; same idiom as step 3.9 below.
 const hasBun = (await $`bun --version`.quiet().nothrow()).exitCode === 0;
 if (hasBun) {
     const verifyScripts = path.join('scripts', 'verify-scripts.ts');
     if (fs.existsSync(verifyScripts)) {
-        await $`bun ${verifyScripts} --check-drift`.quiet().nothrow();
+        const driftRes = await $`bun ${verifyScripts} --check-drift`.nothrow();
+        if (driftRes.exitCode !== 0) {
+            console.error(`${RED}✗ Step 3.7: L0/L1 script drift detected (exit ${driftRes.exitCode})${RESET}`);
+            console.error('  Fix: bun scripts/propagate-to-templates.ts --apply refreshes stale mirrors');
+            console.error('  (then --check-drift to confirm only tolerated gemini-settings drift remains).');
+            if (import.meta.main) process.exit(1);
+        } else {
+            console.log(`${GREEN}✓ L0/L1 script drift check passed${RESET}`);
+        }
     }
 }
 
@@ -306,7 +373,10 @@ if (fs.existsSync(specRegPath)) {
         console.log(`${GREEN}✓ Spec registry check passed${RESET}`);
     }
 } else {
-    console.log('📋 Step 3.9: skipped — no docs/specs/registry.json');
+    // ADR-0074 Universal Design Gate: a missing registry means the gate is INACTIVE —
+    // make that loud instead of a silent skip (previously buried in one plain log line).
+    console.log(`${YELLOW}⚠️  Step 3.9: no docs/specs/registry.json — the Universal Design Gate spec-check is INACTIVE in this repository.${RESET}`);
+    console.log(`${YELLOW}   Activate it: create docs/designs/<spec-id>-design.md, then bun scripts/spec-register.ts --file <design-doc> --source manual${RESET}`);
 }
 
 // 3.95 QA Pre-checks (non-fatal — unique checks from qa-gate.ts)
@@ -335,6 +405,21 @@ if (fs.existsSync('package.json')) {
 // Check 2: README_ko pair
 if (fs.existsSync('README.md') && !fs.existsSync('README_ko.md')) {
     console.warn('⚠️  README_ko.md missing (non-blocking)');
+}
+
+// 3.95b Typecheck gate (T-20260910-012; blocking, root context only). Runs
+// `scripts/typecheck.ts`: `tsc --noEmit` over scripts/ vs the recorded baseline
+// (0 since the 2026-09-11 Phase 2 triage) — fails on ANY type error. The
+// baseline file is a root-context asset; scaffolded projects (no baseline)
+// skip cleanly inside typecheck.ts itself. Inline context.md check (the
+// shared isL0Context const is declared further below).
+if (fs.existsSync('CONSTITUTION.md') && fs.existsSync('scripts/typecheck.ts')) {
+    console.log('📋 Step 3.95b: Typecheck gate (tsc --noEmit over scripts/)...');
+    const typecheckResult = await $`bun scripts/typecheck.ts`.nothrow();
+    if (typecheckResult.exitCode !== 0) {
+        console.error(`${RED}❌ Typecheck gate failed — fix the type errors (never raise the baseline to absorb new debt).${RESET}`);
+        process.exit(1);
+    }
 }
 
 // 3.96 Skill & decision-chain validators (fail-closed gates, ADR-0055/0061; reledgev
@@ -440,6 +525,28 @@ if (isWorkspaceRoot) {
     }
 }
 
+// ── Step 4.51: Governance L0→L1 file deployment (CLAUDE/GEMINI/AGENTS/CODEX.md) ──
+//     ADR-0077 D11: the four instruction twins ride governance-l1 so model/registry
+//     edits at L0 reach templates/common in the same sync instead of waiting for a
+//     manual `--governance-l1` run. Fatal in L0 context, same contract as 4.5.
+if (isWorkspaceRoot && isL0Context) {
+    console.log('\n📘 Publishing governance instruction files L0→L1 (CLAUDE/GEMINI/AGENTS/CODEX.md)...');
+    try {
+        const govRes = await $`bun scripts/propagate-to-templates.ts --governance-l1`.nothrow();
+        if (govRes.exitCode !== 0) {
+            console.log(`${RED}❌ governance-l1 publish failed — fatal in L0 context${RESET}`);
+            if (import.meta.main) {
+              process.exit(1);
+            }
+        }
+    } catch (e) {
+        console.log(`${RED}❌ governance-l1 publish errored — fatal in L0 context: ${e}${RESET}`);
+        if (import.meta.main) {
+          process.exit(1);
+        }
+    }
+}
+
 // ── Step 4.52: Dependency version sync (root → templates/common) ──
 //     Aligns shared dependency versions from root package.json to
 //     templates/common/package.json and regenerates bun.lock.
@@ -507,8 +614,20 @@ if (isWorkspaceRoot && isL0Context) {
 console.log('📋 Step 4.6: Syncing skills to platform directories...');
 const syncSkillsResult = await $`bun scripts/sync-skills.ts`.nothrow();
 if (syncSkillsResult.exitCode !== 0) {
-    console.warn(`⚠️  Skill sync had warnings (exit ${syncSkillsResult.exitCode}), continuing...`);
-    if (syncSkillsResult.stderr) console.warn(String(syncSkillsResult.stderr).trim());
+    const syncSkillsErr = syncSkillsResult.stderr ? String(syncSkillsResult.stderr).trim() : '';
+    // A non-zero exit here can leave platform skill trees partially synced —
+    // committing that state would propagate the inconsistency. Mirrors the
+    // step 4.5 publish gate: fatal in L0 context, warn + continue elsewhere.
+    if (isL0Context) {
+        console.error(`${RED}❌ Skill sync failed (exit ${syncSkillsResult.exitCode}) — fatal in L0 context.${RESET}`);
+        if (syncSkillsErr) console.error(syncSkillsErr);
+        if (import.meta.main) {
+            process.exit(1);
+        }
+    } else {
+        console.warn(`${YELLOW}⚠️  Skill sync failed (exit ${syncSkillsResult.exitCode}) — continuing sync${RESET}`);
+        if (syncSkillsErr) console.warn(syncSkillsErr);
+    }
 }
 
 // 4.62 Cascade re-publish — unconditional second L0→L1 pass after skill sync.
@@ -662,15 +781,21 @@ if (currentBranch === "main" || currentBranch === "master") {
     const timestamp = `${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`;
     
     branch = `pr/${timestamp}-${slug}`;
-    try {
-        const branchExists = (await $`git show-ref --verify refs/heads/${branch}`.quiet().nothrow()).exitCode === 0;
-        if (branchExists) {
-            await $`git checkout ${branch}`.nothrow();
-        } else {
-            await $`git checkout -b ${branch}`.nothrow();
-        }
-    } catch {
-        console.log(`${RED}❌ Failed to create branch '${branch}'${RESET}`);
+    // Fail-closed branch gate (T-20260912-007): every command here runs under
+    // .nothrow(), so failures surface ONLY via .exitCode — the old try/catch was
+    // dead code, and a refused checkout (e.g. "local changes would be overwritten")
+    // fell through silently to staging + commit + push ON MAIN. Any non-zero exit
+    // now aborts BEFORE git add runs — same contract as the step 6 sensitive-file
+    // guard below.
+    const branchProbe = await $`git show-ref --verify refs/heads/${branch}`.quiet().nothrow();
+    const checkoutRes = branchProbe.exitCode === 0
+        ? await $`git checkout ${branch}`.nothrow()
+        : await $`git checkout -b ${branch}`.nothrow();
+    if (checkoutRes.exitCode !== 0) {
+        console.error(`${RED}❌ Failed to ${branchProbe.exitCode === 0 ? 'switch to' : 'create'} branch '${branch}' (exit ${checkoutRes.exitCode}) — aborting before staging/commit.${RESET}`);
+        const detail = checkoutRes.stderr.toString().trim() || checkoutRes.stdout.toString().trim();
+        if (detail) console.error(`   ${detail.split('\n')[0]}`);
+        console.error(`${YELLOW}   Resolve the git error (e.g. commit or stash conflicting local changes), then re-run /sync.${RESET}`);
         if (import.meta.main) {
           process.exit(1);
         }
@@ -688,7 +813,7 @@ try {
     const untracked = untrackedRes.stdout.toString().trim().split('\n').filter(Boolean);
     const modified = modifiedRes.stdout.toString().trim().split('\n').filter(Boolean);
     const candidates = [...new Set([...untracked, ...modified])];
-    const sensitivePattern = /\.(pem|key|p12|pfx|jks|keystore)$|^\.env(\.[^sa]|$)|credentials\.json|service.?account\.json|secrets\.ya?ml/;
+    const sensitivePattern = /\.(pem|key|p12|pfx|jks|keystore)$|^\.env(?!\.(example|sample)$)(\.[^sa]|$)|credentials\.json|service.?account\.json|secrets\.ya?ml/;
     const sensitive = candidates.filter(f => sensitivePattern.test(f));
 
     if (sensitive.length > 0) {
@@ -700,16 +825,89 @@ try {
         }
     }
 } catch (err) {
-  console.error(`[dev-sync] Error: ${err}`);
+  // Fail-closed: an error while collecting guard data must abort BEFORE
+  // `git add -A` runs — same contract as the other gates in this pipeline.
+  console.error(`${RED}❌ Sensitive-file guard errored — refusing git add -A: ${err}${RESET}`);
+  if (import.meta.main) {
+    process.exit(1);
+  }
 }
 
+// 6.5 Scoped staging — decide what may join this commit. taskStaged is what the
+// invoking agent explicitly staged; pipelineOutputs (S1∖S0) is what this run's
+// pipeline steps wrote; residual is neither — the exact set that used to be
+// silently swept in by git add -A (e.g. 75f98784).
+// Design: docs/designs/2026-09-12-dev-sync-scoped-staging-design.md
+let s1Paths = new Set<string>();
 try {
-    const addRes = await $`git add -A`.nothrow();
-    if (addRes.exitCode !== 0) throw new Error(addRes.stderr.toString());
-} catch (e) {
-    console.log(`${RED}❌ git add failed: ${e}${RESET}`);
-    if (import.meta.main) {
-      process.exit(1);
+    const s1Res = await $`git status --porcelain=v1 -z -uall`.quiet().nothrow();
+    if (s1Res.exitCode !== 0) throw new Error(s1Res.stderr.toString());
+    s1Paths = parseStatusPorcelain(s1Res.stdout.toString());
+} catch {
+    snapshotFailed = true;
+}
+
+let taskStaged = new Set<string>();
+try {
+    const stagedRes = await $`git diff --cached --name-only -z`.quiet().nothrow();
+    if (stagedRes.exitCode !== 0) throw new Error(stagedRes.stderr.toString());
+    taskStaged = new Set(stagedRes.stdout.toString().split('\0').filter(Boolean));
+} catch (err) {
+    console.error(`[dev-sync] Error: ${err}`);
+    snapshotFailed = true;
+}
+
+const pipelineOutputs = new Set([...s1Paths].filter(p => !s0Paths.has(p)));
+const committable = new Set([...taskStaged, ...pipelineOutputs]);
+const residual = [...s1Paths].filter(p => !committable.has(p)).sort();
+
+if (residual.length > 0) {
+    const disposition = scopedStaging
+        ? 'left OUT of this commit by scoped staging'
+        : 'swept INTO this commit by git add -A';
+    console.log(`${YELLOW}⚠️  Scoped-staging check: ${residual.length} working-tree file(s) were neither staged for this task nor generated by the pipeline — ${disposition}:${RESET}`);
+    residual.forEach(f => console.log(`   ${f}`));
+    console.log(`${YELLOW}   Stage task files explicitly with 'git add <file>' before /sync, or gitignore scratch paths.${RESET}`);
+    if (!scopedStaging) {
+        console.log(`${YELLOW}   Promotion will exclude these; preview with SYNC_SCOPED_STAGING=1 (or --scoped-staging).${RESET}`);
+    }
+}
+
+if (scopedStaging) {
+    // Promotion preview: stage only declared + generated paths. A failed
+    // snapshot must abort here — an empty S0 would classify every agent file
+    // as pipeline output and silently commit it (fail-closed, same contract
+    // as the sensitive-file guard above).
+    if (snapshotFailed) {
+        console.log(`${RED}❌ Scoped staging could not snapshot the working tree — refusing to stage.${RESET}`);
+        console.log(`${YELLOW}   Re-run without --scoped-staging to fall back to the WARN-soak behavior.${RESET}`);
+        if (import.meta.main) {
+          process.exit(1);
+        }
+    }
+    try {
+        if (committable.size > 0) {
+            const addRes = await $`git add -- ${[...committable].sort()}`.nothrow();
+            if (addRes.exitCode !== 0) throw new Error(addRes.stderr.toString());
+        }
+    } catch (e) {
+        console.log(`${RED}❌ git add failed: ${e}${RESET}`);
+        if (import.meta.main) {
+          process.exit(1);
+        }
+    }
+} else {
+    // WARN soak (ADR-0055): keep git add -A so sync behavior is unchanged;
+    // the residual listing above is the audit trail of what promotion will
+    // start excluding.
+    try {
+        const addRes = await $`git add -A`.nothrow();
+        if (addRes.exitCode !== 0) throw new Error(addRes.stderr.toString());
+    } catch (e) {
+        console.log(`${RED}❌ git add failed: ${e}${RESET}`);
+        if (import.meta.main) {
+          process.exit(1);
+        }
     }
 }
 
