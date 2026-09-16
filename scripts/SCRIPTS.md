@@ -15,7 +15,7 @@
 | `agent-verify.ts` | L0 | 1.0.2 | active | — | — | common | — |
 | `analyze-git-history.ts` | L0 | 1.0.2 | active | — | — | common | — |
 | `archive-memory.ts` | L0 | 1.0.0 | active | — | — | common | — |
-| `audit.ts` | L0 | 2.37.1 | active | — | — | common | — |
+| `audit.ts` | L0 | 2.39.0 | active | — | — | common | — |
 | `cleanup-completed-md.ts` | L0 | 1.1.0 | active | — | — | common | — |
 | `clear-pm-approval.ts` | L0 | 1.0.0 | active | — | — | common | — |
 | `compile-tokens.ts` | L0 | 1.2.0 | active | — | — | common | — |
@@ -30,11 +30,11 @@
 | `helpers/merge-frontmatter.ts` | L0 | 1.8.6 | active | — | — | common | — |
 | `helpers/pm-md-parser.ts` | L0 | 1.1.0 | active | — | — | common | — |
 | `helpers/security-validator.ts` | L0 | 1.1.1 | active | — | — | common | — |
-| `helpers/template-utils.ts` | L0 | 1.1.1 | active | — | — | common | — |
+| `helpers/template-utils.ts` | L0 | 1.2.0 | active | — | — | common | — |
 | `hooks/gateguard-fact-force.ts` | L0 | 1.3.0 | active | — | — | common | — |
 | `hooks/post-write-lifecycle-check.ts` | L0 | 1.1.0 | active | — | — | common | — |
 | `hooks/pre-commit.ts` | L0 | 1.7.0 | active | — | — | common | — |
-| `hooks/pre-push.ts` | L0 | 1.3.0 | active | — | — | common | — |
+| `hooks/pre-push.ts` | L0 | 1.4.0 | active | — | — | common | — |
 | `install-bun.ps1` | L0 | 1.0.0 | active | — | — | common | — |
 | `install-bun.sh` | L0 | 1.0.0 | active | — | — | common | — |
 | `install-vsp.ps1` | L0 | 1.0.0 | active | — | — | common | — |
@@ -46,7 +46,7 @@
 | `lib/pipeline-state.ts` | L0 | 1.1.2 | active | — | — | common | — |
 | `lib/platform-context.ts` | L0 | 1.0.0 | active | — | — | common | — |
 | `lib/ssrf.ts` | L0 | 1.1.0 | active | — | — | common | — |
-| `lifecycle-sync-audit.ts` | L0 | 1.8.0 | active | — | — | common | — |
+| `lifecycle-sync-audit.ts` | L0 | 1.14.0 | active | — | — | common | — |
 | `md-to-ooxml.ts` | L0 | 1.2.0 | active | — | — | common | — |
 | `qa-gate.ts` | L0 | 1.3.0 | active | — | — | common | — |
 | `readme-lifecycle-audit.ts` | L0 | 1.0.4 | active | — | — | common | — |
@@ -55,18 +55,17 @@
 | `setup-github-branch-protection.ts` | L0 | 1.0.1 | active | — | — | common | — |
 | `co-abap/setup.ts` | L0 | 1.0.2 | active | — | — | common | — |
 | `skill-lifecycle-audit.ts` | L0 | 1.4.1 | active | — | — | common | — |
-| `sync-agent-status.ts` | L0 | 1.0.1 | active | — | — | common | — |
 | `sync-md.ts` | L0 | 1.3.0 | active | — | — | common | — |
 | `sync-skill-status.ts` | L0 | 1.0.1 | active | — | — | common | — |
 | `sync-skills.ts` | L0 | 1.8.0 | active | — | — | common | — |
 | `team-builder.ts` | L0 | 1.4.0 | active | — | — | common | — |
-| `test-runner.ts` | L0 | 1.1.1 | active | — | — | common | — |
+| `test-runner.ts` | L0 | 1.4.0 | active | — | — | common | — |
 | `translate-readme.ts` | L0 | 1.0.0 | active | — | — | common | — |
 | `validate-agents.ts` | L0 | 1.2.1 | active | — | — | common | — |
 | `validate-doc-folder.ts` | L0 | 1.1.0 | active | — | — | common | — |
 | `validate-docs-links.ts` | L0 | 1.1.0 | active | — | — | common | — |
 | `validate-md-language.ts` | L0 | 1.11.0 | active | — | — | common | — |
-| `validate-model-registry.ts` | L0 | 1.2.0 | active | — | — | common | — |
+| `validate-model-registry.ts` | L0 | 1.4.0 | active | — | — | common | — |
 | `validate-pm-extends.ts` | L0 | 0.3.1 | active | — | — | common | — |
 | `validate-skills.ts` | L0 | 1.5.1 | active | — | — | common | — |
 | `verify-agent-deliverables.ts` | L0 | 1.0.1 | active | — | — | common | — |
@@ -111,13 +110,24 @@
 | `resolve-variants.ts` | L0 | 1.0.3 | active | —| —| L0+L1 | —|
 | `spec-register.ts` | L0 | 1.2.0 | active | `--file`, `--source`, `--update`, `--status`, `--list`, `--ref`, `--id` | —| L0+L1 | —|
 | `typecheck.ts` | L0 | 1.1.1 | active | —| —| L0+L1 | —|
-| `validate-templates.ts` | L0 | 1.25.1 | active | —| —| L0+L1 | —|
+| `validate-templates.ts` | L0 | 1.33.0 | active | —| —| L0+L1 | —|
 | `validate-variant-readiness.ts` | L0 | 1.1.0 | active | —| —| L0+L1 | —|
 | `helpers/l0-ref-policy.ts` | L0 | 1.1.0 | active | —| —| L0+L1 | —|
 | `helpers/upgrade-versions.ts` | L0+L1 | 1.0.1 | active | —| —| L0+L1 | —|
 | `lib/constitution-scrub.ts` | L0 | 1.0.0 | active | —| —| L0+L1 | —|
 | `lib/git-status.ts` | L0 | 1.0.0 | active | —| —| L0+L1 | —|
 | `lib/local-date.ts` | L0 | 1.0.0 | active | —| —| L0+L1 | —|
+| `generate-version-manifest.ts` | L0 | 1.6.0 | active | shallow-tolerant `--check` (T-20260916-013); emits `validate-md-language:allowlist` markers around the generated Skills table (T-20260912-015) | —| L0+L1 | —|
+| `helpers/generate-variant.ts` | L0 | 1.15.0 | active | —| —| L0+L1 | —|
+| `helpers/layer-filter.ts` | L0 | 1.5.0 | active | —| —| L0+L1 | —|
+| `helpers/markers.ts` | L0 | 1.2.0 | active | —| —| L0+L1 | —|
+| `helpers/rollback-partial-project.ts` | L0 | 1.1.0 | active | —| —| L0+L1 | —|
+| `helpers/scaffold-markers.ts` | L0 | 1.3.0 | active | Shared scaffold marker constants + (marker→source) mapping + delivery-tree derivations + transient test-fixture predicate (T-20260916-001) | —| L0+L1 | —|
+| `lib/managed-block-parity.ts` | L0 | 1.0.0 | active | —| —| L0+L1 | —|
+| `lib/platform-delivery.ts` | L0 | 1.0.0 | active | —| —| L0+L1 | —|
+| `lib/platform-mirror-freshness.ts` | L0 | 1.0.0 | active | Pure platform-skill-mirror vs skills/ SSOT version comparison for the platform-mirror-freshness check (T-20260916-008) | —| L0+L1 | —|
+| `lib/propagation-map-schema.ts` | L0 | 1.3.0 | active | —| —| L0+L1 | —|
+| `lib/variant-overlay-guard.ts` | L0 | 1.0.0 | active | —| —| L0+L1 | —|
 
 ---
 

@@ -1,12 +1,23 @@
 #!/usr/bin/env bun
 /**
  * validate-model-registry.ts
- * Validates that all agents/*.md frontmatter model comments match docs/workspace-schema.json models block.
- * Level: L0 | Status: active | @version 1.2.0
+ * Validates that all agents/*.md frontmatter model comments match docs/workspace-schema.json models block,
+ * and that the tier→model mapping prose in AGENTS.md §3.6 / CLAUDE.md / GEMINI.md / CODEX.md
+ * names exactly the models the registry declares for each tier.
+ * Level: L0 | Status: active | @version 1.4.0
+ *
+ * v1.4.0 (T-20260916-011): the CODEX.md prose target is now platform-delivery
+ * aware. Projects scaffolded without the codex platform carry neither
+ * CODEX.md nor .codex/ (new-project.ts §2.7 strips both), and the
+ * unconditional read failed their audit with "could not read CODEX.md".
+ * The codex target self-skips with a visible note when the platform is not
+ * delivered (shared lib/platform-delivery.ts); L0/L1 contexts, where every
+ * target file exists, are behaviorally unchanged.
  */
-import { readFileSync, readdirSync } from "node:fs";
+import { readFileSync, readdirSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { die } from "./lib/error-handling.ts";
+import { partitionProseTargetsByDelivery } from "./lib/platform-delivery.ts";
 
 const WORKSPACE_ROOT = new URL("..", import.meta.url).pathname
   .replace(/\/$/, "")
@@ -193,8 +204,111 @@ for (const filePath of agentFiles) {
   }
 }
 
-if (mismatches.length === 0) {
-  console.log("✓ All agent model names match registry");
+// Step 8: Tier→model mapping prose blocks (AGENTS.md §3.6 / CLAUDE.md / GEMINI.md / CODEX.md)
+// vs the registry. AGENTS.md lists the deduped model set per tier across all
+// platforms; the platform docs each list their own column. This closes the
+// drift class where a registry model rename leaves the prose behind — the
+// exact failure that made the PM tier change non-atomic.
+interface ProseTarget {
+  file: string;
+  label: string;
+  platform: Platform | "distinct";
+  pattern: RegExp;
+  extract?: (region: string) => string[];
+}
+
+const TIER_TO_KEY: Record<string, string> = { High: "high", Medium: "medium", Low: "low" };
+
+const proseTargets: ProseTarget[] = [
+  {
+    file: "AGENTS.md",
+    label: "§3.6 tier-model-mapping",
+    platform: "distinct",
+    pattern: /^- \*\*(High|Medium|Low)-tier\*\*.*\(([^)]+)\)$/gm,
+    extract: (region) => region.split("/").map((t) => t.trim()),
+  },
+  {
+    file: "CLAUDE.md",
+    label: "3-Tier mapping",
+    platform: "claude",
+    pattern: /^- \*\*(High|Medium|Low)-tier\*\* → ([^\s(]+)/gm,
+  },
+  {
+    file: "GEMINI.md",
+    label: "3-Tier mapping",
+    platform: "gemini",
+    pattern: /^- \*\*(High|Medium|Low)-tier\*\* → ([^\s(]+)/gm,
+  },
+  {
+    file: "CODEX.md",
+    label: "3-Tier mapping",
+    platform: "codex",
+    pattern: /^- \*\*(High|Medium|Low)-tier\*\* → ([^\s(]+)/gm,
+  },
+];
+
+interface ProseMismatch {
+  file: string;
+  message: string;
+}
+const proseMismatches: ProseMismatch[] = [];
+
+// T-20260916-011: skip targets whose platform/file was not delivered into this
+// context (a codex-opt-out project has neither CODEX.md nor .codex/). Skipped
+// targets are surfaced, never silent.
+const { active: deliveredTargets, skipped: skippedTargets } =
+  partitionProseTargetsByDelivery(proseTargets, (rel) => existsSync(join(WORKSPACE_ROOT, rel)));
+for (const s of skippedTargets) {
+  console.log(`ℹ️  ${s.file} ${s.label}: skipped (${s.reason})`);
+}
+
+for (const target of deliveredTargets) {
+  const filePath = join(WORKSPACE_ROOT, target.file);
+  let content: string;
+  try {
+    content = readFileSync(filePath, "utf-8");
+  } catch {
+    proseMismatches.push({ file: target.file, message: `could not read ${target.file}` });
+    continue;
+  }
+
+  const declared: Record<string, string[]> = {};
+  for (const match of content.matchAll(target.pattern)) {
+    const tierKey = TIER_TO_KEY[match[1]];
+    const ids = target.extract
+      ? target.extract(match[2]).filter((t) => /^[\w.-]+$/.test(t))
+      : [match[2].replace(/`/g, "").trim()];
+    declared[tierKey] = ids;
+  }
+
+  for (const tier of ["high", "medium", "low"]) {
+    const declaredIds = declared[tier];
+    if (!declaredIds || declaredIds.length === 0) {
+      proseMismatches.push({
+        file: target.file,
+        message: `no tier→model line found for ${tier} tier (${target.label})`,
+      });
+      continue;
+    }
+    const expectedIds =
+      target.platform === "distinct"
+        ? [...new Set(PLATFORMS.map((p) => models[p]?.[tier]).filter(Boolean))].sort()
+        : [models[target.platform]?.[tier]].filter((m): m is string => Boolean(m)).sort();
+    const declaredSorted = [...declaredIds].sort();
+    const matches =
+      declaredSorted.length === expectedIds.length &&
+      declaredSorted.every((id, i) => id === expectedIds[i]);
+    if (!matches) {
+      proseMismatches.push({
+        file: target.file,
+        message: `${tier} tier declares [${declaredIds.join(", ")}] but registry says [${expectedIds.join(", ")}] (${target.label})`,
+      });
+    }
+  }
+}
+
+if (mismatches.length === 0 && proseMismatches.length === 0) {
+  console.log("✓ All agent model names + tier→model mapping prose match registry");
   if (import.meta.main) {
     process.exit(0);
   }
@@ -203,6 +317,9 @@ if (mismatches.length === 0) {
     console.error(
       `ERROR: ${m.file}\n  platform=${m.platform} tier=${m.tier}: declared="${m.declaredModel}" expected="${m.expectedModel}"`
     );
+  }
+  for (const p of proseMismatches) {
+    console.error(`ERROR: ${p.file}: ${p.message}`);
   }
   if (import.meta.main) {
     process.exit(1);

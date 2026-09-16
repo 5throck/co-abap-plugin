@@ -8,14 +8,73 @@
  * Check C: skills/<name>/SKILL.md vs templates/common/skills/<name>/SKILL.md content
  *          (normalized through the shared scrub so only REAL drift reports)
  * Check E: docs/lifecycle/skills/<name>.md Version/Owner vs SKILL.md frontmatter
+ * Check F: agent tier surfaces (frontmatter, L1 templates, AGENTS.md rosters,
+ *          lifecycle records) vs docs/workspace-schema.json agent_tiers SSOT
+ * Check H: docs/lifecycle/scripts/<name>.md Version vs the current version of
+ *          scripts/<name>.ts (same source Check A uses: the SCRIPTS.md row the
+ *          @version header is validated against)
  *
  * Usage:
  *   bun scripts/lifecycle-sync-audit.ts
  *   bun scripts/lifecycle-sync-audit.ts --json
  *   bun scripts/lifecycle-sync-audit.ts --fix
  *
- * @version 1.8.0
- * @last_updated 2026-09-12
+ * @version 1.14.0
+ * @last_updated 2026-09-16
+ * v1.14.0: New Check H — script lifecycle record version gate. For every
+ *          docs/lifecycle/scripts/<name>.md record whose subject script
+ *          resolves (exact scripts/<name>.ts, then an unambiguous SCRIPTS.md
+ *          basename match for sub-path rows like lib/error-handling.ts), the
+ *          declared Version must equal the script's current SCRIPTS.md
+ *          version (the same source Check A validates @version headers
+ *          against): mismatch = ERROR, missing Version field = WARNING
+ *          (Check E's missing-field semantics). Records are opt-in — a
+ *          script with no record is not reported (SCRIPTS.md remains the
+ *          script lifecycle SSOT), and a record with no resolvable script
+ *          version source is not this check's concern. Motivation: the 3
+ *          script records carry phase-history narrative SCRIPTS.md rows do
+ *          not, and their versions had silently lapsed
+ *          (2026-09-15 project review M6; PM adjudication: GATE, not retire).
+ *          (spec: docs/designs/2026-09-16-lifecycle-gate-and-pm-role-completion-design.md)
+ * v1.13.0: Check E no longer stays fully silent on records without a Version
+ *          field — when the SKILL.md frontmatter declares one, the missing
+ *          record field is a WARNING with a backfill hint (the two
+ *          variant-ization records sat stale in exactly this blind spot; both
+ *          backfilled in the same batch). Absence stays advisory for records
+ *          predating the convention.
+ *          (spec: docs/reports/2026-09-15-project-review-template-fleet.md H9)
+ * v1.12.0: New Check G — .githooks ↔ templates/common/.githooks mirror parity
+ *          (presence-on-both-sides + CRLF-normalized byte equality), replacing
+ *          audit.ts's long-suppressed S-03 check. The suppressed gap had
+ *          produced real drift: an L1-only REBASE_BYPASS_SECRET_SCAN escape
+ *          hatch and diverged commit-msg wording/comments, both remediated in
+ *          this batch.
+ *          (spec: docs/designs/2026-09-15-governance-deadweight-cleanup-design.md)
+ * v1.11.0: Check F extended beyond tier to agent metadata dimensions found
+ *          unvalidated by the 2026-09-15 sweep: (e) frontmatter status vs
+ *          lifecycle record Current Phase (production→active strict, other
+ *          phase vocabularies warn), and (f) record Last Updated must not
+ *          lag frontmatter last_updated — the "record never refreshed after
+ *          the agent changed" class that hid the PM tier drift.
+ *          (spec: docs/designs/2026-09-15-agent-metadata-drift-check-design.md)
+ * v1.10.0: New Check F — agent tier drift detection. agent_tiers in
+ *          docs/workspace-schema.json is the SSOT (the agent-model-gate hook
+ *          consumes it at runtime); Check F compares L0 frontmatter tier
+ *          blocks (5 platforms, uniform), L1 common-template agent tier
+ *          blocks (SSOT match when the agent is registered; completeness and
+ *          uniformity otherwise — the L1 stub wins new-project.ts's stub
+ *          merge), AGENTS.md roster Tier cells (§1 and §4.1), and lifecycle
+ *          record **Tier** fields against it. Detection-only, error-level
+ *          (spec: docs/designs/2026-09-15-agent-tier-drift-check-design.md).
+ * v1.9.0: Check D now parses intentional-duplicate markers through the shared
+ *          parser (helpers/markers.ts parseIntentionalDuplicateLine — complete
+ *          one-line comment + workspace standards §<digits> grammar,
+ *          T-20260912-029) instead of a looser inline regex, so prose that
+ *          merely MENTIONS the marker syntax no longer pollutes the
+ *          informational registry (4 phantom entries → the 2 real markers).
+ *          Registry mapping: source = parsed source (fallback: parsed name),
+ *          reason = parsed reason (fallback: parsed name). Workspace-wide
+ *          walk, all exclusions, and the informational severity are unchanged.
  * v1.8.0: Check C now normalizes L0 skill content through the shared scrub
  *          (scripts/lib/constitution-scrub.ts — the exact transform propagate
  *          applies to templates/ targets) before comparing, so the intentional
@@ -53,6 +112,7 @@ import { cwd } from 'node:process';
 import { createHash } from 'node:crypto';
 import { load as loadYaml } from 'js-yaml';
 import { scrubConstitutionRefs } from './lib/constitution-scrub.ts';
+import { parseIntentionalDuplicateLine } from './helpers/markers.ts';
 
 // ANSI colors for terminal output
 const colors = {
@@ -403,6 +463,17 @@ export function runCheckE(): SyncIssue[] {
           fix: `Update docs/lifecycle/skills/${entry} Version to ${frontmatter.version} (or fix the SKILL.md frontmatter if the record is correct)`,
         });
       }
+    } else if (!recordVersion && frontmatter.version) {
+      // H9 (2026-09-15 project review): a record with no Version field was
+      // permanently exempt from drift detection — the variant-ization records
+      // sat stale in exactly this blind spot. Warn so the field gets backfilled
+      // (warning, not error: records predating the convention stay advisory).
+      issues.push({
+        level: 'warning',
+        file: `docs/lifecycle/skills/${entry}`,
+        message: `Check E: lifecycle record has no Version field but skills/${skillName}/SKILL.md frontmatter declares ${frontmatter.version}`,
+        fix: `Add "- **Version**: ${frontmatter.version}" to docs/lifecycle/skills/${entry}`,
+      });
     }
 
     const recordOwner = extractRecordField(recordContent, 'Owner');
@@ -414,6 +485,470 @@ export function runCheckE(): SyncIssue[] {
         fix: `Update docs/lifecycle/skills/${entry} Owner to ${frontmatter.owner} (or fix the SKILL.md frontmatter if the record is correct)`,
       });
     }
+  }
+
+  return issues;
+}
+
+/**
+ * Check F: Agent tier drift — docs/workspace-schema.json `agent_tiers` vs
+ * every other tier declaration surface.
+ *
+ * `agent_tiers` is the SSOT (the only machine-consumed copy: the
+ * agent-model-gate hook reads it at runtime). All other surfaces must
+ * agree:
+ *   (a) agents/<name>.md frontmatter — 5 platforms, uniform, == SSOT
+ *   (b) templates/common/agents/<name>.md — uniform, == SSOT when the
+ *       agent is in agent_tiers (the L1 stub frontmatter wins
+ *       new-project.ts's stub merge, so an L0/L1 split silently changes
+ *       resolved projects); L1-only agents get completeness/uniformity
+ *       checks only
+ *   (c) AGENTS.md roster rows referencing agents/<name>.md — Tier cell
+ *       (bold markers stripped) == SSOT
+ *   (d) docs/lifecycle/agents/<name>.md `**Tier**:` field == SSOT
+ *   (e) frontmatter status ↔ record Current Phase (production→active is
+ *       an error on mismatch; contested vocabularies report as warnings)
+ *   (f) record Last Updated must not lag frontmatter last_updated — an
+ *       agent change without a refreshed record is exactly the drift class
+ *       that hid the 2026-09 tier change (spec: docs/designs/
+ *       2026-09-15-agent-tier-drift-check-design.md and
+ *       docs/designs/2026-09-15-agent-metadata-drift-check-design.md)
+ * Detection-only (no fixData): remediation routes through the
+ * lifecycle-manager / docs-writer workflows. Runs only at workspace root.
+ */
+export function runCheckF(): SyncIssue[] {
+  const issues: SyncIssue[] = [];
+
+  if (!IS_WORKSPACE_ROOT) return issues;
+
+  const schemaPath = join(ROOT, 'docs', 'workspace-schema.json');
+  if (!existsSync(schemaPath)) return issues;
+
+  let agentTiers: Record<string, string>;
+  try {
+    const schema = JSON.parse(readFileSync(schemaPath, 'utf-8')) as {
+      agent_tiers?: Record<string, string>;
+    };
+    agentTiers = schema.agent_tiers ?? {};
+  } catch {
+    issues.push({
+      level: 'error',
+      file: 'docs/workspace-schema.json',
+      message: 'Check F: workspace-schema.json is not parseable JSON — agent tier SSOT unreadable',
+      fix: 'Repair the docs/workspace-schema.json JSON syntax',
+    });
+    return issues;
+  }
+  if (Object.keys(agentTiers).length === 0) return issues;
+
+  const VALID_TIERS = new Set(['high', 'medium', 'low']);
+  const PLATFORMS = ['claude', 'gemini', 'antigravity', 'gemini-cli', 'codex'];
+
+  const parseTierBlock = (content: string, relFile: string): Record<string, string> | undefined => {
+    const fm = /^---\r?\n([\s\S]*?)\r?\n---/.exec(content);
+    if (!fm) return undefined;
+    let doc: Record<string, unknown> | null;
+    try {
+      doc = loadYaml(fm[1]) as Record<string, unknown> | null;
+    } catch {
+      issues.push({
+        level: 'error',
+        file: relFile,
+        message: `Check F: ${relFile} frontmatter is not parseable YAML — tier unverifiable`,
+        fix: 'Repair the YAML frontmatter',
+      });
+      return undefined;
+    }
+    const tier = doc?.tier;
+    if (!tier || typeof tier !== 'object') return undefined;
+    const out: Record<string, string> = {};
+    for (const [platform, value] of Object.entries(tier as Record<string, unknown>)) {
+      out[platform] = String(value).trim().toLowerCase();
+    }
+    return out;
+  };
+
+  const checkTierBlock = (
+    tierBlock: Record<string, string> | undefined,
+    relFile: string,
+    expected?: string,
+  ): void => {
+    if (!tierBlock) return; // no tier block (extends-only skeleton) — shape validators own that
+    const missing = PLATFORMS.filter((p) => tierBlock[p] === undefined);
+    if (missing.length > 0) {
+      issues.push({
+        level: 'error',
+        file: relFile,
+        message: `Check F: ${relFile} tier block is missing platform key(s): ${missing.join(', ')}`,
+        fix: 'Declare all 5 platforms (claude, gemini, antigravity, gemini-cli, codex) in the tier block',
+      });
+      return;
+    }
+    const values = PLATFORMS.map((p) => tierBlock[p]);
+    const distinct = new Set(values);
+    if (distinct.size > 1) {
+      issues.push({
+        level: 'error',
+        file: relFile,
+        message: `Check F: ${relFile} tier block is not uniform across platforms (${[...distinct].join(' / ')})`,
+        fix: 'Set all platforms to the same tier value — one tier per agent (AGENTS.md §3.6)',
+      });
+      return;
+    }
+    const actual = values[0];
+    if (!VALID_TIERS.has(actual)) {
+      issues.push({
+        level: 'error',
+        file: relFile,
+        message: `Check F: ${relFile} tier value '${actual}' is not one of high/medium/low`,
+        fix: "Use 'high', 'medium', or 'low'",
+      });
+      return;
+    }
+    if (expected && actual !== expected) {
+      issues.push({
+        level: 'error',
+        file: relFile,
+        message: `Check F: ${relFile} tier '${actual}' does not match docs/workspace-schema.json agent_tiers '${expected}'`,
+        fix: `Update ${relFile} tier to '${expected}' (or fix agent_tiers if the frontmatter is correct)`,
+      });
+    }
+  };
+
+  // (a) L0 frontmatter ↔ SSOT
+  for (const [agent, expectedTier] of Object.entries(agentTiers)) {
+    const agentPath = join(ROOT, 'agents', `${agent}.md`);
+    if (!existsSync(agentPath)) {
+      issues.push({
+        level: 'error',
+        file: `agents/${agent}.md`,
+        message: `Check F: agent_tiers declares '${agent}' but agents/${agent}.md does not exist`,
+        fix: 'Remove the agent_tiers entry or restore the agent file',
+      });
+      continue;
+    }
+    const relFile = `agents/${agent}.md`;
+    checkTierBlock(parseTierBlock(readFileSync(agentPath, 'utf-8'), relFile), relFile, expectedTier);
+  }
+
+  // (b) L1 common-template agents ↔ SSOT (or completeness-only for L1-only agents)
+  const l1AgentsDir = join(ROOT, 'templates', 'common', 'agents');
+  if (existsSync(l1AgentsDir)) {
+    for (const entry of readdirSync(l1AgentsDir)) {
+      if (!entry.endsWith('.md') || entry === '_COMMON.md') continue;
+      const relFile = `templates/common/agents/${entry}`;
+      const content = readFileSync(join(l1AgentsDir, entry), 'utf-8');
+      const frontmatterName = (() => {
+        const fm = /^---\r?\n([\s\S]*?)\r?\n---/.exec(content);
+        if (!fm) return undefined;
+        try {
+          const doc = loadYaml(fm[1]) as { name?: string } | null;
+          return typeof doc?.name === 'string' ? doc.name : undefined;
+        } catch {
+          return undefined;
+        }
+      })();
+      checkTierBlock(
+        parseTierBlock(content, relFile),
+        relFile,
+        frontmatterName ? agentTiers[frontmatterName] : undefined,
+      );
+    }
+  }
+
+  // (c) AGENTS.md roster rows ↔ SSOT — scoped to the two roster tables
+  // (headers `| Agent | File | Tier |…`), so execution-plan example rows that
+  // merely mention agents/<name>.md in a Task cell cannot false-positive.
+  const agentsMdPath = join(ROOT, 'AGENTS.md');
+  if (existsSync(agentsMdPath)) {
+    const lines = readFileSync(agentsMdPath, 'utf-8').split('\n');
+    const rosterRows: string[] = [];
+    let inRosterTable = false;
+    for (const line of lines) {
+      if (!line.trimStart().startsWith('|')) {
+        inRosterTable = false;
+        continue;
+      }
+      const cells = line.split('|').map((c) => c.trim().toLowerCase());
+      if (cells.includes('agent') && cells.includes('file') && cells.includes('tier')) {
+        inRosterTable = true; // header row of a roster table
+        continue;
+      }
+      if (inRosterTable && cells.some((c) => c.includes('---'))) continue; // separator row
+      if (inRosterTable) rosterRows.push(line);
+    }
+    for (const [agent, expectedTier] of Object.entries(agentTiers)) {
+      const needle = `agents/${agent}.md`;
+      const matchingRows = rosterRows.filter((row) => row.includes(needle));
+      if (matchingRows.length === 0) {
+        issues.push({
+          level: 'error',
+          file: 'AGENTS.md',
+          message: `Check F: no AGENTS.md roster row references ${needle}`,
+          fix: `Add '${agent}' to the §1 Agent Roster and §4.1 Subagent Roster tables`,
+        });
+        continue;
+      }
+      for (const row of matchingRows) {
+        const tierCell = (row.split('|')[3] ?? '').replace(/\*\*/g, '').trim();
+        if (tierCell.toLowerCase() !== expectedTier) {
+          issues.push({
+            level: 'error',
+            file: 'AGENTS.md',
+            message: `Check F: AGENTS.md roster row for '${agent}' shows tier '${tierCell || '(empty)'}' but agent_tiers says '${expectedTier}'`,
+            fix: `Update the row's Tier cell to ${expectedTier.charAt(0).toUpperCase() + expectedTier.slice(1)} (or fix agent_tiers if the roster is correct)`,
+          });
+        }
+      }
+    }
+  }
+
+  // (d) Lifecycle record `**Tier**:` field ↔ SSOT
+  for (const [agent, expectedTier] of Object.entries(agentTiers)) {
+    const recordPath = join(ROOT, 'docs', 'lifecycle', 'agents', `${agent}.md`);
+    if (!existsSync(recordPath)) continue; // record existence is agent-lifecycle-audit's concern
+    const recordTier = extractRecordField(readFileSync(recordPath, 'utf-8'), 'Tier');
+    if (recordTier && recordTier.trim().replace(/\.$/, '').toLowerCase() !== expectedTier) {
+      issues.push({
+        level: 'error',
+        file: `docs/lifecycle/agents/${agent}.md`,
+        message: `Check F: lifecycle record Tier '${recordTier.trim()}' does not match agent_tiers '${expectedTier}'`,
+        fix: `Update the docs/lifecycle/agents/${agent}.md **Tier** field to ${expectedTier} (or fix agent_tiers if the record is correct)`,
+      });
+    }
+  }
+
+  // (e) frontmatter status ↔ record Current Phase
+  // (f) record Last Updated must not lag frontmatter last_updated
+  // Records missing a field are skipped (predating the convention is not a
+  // mismatch); both use extractRecordField like (d).
+  const PHASE_TO_STATUS: Record<string, string> = {
+    production: 'active',
+    beta: 'active',
+    draft: 'experimental',
+    deprecated: 'deprecated',
+    archived: 'archived',
+  };
+  const PHASE_STRICT = new Set(['production', 'deprecated', 'archived']);
+  for (const agent of Object.keys(agentTiers)) {
+    const agentPath = join(ROOT, 'agents', `${agent}.md`);
+    const recordPath = join(ROOT, 'docs', 'lifecycle', 'agents', `${agent}.md`);
+    if (!existsSync(agentPath) || !existsSync(recordPath)) continue; // absence handled by (a)/(d)
+
+    const fmMatch = /^---\r?\n([\s\S]*?)\r?\n---/.exec(readFileSync(agentPath, 'utf-8'));
+    let status: string | undefined;
+    let fmUpdated: string | undefined;
+    if (fmMatch) {
+      try {
+        const doc = loadYaml(fmMatch[1]) as { status?: string; last_updated?: string | Date } | null;
+        status = typeof doc?.status === 'string' ? doc.status.trim().toLowerCase() : undefined;
+        const lu = doc?.last_updated;
+        if (lu instanceof Date) fmUpdated = lu.toISOString().slice(0, 10);
+        else if (typeof lu === 'string') fmUpdated = lu.trim().slice(0, 10);
+      } catch {
+        // unparseable frontmatter already reported by (a)'s parseTierBlock
+      }
+    }
+
+    const recordContent = readFileSync(recordPath, 'utf-8');
+
+    const phase = extractRecordField(recordContent, 'Current Phase');
+    if (status && phase) {
+      const phaseNorm = phase.trim().toLowerCase();
+      const expected = PHASE_TO_STATUS[phaseNorm];
+      if (expected && expected !== status) {
+        issues.push({
+          level: PHASE_STRICT.has(phaseNorm) ? 'error' : 'warning',
+          file: `docs/lifecycle/agents/${agent}.md`,
+          message: `Check F: ${agent} lifecycle record Current Phase '${phase.trim()}' does not match agents/${agent}.md frontmatter status '${status}'`,
+          fix: `Reconcile the docs/lifecycle/agents/${agent}.md Current Phase field with agents/${agent}.md status`,
+        });
+      }
+    }
+
+    const recordUpdated = extractRecordField(recordContent, 'Last Updated');
+    const recordDate = recordUpdated ? /^(\d{4}-\d{2}-\d{2})/.exec(recordUpdated.trim())?.[1] : undefined;
+    if (fmUpdated && recordDate && recordDate < fmUpdated) {
+      issues.push({
+        level: 'error',
+        file: `docs/lifecycle/agents/${agent}.md`,
+        message: `Check F: lifecycle record Last Updated (${recordDate}) lags agents/${agent}.md frontmatter last_updated (${fmUpdated}) — the record was not refreshed after the agent changed`,
+        fix: `Update the docs/lifecycle/agents/${agent}.md **Last Updated** field to ${fmUpdated} (with a short reason note)`,
+      });
+    }
+  }
+
+  if (!jsonMode) {
+    console.log(
+      `${colors.dim}Check F: agent tiers vs schema agent_tiers SSOT — ${Object.keys(agentTiers).length} agent(s)${issues.length > 0 ? `, ${issues.length} drift finding(s)` : ', all surfaces agree'}${colors.reset}`,
+    );
+  }
+
+  return issues;
+}
+
+/**
+ * Check G: .githooks mirror parity — .githooks/ vs templates/common/.githooks/.
+ *
+ * The five hook wrappers are hand-maintained mirrors with no propagation
+ * domain: L0 is what the workspace root actually runs, L1 is what scaffolded
+ * projects receive. The old audit.ts S-03 check was suppressed ("Git Bash
+ * assumed on Windows") and the gap produced real drift (a secret-scan bypass
+ * escape hatch survived only on the L1 side, and commit-msg wording/comments
+ * diverged) — this check replaces it with a platform-neutral file comparison.
+ * Every entry in either directory must exist on both sides and be
+ * byte-identical after CRLF normalization; there are no intentional
+ * divergences after the 2026-09-15 cleanup, and a future one should use the
+ * intentional-duplicate marker mechanism rather than a hidden allowlist.
+ * Detection-only. Runs only at workspace root.
+ * (spec: docs/designs/2026-09-15-governance-deadweight-cleanup-design.md)
+ */
+export function runCheckG(): SyncIssue[] {
+  const issues: SyncIssue[] = [];
+
+  if (!IS_WORKSPACE_ROOT) return issues;
+
+  const l0Dir = join(ROOT, '.githooks');
+  const l1Dir = join(ROOT, 'templates', 'common', '.githooks');
+  if (!existsSync(l0Dir) || !existsSync(l1Dir)) return issues;
+
+  const names = new Set([...readdirSync(l0Dir), ...readdirSync(l1Dir)]);
+  const normalize = (s: string): string => s.replace(/\r\n/g, '\n');
+
+  for (const name of [...names].sort()) {
+    if (name.startsWith('.')) continue;
+    const l0Path = join(l0Dir, name);
+    const l1Path = join(l1Dir, name);
+    const l0IsFile = existsSync(l0Path) && statSync(l0Path).isFile();
+    const l1IsFile = existsSync(l1Path) && statSync(l1Path).isFile();
+
+    if (l0IsFile !== l1IsFile) {
+      issues.push({
+        level: 'error',
+        file: `.githooks/${name}`,
+        message: `Check G: hook '${name}' exists on ${l0IsFile ? 'L0 only' : 'templates/common (L1) only'} — mirror sets have diverged`,
+        fix: l0IsFile
+          ? `Copy .githooks/${name} to templates/common/.githooks/${name} (or remove it from L0 if it is intentionally root-only)`
+          : `Remove templates/common/.githooks/${name} (or add the hook to .githooks/ if projects need it)`,
+      });
+      continue;
+    }
+    if (!l0IsFile) continue;
+
+    if (normalize(readFileSync(l0Path, 'utf-8')) !== normalize(readFileSync(l1Path, 'utf-8'))) {
+      issues.push({
+        level: 'error',
+        file: `.githooks/${name}`,
+        message: `Check G: hook mirror drift — .githooks/${name} differs from templates/common/.githooks/${name}`,
+        fix: `Decide the canonical content, then make both copies byte-identical (CRLF-insensitive)`,
+      });
+    }
+  }
+
+  if (!jsonMode) {
+    console.log(
+      `${colors.dim}Check G: .githooks mirror parity — ${names.size} entr(ies)${issues.length > 0 ? `, ${issues.length} drift finding(s)` : ', all mirrors in sync'}${colors.reset}`,
+    );
+  }
+
+  return issues;
+}
+
+/**
+ * Check H: script lifecycle record version gate (pure comparison helper).
+ *
+ * Compares a docs/lifecycle/scripts/<name>.md record's declared **Version**
+ * against the subject script's current version (the SCRIPTS.md registry row —
+ * the same source Check A validates the file's @version header against).
+ * Missing Version field = WARNING (mirrors Check E's missing-field semantics:
+ * records predating the convention stay advisory); a declared Version that
+ * disagrees = ERROR; agreement = null. Leading "v" is tolerated on both
+ * sides. `recordLabel` names the record in the emitted message/fix text.
+ */
+export function compareScriptRecordVersion(
+  recordVersion: string | undefined,
+  scriptVersion: string,
+  recordLabel: string,
+): { level: 'error' | 'warning'; message: string; fix: string } | null {
+  const normalize = (v: string): string => v.trim().replace(/^v/i, '');
+  if (recordVersion === undefined || recordVersion.trim() === '') {
+    return {
+      level: 'warning',
+      message: `${recordLabel} has no Version field but the script's SCRIPTS.md entry declares ${scriptVersion}`,
+      fix: `Add "- **Version**: ${scriptVersion}" to ${recordLabel}`,
+    };
+  }
+  if (normalize(recordVersion) !== normalize(scriptVersion)) {
+    return {
+      level: 'error',
+      message: `${recordLabel} Version ${recordVersion} does not match the script's SCRIPTS.md entry ${scriptVersion}`,
+      fix: `Update ${recordLabel} Version to ${scriptVersion} (with a Phase History catch-up row)`,
+    };
+  }
+  return null;
+}
+
+/**
+ * Check H: script lifecycle record version gate.
+ *
+ * For every docs/lifecycle/scripts/<name>.md record whose subject script
+ * resolves, the declared Version must equal the script's current version per
+ * Check A's source (the scripts/SCRIPTS.md row; the @version header is the
+ * same source Check A validates against it). Resolution: exact
+ * `scripts/<name>.ts` first, then an unambiguous SCRIPTS.md basename match
+ * (sub-path rows like `lib/error-handling.ts`). Records are opt-in: no
+ * record for a script = not reported (SCRIPTS.md remains the script
+ * lifecycle SSOT); a record with no resolvable version source (removed or
+ * unregistered script) is not this check's concern. Runs only at workspace
+ * root. (spec: docs/designs/2026-09-16-lifecycle-gate-and-pm-role-completion-design.md)
+ */
+export function runCheckH(): SyncIssue[] {
+  const issues: SyncIssue[] = [];
+
+  if (!IS_WORKSPACE_ROOT) return issues;
+  const lifecycleScriptsDir = join(ROOT, 'docs', 'lifecycle', 'scripts');
+  if (!existsSync(lifecycleScriptsDir)) return issues;
+  if (!existsSync(SCRIPTS_MD)) return issues;
+
+  const registry = parseScriptsMdRegistry(SCRIPTS_MD);
+  let checkedCount = 0;
+
+  for (const entry of readdirSync(lifecycleScriptsDir)) {
+    if (!entry.endsWith('.md')) continue;
+    const recordName = entry.replace(/\.md$/, '');
+
+    // Resolve the subject script's registry row (see docblock above).
+    let registryKey: string | undefined;
+    if (registry.has(`${recordName}.ts`)) {
+      registryKey = `${recordName}.ts`;
+    } else {
+      const matches = [...registry.keys()].filter((k) => basename(k) === `${recordName}.ts`);
+      if (matches.length === 1) registryKey = matches[0];
+    }
+    if (!registryKey) continue; // no version source — records are opt-in
+
+    const recordPath = join(lifecycleScriptsDir, entry);
+    const recordContent = readFileSync(recordPath, 'utf-8');
+    const recordLabel = `docs/lifecycle/scripts/${entry}`;
+    const verdict = compareScriptRecordVersion(
+      extractRecordField(recordContent, 'Version'),
+      registry.get(registryKey)!.version,
+      recordLabel,
+    );
+    if (!verdict) continue;
+    checkedCount++;
+    issues.push({
+      level: verdict.level,
+      file: recordLabel,
+      message: `Check H: ${verdict.message}`,
+      fix: verdict.fix,
+    });
+  }
+
+  if (!jsonMode) {
+    console.log(
+      `${colors.dim}Check H: script record versions vs SCRIPTS.md — ${checkedCount} finding(s)${issues.length > 0 ? '' : ', all records in sync'}${colors.reset}`,
+    );
   }
 
   return issues;
@@ -601,10 +1136,18 @@ function runCheckX(): SyncIssue[] {
 /**
  * Check D: Scan all .md files for intentional-duplicate annotations.
  * Informational only — never produces errors or warnings.
+ *
+ * Markers are parsed per line through the shared parser
+ * (helpers/markers.ts parseIntentionalDuplicateLine, T-20260912-029): a line
+ * registers only when it contains a COMPLETE one-line
+ * `<!-- intentional-duplicate: ... -->` comment whose name carries the
+ * workspace standards §<digits> grammar — prose that merely mentions the
+ * marker syntax stays out of the registry. Registry mapping:
+ * source = parsed `source` field (fallback: parsed `name`),
+ * reason = parsed `reason` field (fallback: parsed `name`).
  */
 function runCheckD(): DuplicateEntry[] {
   const entries: DuplicateEntry[] = [];
-  const PATTERN = /<!--\s*intentional-duplicate:\s*([^—\n]+)\s*—\s*([^;>\n]+)/g;
   const EXCLUDED = ['node_modules', '.git', '_archive', 'memory'];
   // Skip context.md itself (contains the annotation definition/example, not a real duplicate)
 
@@ -639,13 +1182,15 @@ function runCheckD(): DuplicateEntry[] {
           continue;
         }
 
-        let match: RegExpExecArray | null;
-        PATTERN.lastIndex = 0;
-        while ((match = PATTERN.exec(content)) !== null) {
+        // Per-line shared-parser scan (lines scanned in order, so `file`
+        // remains a whole-file registry of marker lines).
+        for (const line of content.split('\n')) {
+          const parsed = parseIntentionalDuplicateLine(line);
+          if (!parsed) continue;
           entries.push({
             file: fullPath.replace(ROOT + '\\', '').replace(ROOT + '/', ''),
-            source: match[1].trim(),
-            reason: match[2].trim(),
+            source: parsed.source ?? parsed.name ?? '',
+            reason: parsed.reason ?? parsed.name ?? '',
           });
         }
       }
@@ -843,6 +1388,15 @@ function runAudit(jsonMode = false): AuditResult {
     console.log(
       `${colors.dim}Check E: lifecycle records Version/Owner vs SKILL.md frontmatter${colors.reset}`,
     );
+    console.log(
+      `${colors.dim}Check F: agent tiers vs workspace-schema.json agent_tiers SSOT${colors.reset}`,
+    );
+    console.log(
+      `${colors.dim}Check G: .githooks vs templates/common/.githooks mirror parity${colors.reset}`,
+    );
+    console.log(
+      `${colors.dim}Check H: script lifecycle record versions vs SCRIPTS.md${colors.reset}`,
+    );
     console.log('');
   }
 
@@ -852,6 +1406,9 @@ function runAudit(jsonMode = false): AuditResult {
   const checkXIssues = runCheckX();
   const checkVIssues = runCheckV();
   const checkEIssues = runCheckE();
+  const checkFIssues = runCheckF();
+  const checkGIssues = runCheckG();
+  const checkHIssues = runCheckH();
   const registryEntries = runCheckD();
 
   if (!jsonMode) {
@@ -874,6 +1431,9 @@ function runAudit(jsonMode = false): AuditResult {
     ...checkXIssues.filter((i) => i.level === 'error'),
     ...checkVIssues.filter((i) => i.level === 'error'),
     ...checkEIssues.filter((i) => i.level === 'error'),
+    ...checkFIssues.filter((i) => i.level === 'error'),
+    ...checkGIssues.filter((i) => i.level === 'error'),
+    ...checkHIssues.filter((i) => i.level === 'error'),
   ];
   const allWarnings = [
     ...checkAIssues.filter((i) => i.level === 'warning'),
@@ -882,10 +1442,13 @@ function runAudit(jsonMode = false): AuditResult {
     ...checkXIssues.filter((i) => i.level === 'warning'),
     ...checkVIssues.filter((i) => i.level === 'warning'),
     ...checkEIssues.filter((i) => i.level === 'warning'),
+    ...checkFIssues.filter((i) => i.level === 'warning'),
+    ...checkGIssues.filter((i) => i.level === 'warning'),
+    ...checkHIssues.filter((i) => i.level === 'warning'),
   ];
 
   return {
-    checksRun: 7,
+    checksRun: 10,
     errors: allErrors,
     warnings: allWarnings,
     registry: registryEntries,
