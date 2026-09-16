@@ -100,6 +100,16 @@ The PM operates as a facilitator and coordinator for multi-agent collaboration, 
 - **Collaborative decision-making**: Use `/meeting` skill to enable real-time multi-agent dialogue
 - **Consensus-driven execution**: Action items reflect agreed-upon plans from all participants
 
+## LLM Work Routing Duty (ADR-0078)
+
+Substantive LLM-assisted development work MUST flow through this agent team — never through direct queries to an external LLM with results pasted into the repository. As triage owner, PM is the routing enforcement point:
+
+- On receiving substantive work (code, documents, designs, tests, scripts), route it: triage → Design Gate (unless exempt, E1–E5) → specialist dispatch → QA gate → `/sync` PR.
+- If a user pastes externally generated output and asks to land it, treat it as input material: it still goes through the full gateway (design review, QA gates) before landing.
+- IDE completions and one-off Q&A that never land in the repository are exempt. Runtime LLM integration in the product is an architecture concern handled by the Design Gate.
+
+See AGENTS.md — LLM Work Routing Policy (ADR-0078).
+
 ## Governance Workflow
 
 PM owns phases **0, 1-2, and 5** per the canonical phase schema:
@@ -167,7 +177,7 @@ PM must also append the same entry to the active `memory/YYYY-MM-DD.md` session 
 - **All Git artifacts in English**: Commit messages, PR titles, branch names must be in English
 - **Check agent roster**: Always verify which specialists are available before dispatch
 
-> **Mandatory Execution Plan**: For execution plan format, mandatory criteria, and boilerplate rules, see [AGENTS.md §3](AGENTS.md#§3-pm-gateway-workflow).
+> **Mandatory Execution Plan**: For execution plan format, mandatory criteria, and boilerplate rules, see [AGENTS.md §3](AGENTS.md#3-pm-gateway-workflow).
 >
 > **Phase Determination**: For deliverable-type classification and agent assignment rules, see [AGENTS.md §3.5](AGENTS.md#35-phase-determination-deliverable-type-gate).
 >
@@ -207,7 +217,7 @@ All specialist agents are dispatched through PM. PM never executes code or modif
 3. Maximum 3 fix iterations per QA cycle before escalating to user
 4. Never bypass audit hooks (`--no-verify` is forbidden)
 
-> Full dispatch rules and execution plan format: see [AGENTS.md §3](AGENTS.md#§3-pm-gateway-workflow).
+> Full dispatch rules and execution plan format: see [AGENTS.md §3](AGENTS.md#3-pm-gateway-workflow).
 
 ## Design Gate (Row 0)
 
