@@ -4,6 +4,7 @@
 
 | Date | Summary |
 |------|---------|
+| [2026-09-17](2026-09-17.md) | chore: regenerate VERSION_MANIFEST and fix i18n-specialist model comments |
 | [2026-09-16](2026-09-16.md) | chore(upgrade): sync template 0.6.0 fleet resync content |
 | [2026-09-12](2026-09-12.md) | chore: sync project-review skill updates |
 | [2026-09-06](2026-09-06.md) | chore: upgrade template to 0.6.0 |

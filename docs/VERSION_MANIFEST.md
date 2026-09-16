@@ -1,6 +1,6 @@
 # VERSION_MANIFEST.md
 
-**Generated**: 2026-09-16T14:51:04.906Z
+**Generated**: 2026-09-16T15:02:53.270Z
 **Manifest Version**: 1.0
 **Location**: docs/VERSION_MANIFEST.md
 
@@ -19,28 +19,28 @@
 
 | Name | File | Tier | Model | Last Modified |
 |------|------|------|-------|---------------|
-| architect | agents/architect.md | N/A | inherit | 2026-08-29 |
-| co-analyst | agents/co-analyst.md | N/A | inherit | 2026-08-29 |
-| code-writer | agents/code-writer.md | N/A | inherit | 2026-08-29 |
-| dba | agents/dba.md | N/A | inherit | 2026-08-29 |
-| devops-admin | agents/devops-admin.md | N/A | inherit | 2026-08-29 |
-| fi-analyst | agents/fi-analyst.md | N/A | inherit | 2026-08-29 |
-| fiori-developer | agents/fiori-developer.md | N/A | inherit | 2026-08-29 |
-| form-expert | agents/form-expert.md | N/A | inherit | 2026-08-29 |
-| gui-scripter | agents/gui-scripter.md | N/A | inherit | 2026-08-29 |
-| i18n-specialist | agents/i18n-specialist.md | N/A | inherit | 2026-09-06 |
-| interface-expert | agents/interface-expert.md | N/A | inherit | 2026-08-29 |
-| le-analyst | agents/le-analyst.md | N/A | inherit | 2026-08-29 |
-| mm-analyst | agents/mm-analyst.md | N/A | inherit | 2026-08-29 |
-| pm | agents/pm.md | N/A | N/A | 2026-08-29 |
-| pp-analyst | agents/pp-analyst.md | N/A | inherit | 2026-08-29 |
-| read-only-analyst | agents/read-only-analyst.md | N/A | inherit | 2026-08-29 |
+| architect | agents/architect.md | high | inherit | 2026-08-29 |
+| co-analyst | agents/co-analyst.md | medium | inherit | 2026-08-29 |
+| code-writer | agents/code-writer.md | low | inherit | 2026-08-29 |
+| dba | agents/dba.md | medium | inherit | 2026-08-29 |
+| devops-admin | agents/devops-admin.md | medium | inherit | 2026-08-29 |
+| fi-analyst | agents/fi-analyst.md | medium | inherit | 2026-08-29 |
+| fiori-developer | agents/fiori-developer.md | medium | inherit | 2026-08-29 |
+| form-expert | agents/form-expert.md | medium | inherit | 2026-08-29 |
+| gui-scripter | agents/gui-scripter.md | low | inherit | 2026-08-29 |
+| i18n-specialist | agents/i18n-specialist.md | medium | inherit | 2026-09-06 |
+| interface-expert | agents/interface-expert.md | medium | inherit | 2026-08-29 |
+| le-analyst | agents/le-analyst.md | medium | inherit | 2026-08-29 |
+| mm-analyst | agents/mm-analyst.md | medium | inherit | 2026-08-29 |
+| pm | agents/pm.md | N/A | N/A | 2026-09-16 |
+| pp-analyst | agents/pp-analyst.md | medium | inherit | 2026-08-29 |
+| read-only-analyst | agents/read-only-analyst.md | medium | inherit | 2026-08-29 |
 | README_ko | agents/README_ko.md | N/A | N/A | 2026-08-17 |
-| sap-investigator | agents/sap-investigator.md | N/A | inherit | 2026-08-29 |
-| schema-inspector | agents/schema-inspector.md | N/A | inherit | 2026-08-29 |
-| sd-analyst | agents/sd-analyst.md | N/A | inherit | 2026-08-29 |
-| security-monitor | agents/security-monitor.md | N/A | inherit | 2026-08-29 |
-| test-runner | agents/test-runner.md | N/A | inherit | 2026-08-29 |
+| sap-investigator | agents/sap-investigator.md | medium | inherit | 2026-08-29 |
+| schema-inspector | agents/schema-inspector.md | medium | inherit | 2026-08-29 |
+| sd-analyst | agents/sd-analyst.md | medium | inherit | 2026-08-29 |
+| security-monitor | agents/security-monitor.md | low | inherit | 2026-08-29 |
+| test-runner | agents/test-runner.md | low | inherit | 2026-08-29 |
 
 ---
 
@@ -244,28 +244,8 @@
 
 ⚠️ **Drift detected**:
 
-- [WARNING] Agent architect missing tier or model metadata
-- [WARNING] Agent co-analyst missing tier or model metadata
-- [WARNING] Agent code-writer missing tier or model metadata
-- [WARNING] Agent dba missing tier or model metadata
-- [WARNING] Agent devops-admin missing tier or model metadata
-- [WARNING] Agent fi-analyst missing tier or model metadata
-- [WARNING] Agent fiori-developer missing tier or model metadata
-- [WARNING] Agent form-expert missing tier or model metadata
-- [WARNING] Agent gui-scripter missing tier or model metadata
-- [WARNING] Agent i18n-specialist missing tier or model metadata
-- [WARNING] Agent interface-expert missing tier or model metadata
-- [WARNING] Agent le-analyst missing tier or model metadata
-- [WARNING] Agent mm-analyst missing tier or model metadata
 - [WARNING] Agent pm missing tier or model metadata
-- [WARNING] Agent pp-analyst missing tier or model metadata
-- [WARNING] Agent read-only-analyst missing tier or model metadata
 - [WARNING] Agent README_ko missing tier or model metadata
-- [WARNING] Agent sap-investigator missing tier or model metadata
-- [WARNING] Agent schema-inspector missing tier or model metadata
-- [WARNING] Agent sd-analyst missing tier or model metadata
-- [WARNING] Agent security-monitor missing tier or model metadata
-- [WARNING] Agent test-runner missing tier or model metadata
 - [WARNING] Skill handbook has no triggers defined
 - [WARNING] Skill handbook-sync-audit has no triggers defined
 - [ERROR] Skill post-write-chain frontmatter YAML parse error: bad indentation of a mapping entry (2:131)
