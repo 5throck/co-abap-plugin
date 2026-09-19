@@ -1,6 +1,6 @@
 # VERSION_MANIFEST.md
 
-**Generated**: 2026-09-19T01:36:38.062Z
+**Generated**: 2026-09-19T02:13:36.775Z
 **Manifest Version**: 1.0
 **Location**: docs/VERSION_MANIFEST.md
 
@@ -32,7 +32,7 @@
 | interface-expert | agents/interface-expert.md | medium | inherit | 2026-08-29 |
 | le-analyst | agents/le-analyst.md | medium | inherit | 2026-08-29 |
 | mm-analyst | agents/mm-analyst.md | medium | inherit | 2026-08-29 |
-| pm | agents/pm.md | N/A | N/A | 2026-09-16 |
+| pm | agents/pm.md | N/A | N/A | 2026-09-19 |
 | pp-analyst | agents/pp-analyst.md | medium | inherit | 2026-08-29 |
 | read-only-analyst | agents/read-only-analyst.md | medium | inherit | 2026-08-29 |
 | README_ko | agents/README_ko.md | N/A | N/A | 2026-08-17 |

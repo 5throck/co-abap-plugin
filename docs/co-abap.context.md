@@ -534,3 +534,7 @@ Development-facing instruction text follows ASD-STE100 (Simplified Technical Eng
 - **Rules**: one instruction per sentence (≤ 20 words procedural / ≤ 25 descriptive); active voice with imperative steps; present tense; one term = one meaning (use glossary/registry terms exactly); no idioms; positive phrasing preferred; minimal pronouns; lists for parallel items and tables for structured data.
 - **Enforcement**: advisory — PM conforms task briefs at triage; architect checks requirement sections at Design Gate review. Full decision: ADR-0079 in the workspace root `docs/adr/`.
 <!-- COMMON-CONTEXT:END -->
+
+## Procedures
+
+Structured workflows live in `procedures/<name>/schema.yaml` (ADR-0063, canonical workflow source). Validate with `bun scripts/validate-procedures.ts`; the skill graph derives procedure/output_type nodes and step edges from them.
