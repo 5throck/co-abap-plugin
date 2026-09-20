@@ -8,6 +8,7 @@ Versions follow [Semantic Versioning](https://semver.org/).
 ---
 
 ## [Unreleased]
+- **[2026-09-20]**: fix(ci): declare js-yaml (^5.4.2) in devDependencies — the audit scripts import it, but it was only resolvable through the parent workspace node_modules on operator machines, so the first-ever CI run (enabled today) failed module resolution.
 - **[2026-09-20]**: fix(mcp): drop the stray `@nanonets/graft` argument from the graft server entry in `.mcp.json` — `graft mcp` reads that position as a repository dir, so the stdio server failed to resolve this repo's graph and walked up to the workspace root's graph. Matches the clean form in `.agents/mcp.json` and the common template. Fleet follow-up to co-newbiz PR #390.
 - **[2026-09-20]**: chore(upgrade): template upgraded to 0.6.0 via `upgrade-project.ts --prune-removed` (2026-09-20 evening resync Step 4) — delivers the common-template LF-enforcement `.gitattributes` block (`*.html/css/js/json/md text eol=lf`), closing the Windows CRLF smudge that failed the pre-push VERSION_MANIFEST gate on 6 of 8 fleet repos; same-version script drift restored to canonical, project-specific gitleaks allowlist entries preserved via merge-aware upgrade `audit.ts` + `verify-scripts.ts --verify` clean post-upgrade.
 
