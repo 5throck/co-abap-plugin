@@ -12,10 +12,14 @@
     "dispatch:serial": "bun scripts/co-abap/dispatch.ts serial"
   },
   "devDependencies": {
+    "@types/js-yaml": "^4.0.9",
     "@types/node": "^20.19.43",
     "typescript": "^5.9.3"
   },
   "engines": {
     "bun": ">=1.0.0"
+  },
+  "dependencies": {
+    "js-yaml": "^5.4.2"
   }
 }
