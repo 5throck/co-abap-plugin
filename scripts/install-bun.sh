@@ -27,7 +27,9 @@ echo ""
 echo "⚠️  Add this to your shell profile (~/.bashrc, ~/.zshrc, or ~/.config/fish/config.fish):"
 echo ""
 echo "   # Bun"
+# shellcheck disable=SC2016 — printing profile lines; the variables must not expand here
 echo '   export BUN_INSTALL="$HOME/.bun"'
+# shellcheck disable=SC2016 — printing profile lines; the variables must not expand here
 echo '   export PATH="$BUN_INSTALL/bin:$PATH"'
 echo ""
 echo "Then restart your shell or run: source ~/.bashrc (or ~/.zshrc)"
