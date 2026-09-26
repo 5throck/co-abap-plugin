@@ -119,7 +119,6 @@ bun run <alias>                     # via package.json alias (preferred for CI)
 | `helpers/template-utils.ts` | L0 | 1.2.0 | active | —| —| L0+L1 | —|
 | `helpers/generate-variant.ts` | L0 | 1.15.0 | active | —| —| L0+L1 | —|
 | `tests/apply-handbook-theme.test.ts` | L0 | 1.0.1 | active | — | — | common | — |
-| `tests/automation-quality-gates.test.ts` | L3 | 1.0.0 | active | — | — | L3 | — |
 | `tests/check-structure.test.ts` | L0 | 1.0.0 | active | — | — | common | — |
 | `tests/deploy-readme-patch.test.ts` | L0 | 1.0.0 | active | — | — | common | — |
 | `tests/lifecycle-l3-baseline.test.ts` | L3 | 1.0.0 | active | — | — | L3 | — |

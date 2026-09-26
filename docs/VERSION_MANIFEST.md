@@ -1,6 +1,6 @@
 # VERSION_MANIFEST.md
 
-**Generated**: 2026-09-26T13:24:31.780Z
+**Generated**: 2026-09-26T13:26:00.798Z
 **Manifest Version**: 1.0
 **Location**: docs/VERSION_MANIFEST.md
 
@@ -10,7 +10,7 @@
 
 - **Agents**: 22
 - **Skills**: 50
-- **Scripts**: 107 *(top-level CLI scripts; library/helper modules under `scripts/lib/`, `scripts/helpers/`, `scripts/hooks/`, and `scripts/validators/` plus experiment files under `scripts/experiments/` are excluded here — `scripts/SCRIPTS.md` is the full registry)*
+- **Scripts**: 106 *(top-level CLI scripts; library/helper modules under `scripts/lib/`, `scripts/helpers/`, `scripts/hooks/`, and `scripts/validators/` plus experiment files under `scripts/experiments/` are excluded here — `scripts/SCRIPTS.md` is the full registry)*
 - **Commands**: 20
 
 ---
@@ -19,28 +19,28 @@
 
 | Name | File | Tier | Model | Last Modified |
 |------|------|------|-------|---------------|
-| architect | agents/architect.md | high | inherit | 2026-08-29 |
-| co-analyst | agents/co-analyst.md | medium | inherit | 2026-08-29 |
-| code-writer | agents/code-writer.md | low | inherit | 2026-08-29 |
-| dba | agents/dba.md | medium | inherit | 2026-08-29 |
-| devops-admin | agents/devops-admin.md | medium | inherit | 2026-08-29 |
-| fi-analyst | agents/fi-analyst.md | medium | inherit | 2026-08-29 |
-| fiori-developer | agents/fiori-developer.md | medium | inherit | 2026-08-29 |
-| form-expert | agents/form-expert.md | medium | inherit | 2026-08-29 |
-| gui-scripter | agents/gui-scripter.md | low | inherit | 2026-08-29 |
-| i18n-specialist | agents/i18n-specialist.md | medium | inherit | 2026-09-16 |
-| interface-expert | agents/interface-expert.md | medium | inherit | 2026-08-29 |
-| le-analyst | agents/le-analyst.md | medium | inherit | 2026-08-29 |
-| mm-analyst | agents/mm-analyst.md | medium | inherit | 2026-08-29 |
-| pm | agents/pm.md | high | N/A | 2026-09-19 |
-| pp-analyst | agents/pp-analyst.md | medium | inherit | 2026-08-29 |
-| read-only-analyst | agents/read-only-analyst.md | medium | inherit | 2026-08-29 |
-| README_ko | agents/README_ko.md | N/A | N/A | 2026-08-17 |
-| sap-investigator | agents/sap-investigator.md | medium | inherit | 2026-08-29 |
-| schema-inspector | agents/schema-inspector.md | medium | inherit | 2026-08-29 |
-| sd-analyst | agents/sd-analyst.md | medium | inherit | 2026-08-29 |
-| security-monitor | agents/security-monitor.md | low | inherit | 2026-08-29 |
-| test-runner | agents/test-runner.md | low | inherit | 2026-08-29 |
+| architect | agents/architect.md | high | inherit | 2026-09-26 |
+| co-analyst | agents/co-analyst.md | medium | inherit | 2026-09-26 |
+| code-writer | agents/code-writer.md | low | inherit | 2026-09-26 |
+| dba | agents/dba.md | medium | inherit | 2026-09-26 |
+| devops-admin | agents/devops-admin.md | medium | inherit | 2026-09-26 |
+| fi-analyst | agents/fi-analyst.md | medium | inherit | 2026-09-26 |
+| fiori-developer | agents/fiori-developer.md | medium | inherit | 2026-09-26 |
+| form-expert | agents/form-expert.md | medium | inherit | 2026-09-26 |
+| gui-scripter | agents/gui-scripter.md | low | inherit | 2026-09-26 |
+| i18n-specialist | agents/i18n-specialist.md | medium | inherit | 2026-09-26 |
+| interface-expert | agents/interface-expert.md | medium | inherit | 2026-09-26 |
+| le-analyst | agents/le-analyst.md | medium | inherit | 2026-09-26 |
+| mm-analyst | agents/mm-analyst.md | medium | inherit | 2026-09-26 |
+| pm | agents/pm.md | high | N/A | 2026-09-26 |
+| pp-analyst | agents/pp-analyst.md | medium | inherit | 2026-09-26 |
+| read-only-analyst | agents/read-only-analyst.md | medium | inherit | 2026-09-26 |
+| README_ko | agents/README_ko.md | N/A | N/A | 2026-09-26 |
+| sap-investigator | agents/sap-investigator.md | medium | inherit | 2026-09-26 |
+| schema-inspector | agents/schema-inspector.md | medium | inherit | 2026-09-26 |
+| sd-analyst | agents/sd-analyst.md | medium | inherit | 2026-09-26 |
+| security-monitor | agents/security-monitor.md | low | inherit | 2026-09-26 |
+| test-runner | agents/test-runner.md | low | inherit | 2026-09-26 |
 
 ---
 
@@ -118,7 +118,6 @@
 | apply-handbook-theme.ts | 1.0.0 | scripts/handbook/apply-handbook-theme.ts | N/A |
 | archive-memory.ts | 1.1.0 | scripts/archive-memory.ts | N/A |
 | audit.ts | 2.45.0 | scripts/audit.ts | bun |
-| automation-quality-gates.test.ts | 1.0.0 | scripts/tests/automation-quality-gates.test.ts | bun:test, js-yaml |
 | bootstrap-stages.ts | 1.0.0 | scripts/bootstrap-stages.ts | fs, js-yaml, path |
 | build-search-index.ts | 1.0.0 | scripts/handbook/build-search-index.ts | N/A |
 | check-a11y.ts | 1.0.0 | scripts/handbook/check-a11y.ts | N/A |
