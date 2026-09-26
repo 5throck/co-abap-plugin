@@ -1,6 +1,5 @@
 # Secrets — never commit
 .env
-.mcp.json
 
 # Python
 .venv/
@@ -15,7 +14,6 @@ node_modules/
 .next/
 dist/
 build/
-bun.lockb
 
 # OS artifacts
 .DS_Store
@@ -47,10 +45,28 @@ Thumbs.db
 *.bak
 *.tmp
 
+# Scratch workspace — temp/ is throwaway (not committed)
+scratch/temp/
+
 # Databases
 *.sqlite
 *.db
 
+# CodeGraph Index
+.codegraph/
+
+# Antigravity/ZCode session-local state (plans, config -- never shared)
+.zcode/
+
+# OpenChrome MCP local cache
+.openchrome/
+
+# vsp MCP server binary (downloaded, not source)
+/vsp
+vsp.exe
+
+# Prevent .cmd files (use .sh/.ts or .ps1 instead)
+*.cmd
 
 
 <!-- WORKSPACE-MANAGED: Git ignore patterns. Content outside this block is preserved during project upgrades. -->
@@ -127,3 +143,7 @@ tests/.temp/
 # graft's local graph cache — regenerable, not committed (run `graft build`).
 /graft/
 <!-- /WORKSPACE-MANAGED -->
+
+# Plugin repo-local ignores
+.mcp.json
+bun.lockb

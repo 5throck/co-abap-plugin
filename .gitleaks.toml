@@ -21,6 +21,8 @@ regexes = [
   '''YOUR_SECRET''',
   # gitleaks:allow inline marker (single-line suppression)
   '''gitleaks:allow''',
+  # Preserved from this project's prior .gitleaks.toml (not in the current common template):
+  '''DEVELOPER:Down1oad''',
 ]
 paths = [
   '''\.env\.sample''',
@@ -32,10 +34,9 @@ paths = [
   '''.*_test\.(js|ts|py|go|rs)$''',
   '''.*\.test\.(js|ts)$''',
   '''.*_spec\.rb$''',
-  # _examples/ contains illustrative content with realistic-looking values
-  # (memory/ is deliberately NOT excluded: it is git-tracked in scaffolded
-  #  projects, so secrets pasted into session logs must stay scannable —
-  #  mirror of the L0 workspace-root policy)
+  # _examples/ contains illustrative content with realistic-looking values.
+  # Tracked memory/ content is deliberately scanned because session logs can
+  # contain pasted credentials.
   '''_examples/.*''',
   # Local dependency/build directories — gitignored, never committed, but
   # --no-git mode scans them anyway; third-party library internals (test
@@ -44,6 +45,5 @@ paths = [
   '''(^|/)venv/''',
   '''(^|/)node_modules/''',
   '''(^|/)__pycache__/''',
-  # Preserved from this project's prior .gitleaks.toml (not in the current common template):
-  '''memory/.*''',
+  '''(^|/)scratch/''',
 ]

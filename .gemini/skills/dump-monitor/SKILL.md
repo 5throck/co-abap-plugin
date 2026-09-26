@@ -4,7 +4,7 @@ description: Use when checking SAP system health, investigating reported errors,
 version: 1.0.0
 last_reviewed: 2026-08-15
 status: active
-scope: co-abap-plugin
+scope: co-abap
 owner: devops-admin
 prerequisites: vsp MCP server
 relates_to:

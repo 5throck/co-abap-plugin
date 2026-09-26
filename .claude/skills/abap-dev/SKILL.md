@@ -4,7 +4,7 @@ description: Use when working on SAP ABAP development tasks — provides special
 version: 1.1.0
 last_reviewed: 2026-08-15
 status: active
-scope: co-abap-plugin
+scope: co-abap
 owner: code-writer
 prerequisites: vsp MCP server
 relates_to:

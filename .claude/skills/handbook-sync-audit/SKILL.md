@@ -1,7 +1,7 @@
 ---
 name: handbook-sync-audit
 scope: common
-version: 1.0.0
+version: 1.0.5
 description: >-
   Handbook Sync Audit — verifies that generated handbooks stay aligned with
   their sources across three axes: (1) content reflection against the
@@ -11,10 +11,16 @@ description: >-
   missing. Responds to "audit handbook", "handbook parity check",
   "handbook sync audit", "textbook drift check".
 status: active
-owner: handbook-reviewer
+owner: pm
 last_reviewed: 2026-08-29
 prerequisites: handbook (audits the output of the H-Stage handbook pipeline)
 l2_propagate: true
+metadata:
+  triggers:
+    - audit handbook
+    - handbook parity check
+    - handbook sync audit
+    - textbook drift check
 ---
 
 ## Context
@@ -96,8 +102,8 @@ block verbatim — the `#section-id` and source-doc references are the fix plan.
 ## Related Skills
 
 - `handbook` — H-Stage generation pipeline this skill audits
-- `validate-docs-links` (workspace) — markdown link validation for workspace docs
 - `project-review` — broader multi-agent project review that can include handbook output
+- markdown link validation for workspace docs runs through the handbook doctor pipeline, not a separate skill
 
 ## Notes
 

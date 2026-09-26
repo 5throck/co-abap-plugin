@@ -1,8 +1,25 @@
 #!/usr/bin/env bun
 /**
  * Shared Scaffold Delivery Contracts
- * @version 1.4.0
+ * @version 1.6.1
  *
+ * v1.6.0 (2026-09-25, ADR-0088 W2): PlatformProfile gains 'hermes' —
+ *         deriveNewProjectDelivery models the new-project hermes-primary
+ *         profile (keeps .hermes/, drops CLAUDE.md/GEMINI.md) and the
+ *         hermes-opt-out strip for every other profile, mirroring the
+ *         new-project.ts §2.7 semantics this derivation must match (Test 26).
+ * v1.5.1 (2026-09-24, spec docs/designs/2026-09-24-platform-ssot-constant-design.md):
+ *         behavior-neutral constant adoption — the three canonical 5-element
+ *         skill-base literals (schema prune, l2_propagate sweep derivation,
+ *         legacy-L0 predicate) become PLATFORM_SKILL_BASES (../lib/platforms.ts).
+ *         NO behavior change.
+ * v1.5.0 (2026-09-24, scaffold identity overview — spec
+ *         2026-09-24-scaffold-identity-overview-design): docs/project.template.md
+ *         joins NEW_PROJECT_CLEANUP_FILES (new-project §5.2 renders it into
+ *         docs/project.md and removes the raw copy, same lifecycle as
+ *         docs/variant.context.template.md) and docs/project.md joins
+ *         POST_DELIVERY_ARTIFACTS (a scaffold-time render, not a common-tree
+ *         relpath — the E2E pinning checks subtract it from actual trees).
  * v1.4.0: PlatformProfile's 'both' renamed to 'all' and its delivery-derivation
  * meaning expanded to include the codex platform (CODEX.md/.codex/), matching
  * the same rename in new-project.ts/upgrade-project.ts/test-new-project.ts —
@@ -63,6 +80,7 @@
 import { readdirSync, readFileSync, existsSync } from 'node:fs';
 import { join, basename } from 'node:path';
 import { includeScriptInL3, parseScriptLayers } from './layer-filter.ts';
+import { PLATFORM_SKILL_BASES } from '../lib/platforms.ts';
 
 // ============================================================================
 // 1. Scaffold marker constants (T-20260915-002 / C3)
@@ -268,6 +286,10 @@ export const NEW_PROJECT_L1_ONLY_DIRS: readonly string[] = [
 export const NEW_PROJECT_CLEANUP_FILES: readonly string[] = [
   'scripts/propagation-map.json', 'variant.json', 'agents/pm.md.backup',
   'docs/variant.context.template.md',
+  // Rendered into docs/project.md at scaffold time (§5.2), then the raw copy is
+  // removed — same copy-then-remove lifecycle as docs/variant.context.template.md.
+  // (spec 2026-09-24-scaffold-identity-overview-design)
+  'docs/project.template.md',
 ];
 
 /** Legacy hardcoded L0-only skills new-project removes as a safety net. */
@@ -282,6 +304,9 @@ export const NEW_PROJECT_LEGACY_L0_SKILLS: readonly string[] = ['simulate-projec
 export const L3_DEDICATED_STEP_DELIVERIES: readonly string[] = [
   'AGENTS.md', 'README.md', 'README_ko.md', 'SECURITY.md', 'package.json',
   'agents/pm.md', 'memory/MEMORY.md', 'docs/lifecycle/agents/pm.md', 'docs/context.md',
+  // Copied explicitly alongside docs/context.md (2026-09-21 review M-22): keeps the
+  // project-side language validator out of its degraded ko-only locale mode.
+  'docs/workspace-schema.json',
 ];
 
 // ============================================================================
@@ -304,6 +329,10 @@ export interface ReviewedDeliveryExclusion {
 }
 
 export const REVIEWED_DELIVERY_EXCLUSIONS: readonly ReviewedDeliveryExclusion[] = [
+  {
+    path: 'docs/governance/agents/',
+    reason: 'ADR-0090 W2: workspace operational reference (AGENTS.md pointer-table targets: pm-gateway-workflow / execution-plan-templates / workflows) — L3 drafts are variant seeds and do not carry workspace-level procedure docs; new-project delivers them from templates/common/docs/governance/agents/',
+  },
   {
     path: '.agents/',
     reason: 'L0-only platform skill mirror; re-synced by scripts/sync-skills.ts (COMMON_OVERLAY_EXCLUDE: synced by a separate mechanism)',
@@ -345,10 +374,6 @@ export const REVIEWED_DELIVERY_EXCLUSIONS: readonly ReviewedDeliveryExclusion[] 
     reason: 'top-level docs/ beyond _common excluded by COMMON_OVERLAY_EXCLUDE (H13 reviewed gap)',
   },
   {
-    path: 'docs/workspace-schema.json',
-    reason: 'top-level docs/ beyond _common excluded by COMMON_OVERLAY_EXCLUDE (H13 reviewed gap)',
-  },
-  {
     path: 'docs/skill-graph.json',
     reason: 'regenerated on first /sync (dev-sync step 4.65); a stale common copy would be overwritten at first generation',
   },
@@ -361,6 +386,30 @@ export const REVIEWED_DELIVERY_EXCLUSIONS: readonly ReviewedDeliveryExclusion[] 
     reason: 'L3 delivers only its own docs/lifecycle/agents/pm.md governance record; the rest of docs/lifecycle/ is not copied (H13 reviewed gap)',
   },
   {
+    path: 'docs/lifecycle/skills/decision-record.md',
+    reason: 'L3 delivers only its own docs/lifecycle/agents/pm.md governance record; the rest of docs/lifecycle/ is not copied (H13 reviewed gap)',
+  },
+  {
+    path: 'docs/lifecycle/skills/evidence-ledger.md',
+    reason: 'L3 delivers only its own docs/lifecycle/agents/pm.md governance record; the rest of docs/lifecycle/ is not copied (H13 reviewed gap)',
+  },
+  {
+    path: 'docs/lifecycle/skills/handbook.md',
+    reason: 'L3 delivers only its own docs/lifecycle/agents/pm.md governance record; the rest of docs/lifecycle/ is not copied (H13 reviewed gap)',
+  },
+  {
+    path: 'docs/lifecycle/skills/i18n-formatting.md',
+    reason: 'L3 delivers only its own docs/lifecycle/agents/pm.md governance record; the rest of docs/lifecycle/ is not copied (H13 reviewed gap)',
+  },
+  {
+    path: 'docs/lifecycle/skills/i18n-layout.md',
+    reason: 'L3 delivers only its own docs/lifecycle/agents/pm.md governance record; the rest of docs/lifecycle/ is not copied (H13 reviewed gap)',
+  },
+  {
+    path: 'docs/lifecycle/skills/i18n-locale-config.md',
+    reason: 'L3 delivers only its own docs/lifecycle/agents/pm.md governance record; the rest of docs/lifecycle/ is not copied (H13 reviewed gap)',
+  },
+  {
     path: 'docs/specs/registry.json',
     reason: 'the L3 draft seeds docs/specs/ via scripts/spec-register.ts at first spec activity, not from a copied tree',
   },
@@ -370,17 +419,20 @@ export const REVIEWED_DELIVERY_EXCLUSIONS: readonly ReviewedDeliveryExclusion[] 
 // 6. Delivery-tree derivation (T-20260915-003 / H13)
 // ============================================================================
 
-export type PlatformProfile = 'claude' | 'antigravity' | 'all' | 'codex';
+export type PlatformProfile = 'claude' | 'antigravity' | 'all' | 'codex' | 'hermes';
 
 /**
  * Relpaths (forward slashes) of files under templates/common/ that are NOT
  * delivered into a scaffolded project because scaffold-time steps run after
  * delivery: dependency install, git init, graft index build, lockfile
  * regeneration. The E2E pinning checks subtract these from ACTUAL scaffolded
- * trees before comparing against the derivations.
+ * trees before comparing against the derivations. docs/project.md joins as the
+ * scaffold-time RENDER of the delivered docs/project.template.md raw copy
+ * (removed post-render; not a common-tree relpath, so it can never join the
+ * derivation universe — spec 2026-09-24-scaffold-identity-overview-design).
  */
 export const POST_DELIVERY_ARTIFACTS: { exact: readonly string[]; prefixes: readonly string[] } = {
-  exact: ['bun.lock', 'bun.lockb', 'package-lock.json'],
+  exact: ['bun.lock', 'bun.lockb', 'package-lock.json', 'docs/project.md'],
   prefixes: ['node_modules/', '.git/', 'graft/'],
 };
 
@@ -435,7 +487,7 @@ function pruneRegionNeutral(rels: Set<string>, workspaceRoot: string): void {
   } catch {
     return; // unparseable schema — model nothing (the prune helper fails loud at runtime)
   }
-  const skillBases = ['skills', '.claude/skills', '.gemini/skills', '.agents/skills', '.codex/skills'];
+  const skillBases = PLATFORM_SKILL_BASES;
   const prunedSkillNames = Object.keys(scoped?.skills ?? {});
   const pruneDirs = Object.keys(scoped?.dirs ?? {});
   for (const rel of [...rels]) {
@@ -497,8 +549,10 @@ export function deriveNewProjectDelivery(
     if (top === 'memory' && rel.endsWith('.md')) continue; // §memory clear
     if (basename(rel) === '.gitkeep') continue;
     if (platform !== 'codex' && platform !== 'all' && (rel === 'CODEX.md' || rel.startsWith('.codex/'))) continue;
+    if (platform !== 'hermes' && platform !== 'all' && rel.startsWith('.hermes/')) continue;
     if (platform === 'claude' && rel === 'GEMINI.md') continue;
     if (platform === 'antigravity' && rel === 'CLAUDE.md') continue;
+    if (platform === 'hermes' && (rel === 'CLAUDE.md' || rel === 'GEMINI.md')) continue;
     if (isL2PropagateFalseSkillRel(rel, l2PropagateFalseSkills)) continue;
     if (isLegacyL0SkillRel(rel)) continue;
     // §L0-only script removal: the script shells out to layer-filter
@@ -513,6 +567,11 @@ export function deriveNewProjectDelivery(
   // but §2.5c regenerates a root package.json at the SAME relpath — the file
   // exists in the final tree, so the delivery set models it as present.
   if (existsSync(join(commonDir, 'package.json'))) out.add('package.json');
+
+  // memory/MEMORY.md: the §memory clear removes every memory/*.md, then the
+  // M-13 seed step writes the canonical empty index at that relpath — model
+  // it as present (2026-09-21 review M-13, mirrors create-l3-scaffold).
+  out.add('memory/MEMORY.md');
 
   pruneRegionNeutral(out, workspaceRoot);
   return out;
@@ -717,7 +776,10 @@ function isUnderAny(rel: string, dirs: readonly string[]): boolean {
 /** skill dir name → l2_propagate:false, collected from the common tree. */
 function collectL2PropagateFalseSkills(commonDir: string): Map<string, Set<string>> {
   const result = new Map<string, Set<string>>();
-  const bases = ['skills', '.claude/skills', '.gemini/skills', '.codex/skills'];
+  // All five skill bases — the runtime sweep in new-project.ts must stay in sync.
+  // .agents/skills was missing here, so flagged skills leaked via that mirror
+  // while the derivation (and Test 26) stayed green (2026-09-21 review C-1).
+  const bases = PLATFORM_SKILL_BASES;
   for (const base of bases) {
     const baseDir = join(commonDir, base);
     const names = new Set<string>();
@@ -754,7 +816,7 @@ function isL2PropagateFalseSkillRel(
 }
 
 function isLegacyL0SkillRel(rel: string): boolean {
-  const bases = ['skills', '.claude/skills', '.gemini/skills', '.codex/skills'];
+  const bases = PLATFORM_SKILL_BASES;
   for (const base of bases) {
     if (rel.startsWith(`${base}/`)) {
       const skillName = rel.slice(base.length + 1).split('/')[0];

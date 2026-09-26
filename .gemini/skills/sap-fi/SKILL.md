@@ -4,7 +4,7 @@ description: Use when working on FI module tasks — journal entries, account de
 version: 1.0.0
 last_reviewed: 2026-08-15
 status: active
-scope: co-abap-plugin
+scope: co-abap
 owner: fi-analyst
 prerequisites: vsp MCP server
 relates_to:

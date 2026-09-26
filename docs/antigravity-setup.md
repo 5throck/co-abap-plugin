@@ -114,7 +114,7 @@ bun scripts/dev-sync.ts "feat: summary of change"
 
 ## 6. Custom Commands & Skills
 
-Antigravity shares `.gemini/commands/` for slash command definitions and discovers skills from `skills/` (primary source) and its `.claude/skills/`, `.gemini/skills/`, `.agents/skills/` mirrors. The three core process skills are:
+Antigravity shares `.gemini/commands/` for slash command definitions and discovers skills from `.agents/skills/` (shortcut skills) and `skills/` (L0 SSOT). The three core process skills are:
 
 ### `/sync` — Full Project Sync Pipeline
 
@@ -145,11 +145,19 @@ Read `skills/project-review/SKILL.md` and follow the 5-step procedure:
 
 Full 8-step framework: define parameters → detect agents → open structure → conduct rounds → synthesize → archive transcript → close meeting → optional task conversion.
 
-Read the complete procedure in `.gemini/commands/meeting.md`.
+Read the complete procedure in `.gemini/commands/meeting.md` (351 lines).
 
 ### Skill Distribution
 
-Skills live in `skills/` and are mirrored to `.claude/skills/`, `.gemini/skills/`, and `.agents/skills/` for platform-specific loading. Unlike the parent workspace, this plugin does not (yet) have an automated `sync-skills.ts` distribution script — mirror changes manually when editing a skill.
+Skills are distributed from `skills/` (L0 SSOT) to all platform directories by `scripts/sync-skills.ts`:
+
+```
+skills/ (L0) ──► .claude/skills/   (Claude Code)
+              ──► .gemini/skills/   (Gemini CLI / Antigravity)
+              ──► .agents/skills/   (Antigravity shortcuts)
+```
+
+After editing any skill in `skills/`, run `bun scripts/sync-skills.ts` to propagate changes.
 
 ---
 
@@ -161,10 +169,10 @@ Skills live in `skills/` and are mirrored to `.claude/skills/`, `.gemini/skills/
 | PostToolUse hook | ✅ | ❌ | ❌ | ❌ |
 | Post-Write chain | Automatic | Manual (`/post-write`) | Manual | Manual |
 | Git commit | `/sync` | `/sync` | Manual | Manual |
-| Custom commands | ✅ (18 commands) | ✅ (18 commands) | ⚠️ Emulated | ⚠️ Emulated |
+| Custom commands | ✅ (19 commands) | ✅ (19 commands) | ⚠️ Emulated | ⚠️ Emulated |
 | Parallel agent dispatch | ✅ `Agent` tool | ✅ `Agent` tool | ❌ Sequential | ❌ Sequential |
 | Project-level config | ✅ `.mcp.json` | ✅ `.mcp.json` | ✅ `.gemini/settings.json` | ✅ `.gemini/settings.json` |
 
 ---
 
-*Last Updated: 2026-07-11*
+*Last Updated: 2026-09-26*

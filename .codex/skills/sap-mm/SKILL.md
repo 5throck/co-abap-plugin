@@ -4,7 +4,7 @@ description: Use when working on MM module tasks — purchasing, goods receipt, 
 version: 1.0.0
 last_reviewed: 2026-08-15
 status: active
-scope: co-abap-plugin
+scope: co-abap
 owner: mm-analyst
 prerequisites: vsp MCP server
 relates_to:

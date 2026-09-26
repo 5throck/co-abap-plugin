@@ -15,8 +15,9 @@
 | `api-documentation` | L3 | — | — | — | — | — |
 | `ci-triage` | L3 | — | — | — | — | — |
 | `decision-record` | L3 | — | — | — | — | — |
+| `design-foundation` | L3 | — | — | accessibility-audit (composes_with), token-usage-lint (composes_with), ui-ux-design-intelligence (enables) | — | — |
 | `desktop-app-fallback` | L3 | — | — | — | — | — |
-| `documentation-writing` | L3 | — | — | — | — | — |
+| `documentation-writing` | L3 | — | — | team-builder (composes_with) | — | — |
 | `dump-monitor` | L3 | — | — | abap-dev (follows), research-analysis (composes_with), sap-co (composes_with), sap-fi (composes_with), sap-le (composes_with), sap-mm (composes_with), sap-sd (composes_with) | — | — |
 | `evidence-ledger` | L3 | — | — | — | — | — |
 | `explain-me` | L3 | — | — | — | — | — |
@@ -34,7 +35,7 @@
 | `platform-skill-lifecycle-manager` | L3 | — | — | — | — | — |
 | `post-write-chain` | L3 | — | — | — | — | — |
 | `project-review` | L3 | — | — | — | — | — |
-| `research-analysis` | L3 | — | — | documentation-writing (enables), sap-co (composes_with), sap-fi (composes_with), sap-le (composes_with), sap-mm (composes_with), sap-pp (composes_with), sap-sd (composes_with) | — | — |
+| `research-analysis` | L3 | — | — | documentation-writing (enables) | — | — |
 | `sap-co` | L3 | — | — | sap-le (composes_with), sap-mm (composes_with), sap-pp (composes_with), sap-sd (follows) | — | — |
 | `sap-fi` | L3 | — | — | sap-co (follows), sap-le (composes_with), sap-mm (composes_with), sap-pp (composes_with), sap-sd (composes_with) | — | — |
 | `sap-le` | L3 | — | — | sap-pp (follows), sap-sd (composes_with) | — | — |
@@ -70,7 +71,7 @@ Skills used in specific lifecycle phases (from `variant.json` `skill_manifest`):
 | `phase` | Skill used in a lifecycle phase (from `variant.json` `skill_manifest.phases`) |
 | `supersedes` | Supersession — overrides (manual) or decision-record prose labels |
 | `references` | Backtick reference in SKILL.md/agent/ADR body prose, DEC `knowledge_refs[]` naming an ADR, or skill → `term:` node from references/terms-ko.json (ADR-0072) |
-| `cites_skill` | Decision record `skills_used[]` validated against the skill set (ADR-0061 amendment 2026-08-25) |
+| `cites_skill` | Decision record `skills_used[]` and workflow-doc citations (`doc:` nodes, Source 4.8, ticket T-20260923-001) validated against the skill set |
 | `composes_with` | Typed `relates_to` entry — symmetric, used together in the same phase/workflow (ADR-0060 Amendment 3) |
 | `follows` | Typed `relates_to` entry — sequential/ordering relation, no dependency implication (ADR-0060 Amendment 3) |
 | `enables` | Typed `relates_to` entry — this skill's output unlocks another skill/workflow (ADR-0060 Amendment 3) |
@@ -90,3 +91,7 @@ Catalog table above — not skill references and not yet resolved as graph edges
 | Document | Type | Cites skills | References | Supersedes |
 |----------|------|--------------|------------|------------|
 | `adr:0001` | adr | — | — | — |
+| `adr:0002` | adr | — | — | — |
+| `doc:AGENTS.md` | doc | `agent-lifecycle-manager`, `decision-record`, `evidence-ledger`, `explain-me`, `handbook`, `handbook-sync-audit`, `i18n-audit`, `i18n-formatting`, `i18n-layout`, `i18n-locale-config`, `meeting-facilitation`, `project-review`, `security-scan`, `skill-lifecycle-manager`, `sync` | — | — |
+| `doc:CLAUDE.md` | doc | `abap-dev`, `desktop-app-fallback`, `post-write-chain` | — | — |
+| `doc:GEMINI.md` | doc | `abap-dev`, `post-write-chain` | — | — |

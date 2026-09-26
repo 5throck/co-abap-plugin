@@ -1,19 +1,23 @@
-# Agent Governance Record — pm
+# Lifecycle — pm
 
-## Overview
+Lifecycle tracking for the `pm` agent (co-abap variant).
 
-- **Agent Name**: pm
-- **Role**: Project Manager (PM) Agent — common template orchestrator used by scaffolded variants
-- **Version**: 1.1.0
-- **Phase**: production
+| Field | Value |
+|-------|-------|
+| Agent file | [`agents/pm.md`](../../../agents/pm.md) |
+| Lifecycle states | draft / production (active) / deprecated / retired |
+
+> The authoritative lifecycle state lives in the agent file's `lifecycle:` frontmatter block
+> (`phase`, `created`, `last_updated`). Audit coverage:
+> `bun scripts/agent-lifecycle-audit.ts`.
 
 ## Phase History
 
-- **2026-09-09**: Added common lifecycle record so scaffolded `agents/pm.md` governance pointers resolve without each variant needing a bespoke file.
-- **2026-08-24**: Common PM template version 1.1.0 in production.
+| Date | Event | Notes |
+|------|-------|-------|
+| — | created | See agent file frontmatter `lifecycle.created` |
 
 ## Acceptance Criteria
 
-- [x] Defined in `agents/pm.md`
-- [x] Follows standard PM orchestration structure
-- [x] Provides a resolvable default governance pointer for scaffolded variants
+- Agent file passes `bun scripts/agent-lifecycle-audit.ts` (frontmatter completeness, tier block, examples)
+- Agent file passes `bun scripts/validate-agents.ts` runtime-definition checks

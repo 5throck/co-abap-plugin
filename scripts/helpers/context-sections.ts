@@ -1,4 +1,23 @@
-// @version 1.5.0
+// @version 1.8.0
+// v1.7.0 (2026-09-25, variant hygiene batch — spec
+//           docs/designs/2026-09-25-variant-hygiene-batch-design.md, R2):
+//           stripMarkerZones() — pure, exported COMMON-CONTEXT zone stripper for
+//           audit.ts's stale-promoted-content and cross-variant commonization
+//           checks. Marker-zone content is the sanctioned ADR-0062 delivery
+//           channel (dev-sync Step 4.55 owns its drift), so it must not read as
+//           a stale leftover duplicate; duplicates OUTSIDE a zone still count.
+//           Tolerates unterminated zones by not stripping (a START with no END
+//           keeps every line — conservative by design).
+// v1.6.0 (2026-09-22, ADR-0050 Part 3 nested-heading fix): findHeadingSpan() /
+//           removeHeadingSpan() — nesting-aware section extraction and removal for
+//           promote-context-section.ts. The promotion tool previously removed a
+//           promoted section with a regex that stopped at the NEXT `#{2,3}` heading,
+//           so a nested `###` subsection of a promoted `##` section was orphaned in
+//           every variant file and never reached the canonical copy (real incident:
+//           promoting "Scripts" orphaned `### Hybrid Scripting` in 7 variant files,
+//           losing content in co-consult/co-export). A span ends at the next heading
+//           whose level is <= the promoted heading's level (or EOF), and ```/~~~
+//           fences never terminate a span — the same fence awareness as the splitters.
 // v1.5.0 (ADR-0081 fleet sweep / T-20260919-003): spliceCommonContextBlock() —
 //           replaces a project context copy's COMMON-CONTEXT managed block with
 //           the template's, so managed-zone policy content delivers even when
@@ -295,6 +314,47 @@ const VERSION_FOOTER_RE = /\r?\n---\r?\n\r?\n\*[^*\r\n]+version:[^*\r\n]*\*\s*$/
 const COMMON_CONTEXT_BLOCK_RE = /<!--\s*COMMON-CONTEXT:START\s*-->[\s\S]*?<!--\s*\/?COMMON-CONTEXT:END\s*-->/;
 
 /**
+ * Strip complete `<!-- COMMON-CONTEXT:START -->` … `<!-- COMMON-CONTEXT:END -->`
+ * spans (marker lines included) from markdown content (v1.7.0, variant hygiene
+ * batch R2). Pure and order-tolerant: removes every complete span wherever it
+ * appears; content outside spans — including any COMMON-CONTEXT zone in the
+ * middle of an owned section — is preserved byte-for-byte.
+ *
+ * Unterminated-zone tolerance: a START with no later END is NOT stripped. The
+ * span is only removed once its closer is seen; an unclosed zone keeps every
+ * line (conservative — malformed markup must never silently delete content).
+ * A stray END with no opener is likewise kept.
+ *
+ * Consumer: audit.ts's stale-promoted-content and cross-variant commonization
+ * checks strip variant context copies before section-splitting, so sanctioned
+ * marker-zone deliveries (ADR-0062; drift owned by dev-sync Step 4.55) stop
+ * reading as stale leftover duplicates while non-zone duplicates still warn.
+ */
+export function stripMarkerZones(content: string): string {
+  const startRe = /<!--\s*COMMON-CONTEXT\s*:\s*START\s*-->/;
+  const endRe = /<!--\s*\/?\s*COMMON-CONTEXT\s*:\s*END\s*-->/;
+  const lines = content.split('\n');
+
+  // Pass 1: collect COMPLETE spans as inclusive [startIdx, endIdx] line ranges.
+  const spans: Array<[number, number]> = [];
+  let openIdx = -1;
+  for (let i = 0; i < lines.length; i++) {
+    if (openIdx === -1) {
+      if (startRe.test(lines[i])) openIdx = i;
+    } else if (endRe.test(lines[i])) {
+      spans.push([openIdx, i]);
+      openIdx = -1;
+    }
+  }
+  if (spans.length === 0) return content; // unterminated or absent zones: untouched
+
+  // Pass 2: drop only lines inside complete spans.
+  const dropped = new Set<number>();
+  for (const [a, b] of spans) for (let i = a; i <= b; i++) dropped.add(i);
+  return lines.filter((_, i) => !dropped.has(i)).join('\n');
+}
+
+/**
  * Splice the TEMPLATE's COMMON-CONTEXT managed block into a project context
  * copy, replacing the copy's own first COMMON-CONTEXT block (v1.5.0, ADR-0081
  * fleet sweep / T-20260919-003). Purpose: managed-zone policy content (e.g. the
@@ -586,6 +646,29 @@ export function classifyCommonizationSection(
 // UPGRADE-TIME OWNERSHIP DETECTION — docs/context.md preservation (v1.3.0)
 // ============================================================================
 
+/**
+ * W2 HARVEST (introduced upgrade-project v1.42.0 / T-20260922-001; extracted
+ * here as a pure, unit-tested function in T-20260926-021): the variant-only
+ * lines inside a section the commonization pass is about to REMOVE — the set
+ * difference of the section's content lines vs the best-matching common
+ * section's lines. These are backport candidates, not garbage: a genuine
+ * variant improvement inside a near-duplicate section must be reported, not
+ * silently deleted. The comparison is against the SINGLE best-match common
+ * section only — a line that moved to a different common section still
+ * reports as variant-only (conservative: it surfaces for human review, which
+ * the harvest report states explicitly).
+ */
+export function harvestVariantOnlyLines(
+  sectionBody: string,
+  matchedCommonHeading: string | null,
+  commonSections: ContextSection[],
+): { matched: string | null; lines: string[] } {
+  const matchedCommon = commonSections.find((s) => s.heading === matchedCommonHeading);
+  const commonLineSet = matchedCommon ? getContentLines(matchedCommon.body) : new Set<string>();
+  const lines = [...getContentLines(sectionBody)].filter((l) => !commonLineSet.has(l));
+  return { matched: matchedCommonHeading, lines };
+}
+
 export interface ProjectOnlyDetection {
   /**
    * Project top-level sections whose heading does not exist in the template
@@ -641,4 +724,92 @@ export function findProjectOnlySections(
     sections.push(section);
   }
   return { sections, wholeFileOwned };
+}
+
+// ============================================================================
+// v1.6.0 — HEADING SPANS: NESTING-AWARE EXTRACTION / REMOVAL
+// (promote-context-section.ts; closes the ADR-0050 Part 3 nested-heading defect)
+// ============================================================================
+
+export interface HeadingSpan {
+  /** Raw heading line, e.g. "## Scripts". */
+  headingLine: string;
+  /** Normalized heading text, e.g. "scripts". */
+  heading: string;
+  /** Heading level: 2 for `##`, 3 for `###`. */
+  level: number;
+  /** Body between the heading and the span end (leading/trailing blanks trimmed). */
+  body: string;
+  /** 0-indexed line of the heading line. */
+  startLine: number;
+  /** 0-indexed line ONE PAST the span's last line (next <=level heading's startLine, or lines.length). */
+  endLineExclusive: number;
+}
+
+/**
+ * Locate a `##`/`###` heading (fence-aware) and return its NESTING-AWARE span:
+ * from the heading line to just before the NEXT heading whose level is <= the
+ * target's (or EOF). Nested deeper headings (e.g. a `###` under a promoted `##`)
+ * stay INSIDE the span — the fix for the ADR-0050 Part 3 defect where the old
+ * next-`#{2,3}` regex orphaned nested subsections in every variant file. Lines
+ * inside ``` / ~~~ fences never count as heading boundaries (v1.1.0 fence rule).
+ * Returns null when no non-fenced heading matches `targetHeading` (normalized).
+ */
+export function findHeadingSpan(content: string, targetHeading: string): HeadingSpan | null {
+  const lines = content.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
+  const fenced = computeFencedLines(lines);
+  const target = normalizeHeading(targetHeading);
+
+  let startLine = -1;
+  let level = 0;
+  for (let i = 0; i < lines.length; i++) {
+    if (fenced[i]) continue;
+    const match = /^(#{2,3})\s+/.exec(lines[i]);
+    if (match && normalizeHeading(lines[i]) === target) {
+      startLine = i;
+      level = match[1].length;
+      break;
+    }
+  }
+  if (startLine === -1) return null;
+
+  let endLineExclusive = lines.length;
+  for (let i = startLine + 1; i < lines.length; i++) {
+    if (fenced[i]) continue;
+    const match = /^(#{2,3})\s+/.exec(lines[i]);
+    if (match && match[1].length <= level) {
+      endLineExclusive = i;
+      break;
+    }
+  }
+
+  return {
+    headingLine: lines[startLine],
+    heading: target,
+    level,
+    body: lines.slice(startLine + 1, endLineExclusive).join('\n').replace(/^\n+|\n+$/g, ''),
+    startLine,
+    endLineExclusive,
+  };
+}
+
+/**
+ * Remove the nesting-aware span of `targetHeading` from `content` (v1.6.0).
+ * Blank-line hygiene at the removal seam: at most one blank line survives between
+ * the content before and after the removed span. Returns the updated content, or
+ * null when the heading is not found (caller decides whether that is fatal).
+ */
+export function removeHeadingSpan(content: string, targetHeading: string): string | null {
+  const span = findHeadingSpan(content, targetHeading);
+  if (!span) return null;
+  const lines = content.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
+  const before = lines.slice(0, span.startLine);
+  const after = lines.slice(span.endLineExclusive);
+  while (
+    before.length > 0 && after.length > 0 &&
+    before[before.length - 1].trim() === '' && after[0].trim() === ''
+  ) {
+    before.pop();
+  }
+  return [...before, ...after].join('\n');
 }

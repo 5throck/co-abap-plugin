@@ -20,7 +20,7 @@ Agents must choose the appropriate tool for each task type. All tools share the 
 | ABAP object browse / edit | 🚨 Terminal only | —Visual diff + inline review | —File explorer + diff view | 🚨 Terminal only |
 | MCP read/query (GetSource, RunQuery, GrepObjects) | —| —Identical result | —Identical result | —Identical result |
 | Git commit / PR | —`commit-commands` skills | —PR monitoring + CI status | 🚨 Extension terminal only | —Bash tools |
-| Custom commands | —18 slash commands | —18 slash commands | ⚠️ Emulated via `.gemini/commands/` | ⚠️ Emulated via `.gemini/commands/` |
+| Custom commands | —19 slash commands | —19 slash commands | ⚠️ Emulated via `.gemini/commands/` | ⚠️ Emulated via `.gemini/commands/` |
 | Skill discovery | `.claude/skills/` + `skills/` | `.claude/skills/` + `skills/` | `.gemini/skills/` + `.agents/skills/` + `skills/` | `.gemini/skills/` + `skills/` |
 | Web research | —| —| —| —Native capability |
 | Parallel sessions (visual worktrees) | —| —Automatic | —| —|
@@ -44,6 +44,6 @@ Agents must choose the appropriate tool for each task type. All tools share the 
 
 ---
 
-*Last Updated: 2026-07-11*
+*Last Updated: 2026-09-26*
 
 

@@ -1,18 +1,23 @@
-# Agent Governance Record — fi-analyst
+# Lifecycle — fi-analyst
 
-## Overview
+Lifecycle tracking for the `fi-analyst` agent (co-abap variant).
 
-- **Agent Name**: fi-analyst
-- **Role**: FI Module Analyst
-- **Phase**: production
+| Field | Value |
+|-------|-------|
+| Agent file | [`agents/fi-analyst.md`](../../../agents/fi-analyst.md) |
+| Lifecycle states | draft / production (active) / deprecated / retired |
+
+> The authoritative lifecycle state lives in the agent file's `lifecycle:` frontmatter block
+> (`phase`, `created`, `last_updated`). Audit coverage:
+> `bun scripts/agent-lifecycle-audit.ts`.
 
 ## Phase History
 
-- **2026-08-15**: Initial release in production phase (migrated from the co-abap project)
-- **2026-08-21**: Governance record authored and lifecycle frontmatter added
+| Date | Event | Notes |
+|------|-------|-------|
+| — | created | See agent file frontmatter `lifecycle.created` |
 
 ## Acceptance Criteria
 
-- [x] Defined in `agents/fi-analyst.md`
-- [x] Follows 3-Tier model mapping
-- [x] Validated by `scripts/validate-agents.ts`
+- Agent file passes `bun scripts/agent-lifecycle-audit.ts` (frontmatter completeness, tier block, examples)
+- Agent file passes `bun scripts/validate-agents.ts` runtime-definition checks

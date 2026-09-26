@@ -4,7 +4,7 @@ description: Use when working on CO module tasks — cost center accounting, int
 version: 1.0.0
 last_reviewed: 2026-08-15
 status: active
-scope: co-abap-plugin
+scope: co-abap
 owner: co-analyst
 prerequisites: vsp MCP server
 relates_to:

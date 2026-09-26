@@ -1,18 +1,23 @@
-# Agent Governance Record — security-monitor
+# Lifecycle — security-monitor
 
-## Overview
+Lifecycle tracking for the `security-monitor` agent (co-abap variant).
 
-- **Agent Name**: security-monitor
-- **Role**: Security Monitor
-- **Phase**: production
+| Field | Value |
+|-------|-------|
+| Agent file | [`agents/security-monitor.md`](../../../agents/security-monitor.md) |
+| Lifecycle states | draft / production (active) / deprecated / retired |
+
+> The authoritative lifecycle state lives in the agent file's `lifecycle:` frontmatter block
+> (`phase`, `created`, `last_updated`). Audit coverage:
+> `bun scripts/agent-lifecycle-audit.ts`.
 
 ## Phase History
 
-- **2026-08-15**: Initial release in production phase (migrated from the co-abap project)
-- **2026-08-21**: Governance record authored and lifecycle frontmatter added
+| Date | Event | Notes |
+|------|-------|-------|
+| — | created | See agent file frontmatter `lifecycle.created` |
 
 ## Acceptance Criteria
 
-- [x] Defined in `agents/security-monitor.md`
-- [x] Follows 3-Tier model mapping
-- [x] Validated by `scripts/validate-agents.ts`
+- Agent file passes `bun scripts/agent-lifecycle-audit.ts` (frontmatter completeness, tier block, examples)
+- Agent file passes `bun scripts/validate-agents.ts` runtime-definition checks
