@@ -44,7 +44,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"${CLAUDE_PROJECT_DIR:-.}/.claude/helpers/graft-hooks.cjs\" post-edit",
+            "command": "node \".claude/helpers/graft-hooks.cjs\" post-edit",
             "timeout": 10000
           }
         ]
@@ -54,7 +54,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"${CLAUDE_PROJECT_DIR:-.}/.claude/helpers/graft-hooks.cjs\" tool-savings",
+            "command": "node \".claude/helpers/graft-hooks.cjs\" tool-savings",
             "timeout": 8000
           }
         ]
@@ -64,7 +64,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bun scripts/sync-md.ts 2>/dev/null || true"
+            "command": "bun scripts/sync-md.ts"
           }
         ]
       }

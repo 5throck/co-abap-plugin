@@ -10,7 +10,7 @@ This guide describes how to install and use the **ABAP Vibe Coding Plugin** in a
 ## 1. Prerequisites
 
 - **Claude Code CLI** installed (`npm install -g @anthropic-ai/claude-code`)
-- **vsp (MCP Server)** binary placed at `C:\Users\<your-username>\abap\vsp.exe` (Windows) or `~/abap/vsp` (macOS/Linux)
+- **vsp (MCP Server)** binary installed into the **plugin root** — `vsp.exe` (Windows) or `vsp` (macOS/Linux). From the plugin folder, run `bash scripts/install-vsp.sh` (Windows PowerShell: `.\scripts\install-vsp.ps1`). The plugin manifest resolves the binary via `${CLAUDE_PLUGIN_ROOT}/vsp`, so no PATH setup is required.
 - **SAP Connection Details** configured in a `.env` file at the root of your consumer repository (see `.env.sample` in the plugin root)
 
 ---
@@ -116,4 +116,4 @@ For detailed guidelines regarding the complete Harness Governance, Agent role re
 - **MCP Server Details**: [docs/mcp_usage.md](https://github.com/5throck/abap_vibe_coding/blob/main/docs/mcp_usage.md)
 
 ---
-*Last Updated: 2026-08-15*
+*Last Updated: 2026-09-26*

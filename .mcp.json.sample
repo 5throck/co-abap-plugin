@@ -1,5 +1,5 @@
 {
-  "//": "Safe MCP configuration for vsp. Privileged SAP features default to off. To opt in locally, copy this file to ignored .mcp.local.json, change only approved SAP_FEATURE_* values to on, and configure your MCP client to use that local file.",
+  "//": "Safe MCP configuration for vsp. Privileged SAP features default to off. To opt in locally, copy this file to ignored .mcp.local.json, change only approved SAP_FEATURE_* values to on, and configure your MCP client to use that local file. KEEP ONLY ONE abap-* ENTRY: abap-windows / abap-macos / abap-linux are per-OS alternatives with identical settings — enabling several at once launches multiple duplicate vsp servers. Each entry expects the vsp binary at the project root ('./vsp' = 'vsp.exe' on Windows, 'vsp' elsewhere; install it with scripts/install-vsp.* and adjust the command if you placed it elsewhere).",
   "mcpServers": {
     "abap-windows": {
       "command": "./vsp",
