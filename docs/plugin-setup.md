@@ -10,6 +10,9 @@ This guide describes how to install and use the **ABAP Vibe Coding Plugin** in a
 ## 1. Prerequisites
 
 - **Claude Code CLI** installed (`npm install -g @anthropic-ai/claude-code`)
+- **Bun** runtime — the automated hooks and dev-sync utilities in this guide run via `bun` (verify with `bun --version`). Install if missing:
+  - **Windows (PowerShell):** `powershell -c "irm bun.sh/install.ps1"`
+  - **macOS / Linux:** `curl -fsSL https://bun.sh/install | bash`
 - **vsp (MCP Server)** binary installed into the **plugin root** — `vsp.exe` (Windows) or `vsp` (macOS/Linux). From the plugin folder, run `bash scripts/install-vsp.sh` (Windows PowerShell: `.\scripts\install-vsp.ps1`). The plugin manifest resolves the binary via `${CLAUDE_PLUGIN_ROOT}/vsp`, so no PATH setup is required.
 - **SAP Connection Details** configured in a `.env` file at the root of your consumer repository (see `.env.sample` in the plugin root)
 
