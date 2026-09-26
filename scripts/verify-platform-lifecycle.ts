@@ -3,18 +3,27 @@
  * verify-platform-lifecycle.ts — Platform Skill and Command lifecycle verification.
  *
  * Checks:
- *   E: .claude/skills/ and .gemini/skills/ version: field completeness
- *   F: .claude/skills/ <-> .gemini/skills/ version synchronization
- *   G: .claude/commands/ <-> templates/common/.claude/commands/ parity (Tier 1 only)
- *   H: Platform Skill propagation to templates/common/ (Tier 1 only)
+ *   E: platform mirror skills/ version: field completeness (5 mirrors)
+ *   F: n-way version synchronization across the 5 platform mirrors
+ *   G: command propagation to templates/common/ — .claude/commands and
+ *      .gemini/commands 1:1, plus the .codex/prompts mapping (ADR-0077 D4);
+ *      .agents/commands excluded (L0-resident by design — T-20260925-003)
+ *   H: Platform Skill propagation to templates/common/ (5 mirrors, Tier 1 only)
  *
  * Tier 1 vs Tier 3 auto-detection: if variant.json exists in cwd, runs Tier 3 subset (E+F only).
  *
- * @version 1.1.3
+ * Net-new coverage (.agents/.codex legs, codex prompts leg) soaks in WARN per
+ * ADR-0055; the dated promotion tickets (T-20260925-002, not-before 2026-10-09)
+ * flip those to fail. The .hermes legs were promoted out of soak on 2026-09-25
+ * (T-20260925-008: live hermes-agent E2E verification green). Pre-existing
+ * .claude/.gemini semantics keep their severity.
+ *
+ * @version 1.4.0
  */
 
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
+import { PLATFORM_MIRROR_DIRS } from './lib/platforms.ts';
 
 const args = process.argv.slice(2);
 const JSON_MODE = args.includes('--json');
@@ -31,6 +40,17 @@ const VERSION_EXEMPT_PLATFORM_SKILLS = new Set([
   // bumps, so workspace lifecycle fields would create recurring churn.
   '.claude/skills/graft',
 ]);
+
+// Net-new mirror legs soak in WARN (ADR-0055) — TODO(promotion): flip to fail.
+// .hermes/skills joined in ADR-0088 W2 (same onboarding path as .agents/.codex)
+// and was PROMOTED out of soak on 2026-09-25 (T-20260925-008: live hermes-agent
+// v0.21.4 E2E — project skill discovery, frontmatter tolerance, AGENTS.md entry
+// all verified green), so its legs run at fail severity like .claude/.gemini.
+const SOAK_MIRRORS = new Set(['.agents/skills', '.codex/skills']);
+
+function platformOf(mirrorDir: string): string {
+  return mirrorDir.split('/')[0];
+}
 
 function pass(msg: string) {
   if (!JSON_MODE) console.log(`\x1b[32m[PASS]\x1b[0m ${msg}`);
@@ -68,12 +88,13 @@ function listSkillDirs(baseDir: string): string[] {
   );
 }
 
-// Check E: version: field completeness
+// Check E: version: field completeness (all 4 platform mirrors)
 function checkE(): void {
-  if (!JSON_MODE) console.log(`=== Check E: Platform Skill version: completeness (${LEVEL}) ===`);
+  if (!JSON_MODE) console.log(`=== Check E: Platform Skill version: completeness (${LEVEL}, 4 mirrors) ===`);
 
-  for (const platform of ['.claude', '.gemini']) {
-    const skillsDir = join(ROOT, platform, 'skills');
+  for (const mirrorDir of PLATFORM_MIRROR_DIRS) {
+    const platform = platformOf(mirrorDir);
+    const skillsDir = join(ROOT, mirrorDir);
     for (const skillName of listSkillDirs(skillsDir)) {
       const skillMd = join(skillsDir, skillName, 'SKILL.md');
       if (!existsSync(skillMd)) continue;
@@ -82,8 +103,10 @@ function checkE(): void {
         continue;
       }
       const ver = getSkillVersion(skillMd);
+      const soak = SOAK_MIRRORS.has(mirrorDir);
+      const emit = soak ? warn : fail;
       if (!ver) {
-        fail('platform-skill-version', `${platform}/skills/${skillName}/SKILL.md missing version: field`,
+        emit('platform-skill-version', `${platform}/skills/${skillName}/SKILL.md missing version: field${soak ? ' (soak: WARN until promotion)' : ''}`,
           `Add 'version: 1.0.0' to frontmatter`);
       } else {
         pass(`${platform}/skills/${skillName}: version ${ver}`);
@@ -92,51 +115,140 @@ function checkE(): void {
   }
 }
 
-// Check F: .claude/skills/ <-> .gemini/skills/ version sync
+// Check F: n-way version sync across the 4 platform mirrors
+// For each skill present in any mirror: collect the versions of every mirror
+// carrying it. A .claude↔.gemini disagreement is pre-existing fail semantics;
+// any other mismatch (e.g. .claude==.gemini vs .agents/.codex — the Finding-C
+// shape) is net-new coverage soaking in WARN. A mirror directory present
+// without a parseable version warns (pre-existing semantics, generalized).
 function checkF(): void {
-  if (!JSON_MODE) console.log(`\n=== Check F: Platform Skill version sync .claude/ <-> .gemini/ (${LEVEL}) ===`);
+  if (!JSON_MODE) console.log(`\n=== Check F: Platform Skill version sync (n-way across 4 mirrors, ${LEVEL}) ===`);
 
-  const claudeSkillsDir = join(ROOT, '.claude', 'skills');
-  for (const skillName of listSkillDirs(claudeSkillsDir)) {
-    const claudeVer = getSkillVersion(join(claudeSkillsDir, skillName, 'SKILL.md'));
-    const geminiVer = getSkillVersion(join(ROOT, '.gemini', 'skills', skillName, 'SKILL.md'));
+  const union = new Set<string>();
+  for (const mirrorDir of PLATFORM_MIRROR_DIRS) {
+    for (const skillName of listSkillDirs(join(ROOT, mirrorDir))) union.add(skillName);
+  }
 
-    if (claudeVer && geminiVer && claudeVer !== geminiVer) {
-      fail('platform-skill-version-sync',
-        `${skillName}: .claude/skills version ${claudeVer} != .gemini/skills version ${geminiVer}`,
-        `Sync version fields to match`);
-    } else if (claudeVer && !geminiVer && existsSync(join(ROOT, '.gemini', 'skills', skillName))) {
-      warn('platform-skill-version-sync',
-        `${skillName}: .claude/skills has version ${claudeVer} but .gemini/skills missing version:`,
-        `Add version: ${claudeVer} to .gemini/skills/${skillName}/SKILL.md`);
-    } else if (claudeVer) {
-      pass(`${skillName}: version sync OK (${claudeVer})`);
+  for (const skillName of [...union].sort()) {
+    // graft (and any future entry in the exemption set) is version-exempt in
+    // the mirror(s) it lives in — skip entirely (exemption semantics unchanged).
+    const versions = new Map<string, string | null>();
+    for (const mirrorDir of PLATFORM_MIRROR_DIRS) {
+      const skillDir = join(ROOT, mirrorDir, skillName);
+      if (!existsSync(skillDir)) continue;
+      if (isVersionExempt(platformOf(mirrorDir), skillName)) continue;
+      versions.set(mirrorDir, getSkillVersion(join(skillDir, 'SKILL.md')));
+    }
+    if (versions.size === 0) continue;
+
+    for (const [mirrorDir, ver] of versions) {
+      if (ver === null) {
+        warn('platform-skill-version-sync',
+          `${skillName}: ${mirrorDir} directory present but missing version:`,
+          `Add a parseable version: field to ${mirrorDir}/${skillName}/SKILL.md`);
+      }
+    }
+
+    const claudeVer = versions.get('.claude/skills') ?? null;
+    const geminiVer = versions.get('.gemini/skills') ?? null;
+    const distinct = new Set([...versions.values()].filter((v): v is string => v !== null));
+
+    if (distinct.size > 1) {
+      const detail = [...versions.entries()].map(([m, v]) => `${m}=${v ?? '<none>'}`).join(', ');
+      if (claudeVer && geminiVer && claudeVer !== geminiVer) {
+        fail('platform-skill-version-sync',
+          `${skillName}: version mismatch across mirrors — ${detail}`,
+          `Sync version fields to match`);
+      } else {
+        // Net-new mismatch shape (pre-existing pairwise check could not see it)
+        // — soak in WARN; message text is what the Fail promotion will use.
+        warn('platform-skill-version-sync',
+          `${skillName}: version mismatch across mirrors — ${detail} (soak: WARN until promotion)`,
+          `Sync version fields to match`);
+      }
+    } else if (distinct.size === 1) {
+      pass(`${skillName}: version sync OK (${[...distinct][0]})`);
     }
   }
 }
 
-// Check G: .claude/commands/ parity with templates/common/ (Tier 1 only)
-function checkG(): void {
+// ── Commands-surface registry (T-20260925-010: replaces the hardcoded
+// ['.claude','.gemini'] pair loop — every platform's commands surface gets an
+// explicit entry: a governed leg or a RECORDED exclusion, never a silent skip).
+//   .claude/.gemini — 1:1 mirror into templates/common (fail severity, pre-existing)
+//   .codex          — ADR-0077 D4 mapping .claude/commands → .codex/prompts
+//                     (net-new WARN soak; promotion = T-20260925-002, 2026-10-09)
+//   .agents         — L0-resident by design, consumed by the Antigravity CLI at the
+//                     workspace root (spec 2026-09-25-propagation-engine-batch-design
+//                     §6-D8, ticket T-20260925-003)
+//   .hermes         — no commands mirror: skills are invoked natively as
+//                     /<skill-name> (ADR-0088 D1, live-verified T-20260925-008)
+interface CommandsSurface {
+  platform: string;
+  mode: 'mirror-1:1' | 'mapping' | 'excluded';
+  /** soak=true emits WARN instead of FAIL on the mapping leg (ADR-0055). */
+  soak?: boolean;
+  /** Required for mode 'excluded' — the recorded reason an exclusion stands. */
+  exclusionNote?: string;
+}
+
+export const COMMANDS_SURFACES: readonly CommandsSurface[] = [
+  { platform: '.claude', mode: 'mirror-1:1' },
+  { platform: '.gemini', mode: 'mirror-1:1' },
+  { platform: '.codex', mode: 'mapping', soak: true },
+  { platform: '.agents', mode: 'excluded', exclusionNote: 'L0-resident by design — workspace-root Antigravity CLI surface (T-20260925-003)' },
+  { platform: '.hermes', mode: 'excluded', exclusionNote: 'no commands mirror — Hermes invokes skills natively as /<skill-name> (ADR-0088 D1)' },
+];
+
+export function checkG(): void {
   if (IS_TIER3) return; // Tier 3 projects don't have templates/common/
   if (!JSON_MODE) console.log('\n=== Check G: Platform Command propagation to templates/common/ (Tier 1 -> Tier 2) ===');
 
-  for (const platform of ['.claude', '.gemini']) {
-    const cmdDir = join(ROOT, platform, 'commands');
-    const commonCmdDir = join(ROOT, 'templates', 'common', platform, 'commands');
-    if (!existsSync(cmdDir)) continue;
+  const claudeCmdDir = join(ROOT, '.claude', 'commands');
 
-    const rootFiles = readdirSync(cmdDir).filter(f => f.endsWith('.md'));
-    const commonFiles = existsSync(commonCmdDir)
-      ? new Set(readdirSync(commonCmdDir).filter(f => f.endsWith('.md')))
+  for (const surface of COMMANDS_SURFACES) {
+    if (surface.mode === 'excluded') {
+      pass(`${surface.platform}/commands: recorded exclusion — ${surface.exclusionNote}`);
+      continue;
+    }
+
+    if (surface.mode === 'mirror-1:1') {
+      const cmdDir = join(ROOT, surface.platform, 'commands');
+      const commonCmdDir = join(ROOT, 'templates', 'common', surface.platform, 'commands');
+      if (!existsSync(cmdDir)) continue;
+
+      const rootFiles = readdirSync(cmdDir).filter(f => f.endsWith('.md'));
+      const commonFiles = existsSync(commonCmdDir)
+        ? new Set(readdirSync(commonCmdDir).filter(f => f.endsWith('.md')))
+        : new Set<string>();
+
+      const missing = rootFiles.filter(f => !commonFiles.has(f));
+      if (missing.length > 0) {
+        fail('platform-command-propagation',
+          `${surface.platform}/commands/ files not in templates/common/${surface.platform}/commands/: ${missing.join(', ')}`,
+          `Run platform-command-lifecycle-manager skill`);
+      } else {
+        pass(`${surface.platform}/commands/ → templates/common: all ${rootFiles.length} file(s) propagated`);
+      }
+      continue;
+    }
+
+    // mode === 'mapping': .codex leg — ADR-0077 D4 (.claude/commands → .codex/prompts),
+    // NO skip marker — Phase 1b mirrors unconditionally, a deliberate asymmetry.
+    const codexPromptsDir = join(ROOT, 'templates', 'common', '.codex', 'prompts');
+    if (!existsSync(claudeCmdDir)) continue;
+    const codexPrompts = existsSync(codexPromptsDir)
+      ? new Set(readdirSync(codexPromptsDir).filter(f => f.endsWith('.md')))
       : new Set<string>();
-
-    const missing = rootFiles.filter(f => !commonFiles.has(f));
-    if (missing.length > 0) {
-      fail('platform-command-propagation',
-        `${platform}/commands/ files not in templates/common/${platform}/commands/: ${missing.join(', ')}`,
-        `Run platform-command-lifecycle-manager skill`);
+    const claudeFiles = readdirSync(claudeCmdDir).filter(f => f.endsWith('.md'));
+    const missingPrompts = claudeFiles.filter(f => !codexPrompts.has(f));
+    const emit = surface.soak ? warn : fail;
+    if (missingPrompts.length > 0) {
+      emit('platform-command-propagation',
+        `.claude/commands/ files with no templates/common/.codex/prompts/ counterpart (ADR-0077 D4 mapping; no skip marker on the codex leg)${surface.soak ? ' (soak: WARN until promotion)' : ''}: ${missingPrompts.join(', ')}`,
+        `Re-run sync-skills (Phase 1b propagates prompts unconditionally)`);
     } else {
-      pass(`${platform}/commands/ → templates/common: all ${rootFiles.length} file(s) propagated`);
+      pass(`.claude/commands/ → templates/common/.codex/prompts: all ${claudeFiles.length} prompt(s) propagated (mapping)`);
     }
   }
 }
@@ -167,11 +279,15 @@ function checkH(): void {
   }
 
   for (const [skillName] of Object.entries(platformSkills)) {
-    for (const platform of ['.claude', '.gemini']) {
-      const commonPath = join(ROOT, 'templates', 'common', platform, 'skills', skillName, 'SKILL.md');
+    for (const mirrorDir of PLATFORM_MIRROR_DIRS) {
+      const platform = platformOf(mirrorDir);
+      const commonPath = join(ROOT, 'templates', 'common', mirrorDir, skillName, 'SKILL.md');
+      // Net-new mirrors (.agents/.codex) soak in WARN — TODO(promotion): flip to fail.
+      // (.hermes promoted 2026-09-25, T-20260925-008.)
+      const emit = SOAK_MIRRORS.has(mirrorDir) ? warn : fail;
       if (!existsSync(commonPath)) {
-        fail('platform-skill-propagation',
-          `${platform}/skills/${skillName}/ not propagated to templates/common/${platform}/skills/`,
+        emit('platform-skill-propagation',
+          `${platform}/skills/${skillName}/ not propagated to templates/common/${platform}/skills/${SOAK_MIRRORS.has(mirrorDir) ? ' (soak: WARN until promotion)' : ''}`,
           `Run platform-skill-lifecycle-manager skill`);
       } else {
         pass(`${platform}/skills/${skillName}: propagated to templates/common/`);
@@ -198,9 +314,9 @@ async function main() {
   }
 }
 
-main().catch(err => {
-  console.error(err);
-  if (import.meta.main) {
+if (import.meta.main) {
+  main().catch(err => {
+    console.error(err);
     process.exit(1);
-  }
-});
+  });
+}

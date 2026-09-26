@@ -23,6 +23,11 @@
       "layer": "L3"
     },
     {
+      "id": "adr:0002",
+      "type": "adr",
+      "layer": "L3"
+    },
+    {
       "id": "agent-lifecycle-manager",
       "type": "skill",
       "layer": "L3"
@@ -63,6 +68,11 @@
       "layer": "L3"
     },
     {
+      "id": "design-foundation",
+      "type": "skill",
+      "layer": "L3"
+    },
+    {
       "id": "desktop-app-fallback",
       "type": "skill",
       "layer": "L3"
@@ -70,6 +80,21 @@
     {
       "id": "devops-admin",
       "type": "agent",
+      "layer": "L3"
+    },
+    {
+      "id": "doc:AGENTS.md",
+      "type": "doc",
+      "layer": "L3"
+    },
+    {
+      "id": "doc:CLAUDE.md",
+      "type": "doc",
+      "layer": "L3"
+    },
+    {
+      "id": "doc:GEMINI.md",
+      "type": "doc",
       "layer": "L3"
     },
     {
@@ -782,6 +807,191 @@
       "from": "decision-record",
       "to": "evidence-ledger",
       "source": "prose"
+    },
+    {
+      "type": "composes_with",
+      "from": "design-foundation",
+      "to": "accessibility-audit",
+      "source": "relates_to",
+      "symmetric": true,
+      "provenance": {
+        "file": "skills/design-foundation/SKILL.md",
+        "field": "relates_to",
+        "index": 2
+      }
+    },
+    {
+      "type": "references",
+      "from": "design-foundation",
+      "to": "accessibility-audit",
+      "source": "prose"
+    },
+    {
+      "type": "composes_with",
+      "from": "design-foundation",
+      "to": "token-usage-lint",
+      "source": "relates_to",
+      "symmetric": true,
+      "provenance": {
+        "file": "skills/design-foundation/SKILL.md",
+        "field": "relates_to",
+        "index": 1
+      }
+    },
+    {
+      "type": "references",
+      "from": "design-foundation",
+      "to": "token-usage-lint",
+      "source": "prose"
+    },
+    {
+      "type": "enables",
+      "from": "design-foundation",
+      "to": "ui-ux-design-intelligence",
+      "source": "relates_to",
+      "provenance": {
+        "file": "skills/design-foundation/SKILL.md",
+        "field": "relates_to",
+        "index": 0
+      }
+    },
+    {
+      "type": "references",
+      "from": "design-foundation",
+      "to": "ui-ux-design-intelligence",
+      "source": "prose"
+    },
+    {
+      "type": "cites_skill",
+      "from": "doc:AGENTS.md",
+      "to": "agent-lifecycle-manager",
+      "source": "workflow-doc"
+    },
+    {
+      "type": "cites_skill",
+      "from": "doc:AGENTS.md",
+      "to": "decision-record",
+      "source": "workflow-doc"
+    },
+    {
+      "type": "cites_skill",
+      "from": "doc:AGENTS.md",
+      "to": "evidence-ledger",
+      "source": "workflow-doc"
+    },
+    {
+      "type": "cites_skill",
+      "from": "doc:AGENTS.md",
+      "to": "explain-me",
+      "source": "workflow-doc"
+    },
+    {
+      "type": "cites_skill",
+      "from": "doc:AGENTS.md",
+      "to": "handbook",
+      "source": "workflow-doc"
+    },
+    {
+      "type": "cites_skill",
+      "from": "doc:AGENTS.md",
+      "to": "handbook-sync-audit",
+      "source": "workflow-doc"
+    },
+    {
+      "type": "cites_skill",
+      "from": "doc:AGENTS.md",
+      "to": "i18n-audit",
+      "source": "workflow-doc"
+    },
+    {
+      "type": "cites_skill",
+      "from": "doc:AGENTS.md",
+      "to": "i18n-formatting",
+      "source": "workflow-doc"
+    },
+    {
+      "type": "cites_skill",
+      "from": "doc:AGENTS.md",
+      "to": "i18n-layout",
+      "source": "workflow-doc"
+    },
+    {
+      "type": "cites_skill",
+      "from": "doc:AGENTS.md",
+      "to": "i18n-locale-config",
+      "source": "workflow-doc"
+    },
+    {
+      "type": "cites_skill",
+      "from": "doc:AGENTS.md",
+      "to": "meeting-facilitation",
+      "source": "workflow-doc"
+    },
+    {
+      "type": "cites_skill",
+      "from": "doc:AGENTS.md",
+      "to": "project-review",
+      "source": "workflow-doc"
+    },
+    {
+      "type": "cites_skill",
+      "from": "doc:AGENTS.md",
+      "to": "security-scan",
+      "source": "workflow-doc"
+    },
+    {
+      "type": "cites_skill",
+      "from": "doc:AGENTS.md",
+      "to": "skill-lifecycle-manager",
+      "source": "workflow-doc"
+    },
+    {
+      "type": "cites_skill",
+      "from": "doc:AGENTS.md",
+      "to": "sync",
+      "source": "workflow-doc"
+    },
+    {
+      "type": "cites_skill",
+      "from": "doc:CLAUDE.md",
+      "to": "abap-dev",
+      "source": "workflow-doc"
+    },
+    {
+      "type": "cites_skill",
+      "from": "doc:CLAUDE.md",
+      "to": "desktop-app-fallback",
+      "source": "workflow-doc"
+    },
+    {
+      "type": "cites_skill",
+      "from": "doc:CLAUDE.md",
+      "to": "post-write-chain",
+      "source": "workflow-doc"
+    },
+    {
+      "type": "cites_skill",
+      "from": "doc:GEMINI.md",
+      "to": "abap-dev",
+      "source": "workflow-doc"
+    },
+    {
+      "type": "cites_skill",
+      "from": "doc:GEMINI.md",
+      "to": "post-write-chain",
+      "source": "workflow-doc"
+    },
+    {
+      "type": "composes_with",
+      "from": "documentation-writing",
+      "to": "team-builder",
+      "source": "relates_to",
+      "symmetric": true,
+      "provenance": {
+        "file": "skills/documentation-writing/SKILL.md",
+        "field": "relates_to",
+        "index": 0
+      }
     },
     {
       "type": "follows",
@@ -1514,78 +1724,6 @@
       "from": "research-analysis",
       "to": "output_type.feasibility_findings",
       "source": "procedure_schema"
-    },
-    {
-      "type": "composes_with",
-      "from": "research-analysis",
-      "to": "sap-co",
-      "source": "relates_to",
-      "symmetric": true,
-      "provenance": {
-        "file": "skills/research-analysis/SKILL.md",
-        "field": "relates_to",
-        "index": 2
-      }
-    },
-    {
-      "type": "composes_with",
-      "from": "research-analysis",
-      "to": "sap-fi",
-      "source": "relates_to",
-      "symmetric": true,
-      "provenance": {
-        "file": "skills/research-analysis/SKILL.md",
-        "field": "relates_to",
-        "index": 1
-      }
-    },
-    {
-      "type": "composes_with",
-      "from": "research-analysis",
-      "to": "sap-le",
-      "source": "relates_to",
-      "symmetric": true,
-      "provenance": {
-        "file": "skills/research-analysis/SKILL.md",
-        "field": "relates_to",
-        "index": 5
-      }
-    },
-    {
-      "type": "composes_with",
-      "from": "research-analysis",
-      "to": "sap-mm",
-      "source": "relates_to",
-      "symmetric": true,
-      "provenance": {
-        "file": "skills/research-analysis/SKILL.md",
-        "field": "relates_to",
-        "index": 4
-      }
-    },
-    {
-      "type": "composes_with",
-      "from": "research-analysis",
-      "to": "sap-pp",
-      "source": "relates_to",
-      "symmetric": true,
-      "provenance": {
-        "file": "skills/research-analysis/SKILL.md",
-        "field": "relates_to",
-        "index": 6
-      }
-    },
-    {
-      "type": "composes_with",
-      "from": "research-analysis",
-      "to": "sap-sd",
-      "source": "relates_to",
-      "symmetric": true,
-      "provenance": {
-        "file": "skills/research-analysis/SKILL.md",
-        "field": "relates_to",
-        "index": 3
-      }
     },
     {
       "type": "references",

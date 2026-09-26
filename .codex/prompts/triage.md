@@ -3,6 +3,7 @@ name: triage
 description: Automatically classify the incoming SAP ABAP request, create a task file, and generate the Phase 1 parallel dispatch block for sap-investigator, read-only-analyst, and schema-inspector agents.
 argument-hint: "<user request text>"
 allowed-tools: ["Bash"]
+gemini-parity: skip # intentional Claude-only command
 ---
 
 # /triage — Task Triage & Auto-Dispatch
@@ -49,10 +50,10 @@ bun "${CLAUDE_PLUGIN_ROOT:-.}/scripts/new-requirement.ts" "<short requirement ti
 
 This creates `deliverables/REQ-NNN-<slug>/01_srs.md` pre-filled with the REQ ID and title, and
 adds a `Stage 1 / Draft` row to the RTM table in `deliverables/index.md`. The Module Analyst
-then fills in `01_srs.md` during §1 Business Analysis — see
-[deliverables/index.md — Workflow Stages](../../deliverables/index.md#workflow-stages--responsible-agents)
-for the full Stage 1→5 ownership chain. Skip this step for `Debug`, `Graph Analysis`, `Interface`,
-and `Infra` classifications — those are scoped fixes/investigations, not new RTM-tracked scope.
+then fills in `01_srs.md` during §1 Business Analysis → see
+[deliverables/index.md → Workflow Stages](../../deliverables/index.md#workflow-stages--responsible-agents)
+for the full Stage 1 → ownership chain. Skip this step for `Debug`, `Graph Analysis`, `Interface`,
+and `Infra` classifications → those are scoped fixes/investigations, not new RTM-tracked scope.
 
 ### 3. Create Task File
 
@@ -89,9 +90,9 @@ Output the following block (filled with detected values) for the user to paste i
 Based on the detected module, output the ready-to-use dispatch block:
 
 ```markdown
-## 0-A. PM Parallel Dispatch (Phase 1 — Read-Only)
+## 0-A. PM Parallel Dispatch (Phase 1 → Read-Only)
 
-Agent 1 — sap-investigator  (prompt: agents/sap-investigator.md)
+Agent 1 → sap-investigator  (prompt: agents/sap-investigator.md)
   Task: Scan existing codebase for related objects
   Input:
   {
@@ -102,7 +103,7 @@ Agent 1 — sap-investigator  (prompt: agents/sap-investigator.md)
     "max_results": 30
   }
 
-Agent 2 — read-only-analyst  (prompt: agents/read-only-analyst.md)
+Agent 2 → read-only-analyst  (prompt: agents/read-only-analyst.md)
   Task: Query SAP tables for AS-IS data
   Input:
   {
@@ -115,7 +116,7 @@ Agent 2 — read-only-analyst  (prompt: agents/read-only-analyst.md)
     "tables_to_inspect": ["<MODULE_TABLE_1>", "<MODULE_TABLE_2>"]
   }
 
-Agent 3 — schema-inspector  (prompt: agents/schema-inspector.md)
+Agent 3 → schema-inspector  (prompt: agents/schema-inspector.md)
   Task: Inspect table structures
   Input:
   {
@@ -133,10 +134,10 @@ Replace `<MODULE_TABLE_N>` with the module's standard tables from `schema-inspec
 ```
 ✅ Task file created: scratch/tasks/task-YYYY-MM-DD-NNN.md
 📋 Copy §0 and §0-A above into the task file.
-▶  Dispatch all 3 agents IN A SINGLE MESSAGE (parallel).
+⚡ Dispatch all 3 agents IN A SINGLE MESSAGE (parallel).
 ⏳ Wait for all 3 results, then synthesize into §1 Business Analysis.
 ```
 
 ---
 
-*Last Updated: 2026-09-20*
+*Last Updated: 2026-09-26*

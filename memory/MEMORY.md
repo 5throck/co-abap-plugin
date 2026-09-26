@@ -4,10 +4,11 @@
 
 | Date | Summary |
 |------|---------|
+| [2026-09-26](2026-09-26.md) | --help |
 | [2026-09-20](2026-09-20.md) | chore(graft): track .ignore for graft card searchability; regenerate VERSION_MANIFEST |
 | [2026-09-19](2026-09-19.md) | chore(upgrade): template upgrade — ADR-0080 policy delivery |
-| [2026-09-17](2026-09-17.md) | chore: regenerate VERSION_MANIFEST and fix i18n-specialist model comments |
-| [2026-09-16](2026-09-16.md) | chore(upgrade): sync template 0.6.0 fleet resync content |
+| 2026-09-17 | chore: regenerate VERSION_MANIFEST and fix i18n-specialist model comments |
+| 2026-09-16 | chore(upgrade): sync template 0.6.0 fleet resync content |
 | 2026-09-12 | chore: sync project-review skill updates |
 | [2026-09-06](2026-09-06.md) | chore: upgrade template to 0.6.0 |
 | [2026-08-29](2026-08-29.md) | fix(skills): align SKILL.md name field with directory names |

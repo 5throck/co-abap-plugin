@@ -11,8 +11,15 @@ permissions:
 
 jobs:
   audit:
-    name: Documentation Audit
-    runs-on: ubuntu-latest
+    name: Documentation Audit (${{ matrix.os }})
+    # The plugin targets Windows/macOS/Linux consumers — run the audit gate on
+    # all three so platform-specific regressions (paths, line endings, shell
+    # syntax) surface in CI instead of on a consumer machine.
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
         with:

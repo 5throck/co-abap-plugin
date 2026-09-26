@@ -1,10 +1,10 @@
 ---
 name: post-write-chain
-description: Use after ANY WriteSource, EditSource, or Activate operation on SAP ABAP objects. Enforces the mandatory quality gate: SyntaxCheck → RunUnitTests → GetCodeCoverage → RunATCCheck. Trigger automatically after every ABAP write operation.
+description: 'Use after ANY WriteSource, EditSource, or Activate operation on SAP ABAP objects. Enforces the mandatory quality gate: SyntaxCheck → RunUnitTests → GetCodeCoverage → RunATCCheck. Trigger automatically after every ABAP write operation.'
 version: 1.1.0
 last_reviewed: 2026-08-15
 status: active
-scope: co-abap-plugin
+scope: co-abap
 owner: test-runner
 prerequisites: vsp MCP server
 metadata:

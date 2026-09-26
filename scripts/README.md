@@ -1,30 +1,33 @@
 # Project Scripts
 
-Utility scripts for project operations. All utility scripts are implemented in TypeScript and run via the Bun runtime.
+All project automation scripts, implemented in **TypeScript** and running on the **Bun** runtime.
 
 ## Available Scripts
 
-### Bootstrap Scripts (Shell Only)
-
-These scripts must remain as shell scripts because they run before Bun is installed:
+### Core Pipeline Scripts
 
 | Script | Purpose |
 |--------|---------|
-| `install-bun.sh` / `install-bun.ps1` | Install Bun runtime |
-| `install-vsp.sh` / `install-vsp.ps1` | Install vsp binary |
-
-### TypeScript (Bun) Scripts
-
-All utility scripts use TypeScript as the single source of truth:
-
-| Script | Purpose |
-|--------|---------|
-| `sync-md.ts` | Update memory/MEMORY.md index (called by PostToolUse hook) |
-| `audit.ts` | Documentation and file integrity audit |
 | `dev-sync.ts` | Full sync pipeline (memlog → changelog → audit → commit → PR) |
-| `setup.ts` | Initial project setup (env, deps, first commit) |
-| `vsp-task.ts` | Initialize new tasks |
-| `vsp-publish.ts` | Publish plugin assets to consumer repo |
+| `audit.ts` | Documentation and file integrity audit |
+| `sync-md.ts` | Update memory/MEMORY.md index |
+| `vsp-audit.ts` | Legacy audit wrapper (delegates to audit.ts) |
+
+### Utility Scripts
+
+| Script | Purpose |
+|--------|---------|
+| `git-sync.ts` | Simple commit-and-push all changes |
+| `vsp-task.ts` | Create task files in scratch/tasks/ from template |
+| `install-bun.ts` | Bun runtime installer |
+| `install-vsp.ts` | VSP binary installer from GitHub Releases |
+| `setup.ts` | Post-scaffold environment setup (OS/stack detection, deps, licenses) |
+| `vsp-publish.ts` | Package and publish core framework assets to the plugin repository (requires `CLAUDE_PLUGIN_ROOT`) |
+
+### Agent Orchestration Scripts
+
+| Script | Purpose |
+|--------|---------|
 | `verify-skills.ts` | Verify all skills in `skills/` are loadable |
 | `agent-create.ts` | Create new agent definition files |
 | `agent-list.ts` | List all agents with metadata |
@@ -32,38 +35,49 @@ All utility scripts use TypeScript as the single source of truth:
 | `agent-verify.ts` | Verify agent/documentation synchronization |
 | `dispatch.ts` | Main entry point for agent dispatch |
 | `dispatch-parallel.ts` | Parallel agent dispatcher |
-| `dispatch-serial.ts` | Serial agent dispatcher with dependencies |
+| `dispatch-serial.ts` | Serial pipeline executor with dependencies |
 | `retry-handler.ts` | Retry logic with exponential backoff |
-
-All scripts support a `--check` flag for dry-run validation:
-```bash
-bun scripts/dev-sync.ts --check   # syntax check only, no git changes
-```
 
 ## NPM Scripts
 
 Convenience shortcuts defined in `package.json`:
 
 ```bash
-bun run verify-skills     # Verify skills
-bun run agent:create      # Create new agent
-bun run agent:list        # List agents
-bun run agent:delete      # Delete agent
-bun run agent:verify      # Verify agent/documentation sync
-bun run dispatch:parallel # Run parallel dispatch
-bun run dispatch:serial   # Run serial dispatch
+bun run audit            # Run workspace standards audit
+bun run dev-sync         # Full sync pipeline
+bun run sync-md          # Update memory index
+bun run vsp-audit        # Legacy audit wrapper
+bun run git-sync         # Commit and push all changes
+bun run vsp-task         # Create a new task file
+bun run install:vsp      # Install VSP binary
+bun run setup            # Post-scaffold environment setup
+bun run verify-skills    # Verify skills
+bun run agent:create     # Create new agent
+bun run agent:list       # List agents
+bun run agent:delete     # Delete agent
+bun run agent:verify     # Verify agent/documentation sync
+bun run dispatch:parallel  # Run parallel dispatch
+bun run dispatch:serial    # Run serial dispatch
 ```
 
-## Scripting Model
+## Runtime Requirements
 
-This project uses **TypeScript (Bun) as the single source of truth** for all utility scripts:
-
-- **TypeScript (Bun)** for all utility and orchestration scripts
-- **Shell Scripts** only for bootstrap (install-bun, install-vsp) — these must run before Bun exists
+- **Bun >= 1.0.0** — all scripts use `#!/usr/bin/env bun` and Bun-specific APIs (`Bun.$`, `Bun.file`, `Bun.write`, `import.meta.path`)
+- **Git** — used by dev-sync, git-sync, setup
+- **GitHub CLI (`gh`)** — used by dev-sync for PR creation
 
 ## File Encoding
 
-All scripts MUST be saved as **UTF-8 (without BOM)**.
+All scripts are **UTF-8 (without BOM)**.
+
+## Script Conventions
+
+- Shebang: `#!/usr/bin/env bun`
+- Path resolution: `const scriptDir = path.dirname(import.meta.path); const projectRoot = path.resolve(scriptDir, "..");`
+- Shell execution: `import { $ } from 'bun'` for git/gh commands
+- File I/O: `Bun.file()` / `Bun.write()` or `node:fs` APIs
+- CLI pattern: Manual `process.argv` parsing, `import.meta.main` guard
+- Dual usage: Every script supports both CLI execution and `export { main }` for module use
 
 ---
 

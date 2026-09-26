@@ -1,6 +1,6 @@
 # GEMINI.md
 
-**vsp** —Go-native MCP server and CLI for SAP ABAP Development Tools (ADT).
+**vsp** — Go-native MCP server and CLI for SAP ABAP Development Tools (ADT).
 
 > This file contains **Gemini-specific overrides only**.
 > All shared dev context (build commands, codebase map, current priorities, common issues,
@@ -9,123 +9,75 @@
 
 ---
 
-## Context Loading
+## Role Declaration
 
-Load project files at session start using the `@` syntax:
-*(Ref: `docs/context.md` -> `Initial Context Files`)*
+You ARE the PM agent for this session. Load and follow [`agents/pm.md`](agents/pm.md) at all times.
 
-```
-@docs/context.md                            # full project knowledge (ABAP rules, build, codebase map)
-@AGENTS.md                                  # canonical agent roster
-@memory/MEMORY.md                           # recent changes (skip if file does not exist)
-@skills/abap-dev/SKILL.md                   # SAP development workflows
-@skills/post-write-chain/SKILL.md           # mandatory QA chain after any write
-```
+**Governance Enforcement**: All multi-step tasks (2+ files or 2+ sequential steps) must strictly adhere to the PM Gateway workflow:
+1. Display execution plan table first (task | agent | tier | model | platform)
+2. Only then use `invoke_subagent` to dispatch specialist agents
+3. Never bypass PM workflow — direct specialist invocation is forbidden
+
+> **Note**: This Role Declaration and the Mandatory Execution Plan serve as the strict system-prompt-level enforcement for the PM Gateway.
 
 ---
 
+## Gemini-Specific & Antigravity Workflows
 
+### 1. Active Antigravity Tool Suite Mapping & Safeguards
 
-## Gemini-Specific Configuration
+| Tool Category | Tool Name | Operational Guidance |
+| :--- | :--- | :--- |
+| **File Reading** | `view_file` | Read up to 800 lines at a time. Supports absolute paths. |
+| **File Creation** | `write_to_file` | Create new files. Supports `IsArtifact` and structured `ArtifactMetadata` block. |
+| **Surgical Edit** | `replace_file_content` | Replace a single contiguous block of code. Specify `StartLine`, `EndLine`, `TargetContent`, and `ReplacementContent` with 100% exact leading whitespace matching. |
+| **Multi Edit** | `multi_replace_file_content` | Perform multiple non-contiguous edits within the same file simultaneously. Order chunks descendingly (bottom-to-top) to avoid line offsets. |
+| **Search** | `grep_search` | Search codebases via Ripgrep. Keep `MatchPerLine: true` for line-by-line matches. Apply partitioning if matches exceed 50. |
+| **Command Execution** | `run_command` | Execute PowerShell/Bash shell commands. Returns task process IDs. NEVER use `cd` commands. 🚫 **STRICT BAN**: NEVER run `git commit` or `git push` directly via this tool. All commits must go through the approved `/sync` pipeline or `bun scripts/dev-sync.ts`. |
 
-### Recommended Mode
-
-Use `--mode hyperfocused` for all Gemini sessions. In hyperfocused mode all 101 MCP operations are accessible via `sap_execute`; the single entry point reduces tool-selection hallucinations without restricting capability.
-
-```bash
-vsp mcp --mode hyperfocused
-```
-
-### Settings File
-
-Gemini reads `.gemini/settings.json` in the project root. Confirm `mcpServers.abap.args`
-contains `["--mode", "hyperfocused"]` before starting a session.
-
-### Tool Usage in Hyperfocused Mode
-
-All operations are routed through `sap_execute` with an `action` parameter:
-
-```json
-{ "action": "GetSource", "object_type": "PROG", "name": "ZPROG_SBOOK_QUERY" }
-{ "action": "EditSource", "object_url": "/sap/bc/adt/...", "old_string": "...", "new_string": "..." }
-{ "action": "GrepPackages", "packages": ["$TMP"], "pattern": "ZPROG_" }
-```
-
-See [docs/mcp_usage.md](docs/mcp_usage.md) for the full tool catalog and parameter reference.
-
----
-
-## Gemini Skill Additions
-
-The following capabilities extend those in [skills/abap-dev/SKILL.md](skills/abap-dev/SKILL.md):
-
-- **Role-Based Execution**: Switch between Business and Technical roles defined in `AGENTS.md`
-  by explicitly stating the active role at the start of a task.
-- **Multi-Agent Coordination**: Delegate long-running research to background sessions;
-  keep write operations (EditSource, WriteSource) in the primary session.
-- **Advanced Diagnostics**: Use `vsp health` to validate architecture and
-  `vsp slim` for context optimization before large read sessions.
-- **Post-Write Test Chain**: Hooks are not supported. After any write operation, execute the mandatory chain manually via `sap_execute` as defined in `docs/context.md`.
-  ```json
-  { "action": "SyntaxCheck",   "object_url": "/sap/bc/adt/..." }
-  { "action": "RunUnitTests",  "object_url": "/sap/bc/adt/..." }
-  { "action": "RunATCCheck",   "object_url": "/sap/bc/adt/..." }
-  ```
-
-> **Common engineering rules** (memory logging, language, file isolation, post-write chain, git): [docs/context.md § Project-Wide Rules](docs/context.md#project-wide-rules-all-tools).
-
----
-
-
-## Gemini Tool Safeguards
-
-#### 🚨 Surgical Multi-Replace Offset Safeguard
+#### ⚠️ Surgical Multi-Replace Offset Safeguard
 When calling `multi_replace_file_content` with multiple `ReplacementChunks`, the line numbers of subsequent target blocks will shift if previous edits change the line count.
 - **Rule**: Sort and process `ReplacementChunks` from the **bottom of the file to the top** (descending order of line numbers: largest `StartLine` first).
 
-#### 🚨 Grep Search 50-Match Cap Safeguard
+#### ⚠️ Windows Terminal & Code Page Safeguard
+When executing CLI commands via `run_command` on Windows (PowerShell/CMD), the default Windows code page (e.g., CP949) often causes Unicode decoding errors.
+- **Rule:** Before running commands that output non-ASCII text, explicitly set the code page to UTF-8 by prepending `$OutputEncoding = [Console]::OutputEncoding = [System.Text.Encoding]::UTF8;` (PowerShell) or `chcp 65001` (CMD).
+
+#### ⚠️ Grep Search 50-Match Cap Safeguard
 The `grep_search` tool silently truncates results at exactly **50 matches**.
 - **Rule**: If a search yields 50 results, do **NOT** assume you have all occurrences.
 - **Remediation**: Partition the search by targeting specific subdirectories or applying restrictive file glob filters via the `Includes` parameter (e.g., `["*.go"]`).
 
 ---
 
-## Gemini-Specific Workflows
+### 2. Planning Mode & Artifact Specifications
+Enter Planning Mode for complex tasks or architectural modifications. Leverage these three Markdown artifacts (set `IsArtifact: true` with accurate metadata):
 
-### 1. Planning Mode & Artifact Specifications
-For complex tasks or architectural modifications, Gemini must enter **Planning Mode**. Leverage these three Markdown artifacts (set `IsArtifact: true` with accurate metadata):
-
-#### 1a. `implementation_plan.md`
+#### 1. `implementation_plan.md`
 *Path: `<appDataDir>\brain\<session-id>\implementation_plan.md`*
 - **Purpose**: Detailed technical design document presented to the user for feedback and approval.
 - **Metadata**: `ArtifactType: "implementation_plan"`, `RequestFeedback: true`.
 - **Governance**: Stop and wait for explicit user approval before modifying any code.
 
-#### 1b. `task.md`
+#### 2. `task.md`
 *Path: `<appDataDir>\brain\<session-id>\task.md`*
 - **Purpose**: Running TODO list to track development progress dynamically.
 - **Metadata**: `ArtifactType: "task"`.
 - **Syntax**: `- [ ]` uncompleted · `- [/]` in progress · `- [x]` completed.
 
-#### 1c. `walkthrough.md`
+#### 3. `walkthrough.md`
 *Path: `<appDataDir>\brain\<session-id>\walkthrough.md`*
 - **Purpose**: Post-implementation document summarizing changes, test logs, and manual validation details.
 - **Metadata**: `ArtifactType: "walkthrough"`.
 
-After changes are verified, summarize outcomes in `memory/YYYY-MM-DD.md`.
+After changes are verified, summarize outcomes in `memory/YYYY-MM-DD.md` and update `CHANGELOG.md`.
 
-### 2. Executing Custom Commands
-Unlike Claude Code, Gemini does not natively register local custom slash commands from `.gemini/commands/` or `.claude/commands/`. Instead:
-- Automation workflows like `/sync`, `/memlog`, `/project-review`, or `/meeting` are simulated or executed directly as project scripts (e.g., executing `bun scripts/dev-sync.ts` via terminal tools).
-- System-provided slash commands (like `/goal`, `/schedule`, `/browser`, `/grill-me`) can be recommended to the user.
+---
 
-### 3. Coexistence, Precedence & Migration of .claude
-This project contains a `.claude/` directory. To prevent configuration drift and avoid issues when transitioning away from Claude Code, Gemini follows these rules:
-- **Absolute Precedence**: `.gemini/` always takes absolute precedence over `.claude/`. If `.gemini/` exists, `.claude/` is ignored by Gemini to prevent duplicate or conflicting configurations.
-- **Fallback (Coexistence Phase)**: If a project lacks a `.gemini/` directory but contains `.claude/`, Gemini will temporarily read and respect `.claude/settings.json`, `.claude/settings.local.json`, and `.claude/commands/` as the fallback source of truth.
-- **Graceful Migration**: If the project transitions fully away from Claude Code, or if Gemini needs to write new project-level settings/commands, Gemini should proactively offer to migrate the `.claude/` configuration to `.gemini/` (copying and adapting files) rather than leaving legacy files orphaned.
-- **Command Emulation**: Custom slash commands defined as markdown files in `.claude/commands/` must be emulated by Gemini. Read the `.md` file to understand the underlying script execution and run those commands directly via terminal tools.
-- **Gemini Integration Rule**: Gemini can dynamically instantiate roles defined in `AGENTS.md` using `define_subagent` and `invoke_subagent`.
+### 3. Subagent Instantiation & Async Orchestration
+
+> **Agent Architecture**: See [docs/context.md](docs/context.md) for governance rules.
+> **Agent Roster**: See [AGENTS.md](AGENTS.md) for the canonical index of all available agents (e.g. `agents/co-analyst.md`).
 
 #### Define Subagent (`define_subagent`)
 ```json
@@ -153,29 +105,15 @@ This project contains a `.claude/` directory. To prevent configuration drift and
 
 #### Communication (`send_message`)
 Interact with spawned agents via their unique `conversationID`.
-**Reactive Wakeup**: Do not poll in a loop —simply yield execution and the platform wakes you automatically when an agent replies or a background task completes.
+**Reactive Wakeup**: Do not poll in a loop — simply yield execution and the platform wakes you automatically when an agent replies or a background task completes.
 
-
-#### Superpowers Plugin & Cost Optimization (3-Tier Strategy)
-The PM agent MUST leverage the **`superpowers`** plugin (e.g., `subagent-driven-development`, `dispatching-parallel-agents`) for multi-agent harness engineering using a 3-tier model strategy:
-**Model Selection Overrides** (overridden per subagent invocation when appropriate):
-- **High-tier (Design/Planning)** → `gemini-3.1-pro` (Parameter: `thinking_level="medium"`): Complex reasoning, architectural design, planning, and PM orchestration.
-- **Medium-tier (Review/QA)** → `gemini-3.5-flash` (Parameter: `thinking_level="medium"`): Code review, testing, PR review, and quality gates (`verification-before-completion`). Supervises the Low-tier.
-- **Low-tier (Execution/Coding)** → `gemini-3.5-flash` (Parameter: `thinking_level="low"`): Fast, repetitive coding, boilerplate generation, or strictly scoped sub-agent tasks.
+#### Cost Optimization (3-Tier Model Strategy)
+The High/Medium/Low tier concept and its usage rules are the Single Source of Truth in [AGENTS.md §3.6 3-Tier Strategy](AGENTS.md#36-3-tier-strategy). Gemini/Antigravity's model-ID mapping (overridden per subagent invocation when appropriate):
+- **High-tier** (Design/Planning) → `gemini-3.1-pro` (Parameter: `thinking_level="medium"`)
+- **Medium-tier** (Review/QA) → `gemini-3.8-flash` (no thinking parameter)
+- **Low-tier** (Execution/Coding) → `gemini-3.8-flash` (no thinking parameter)
 
 ---
-
-### Optimal Interaction Guidelines
-- **Context Management**: Leverage your massive context window by cross-referencing multiple files simultaneously (e.g., when debugging, review log files along with related code).
-- **Tool Usage**: Actively use tools like `search_web` for real-time package version verification or resolving external dependencies.
-
----
-
-*Last Updated: 2026-09-12*
-
-
-
-
 
 <!-- COMMON-GEMINI:START -->
 #### Cost Optimization (3-Tier Model Strategy)
@@ -188,9 +126,9 @@ The High/Medium/Low tier concept and its usage rules are the Single Source of Tr
 <!-- COMMON-GEMINI:START -->
 ### 4. Language Policy for Documentation
 
-All `.md` files you create or modify MUST be in English, except in `ko/` or `locales/ko/` directories (Korean translation zones) or when explicitly declared as a Korean legal/regulatory content exception.
+All `.md` files you create or modify MUST be in English, except in recognized locale translation zones (`<lang-code>/` or `locales/<lang-code>/` directories, plus `*_&lt;lang-code&gt;` suffix files such as `README_ko.md` — see the AGENTS.md Language Policy) or when explicitly declared as a Korean legal/regulatory content exception.
 
-- README.md, CLAUDE.md, GEMINI.md, AGENTS.md, context.md, CHANGELOG.md — English only
+- README.md, CLAUDE.md, GEMINI.md, CODEX.md, AGENTS.md, context.md, CHANGELOG.md — English only
 - All documentation in docs/, agents/, skills/ — English only
 - Git commit messages, PR titles, PR descriptions — English only
 - Branch names — English only
@@ -202,7 +140,7 @@ For files where Korean is legally or academically mandatory, add to the frontmat
 lang: ko
 lang_reason: legal # legal | source-material | proper-noun
 ```
-*(Not available for: context.md, CLAUDE.md, GEMINI.md, AGENTS.md, or any variant context.md)*
+*(Not available for: context.md, CLAUDE.md, GEMINI.md, CODEX.md, AGENTS.md, or any variant context.md)*
 
 #### Korean Plain-Language Preference (`순우리말`-First)
 When writing Korean documentation or Korean translation output, prefer native Korean words (`순우리말`) over loanwords (`외래어`) whenever a natural, widely-understood native equivalent exists — e.g. prefer `만들기` over `크리에이션`, `알림` over `노티피케이션`. Loanwords effectively settled in Korean (`컴퓨터`, `데이터`, `소프트웨어`, `파일`) and established technical terms remain permitted; clarity takes precedence over forced nativization. New Korean content applies this immediately; existing Korean documents are nativized incrementally (touched sections only, no bulk rewrites).
@@ -219,12 +157,12 @@ The execution plan table format, the Design Gate (Row 0) rule, exemption categor
 <!-- COMMON-GEMINI:END -->
 
 <!-- COMMON-GEMINI:START -->
-### 6. Workspace & Template Boundary Policy
+### 6. Project Boundary Policy
 
-- **Strict CWD Isolation**: When modifying templates (in `templates/`), you MUST strictly limit your working directory (CWD) to the specific template folder.
-- **No Cross-Modification**: Modifying workspace root files and template files in a single task or session is forbidden. Keep workspace root changes and template changes completely isolated.
+- **Strict Scope**: Work only within the current project directory.
+- **No Cross-Project Modification**: Modifying files outside the project root during a session is forbidden.
 
-> For L1-L2 Fork Model and lifecycle management rules, see [docs/context.md](docs/context.md) and [docs/context.md](docs/context.md).
+> For lifecycle management rules, see [docs/context.md — Lifecycle Management](docs/context.md#lifecycle-management).
 <!-- COMMON-GEMINI:END -->
 
 <!-- COMMON-GEMINI:START -->
@@ -279,3 +217,89 @@ If a custom slash command or background script returns a non-zero exit code:
 - All `scripts/` operational scripts are TypeScript (`.ts`) — run via `bun scripts/<name>.ts`. No `.sh/.ps1` counterparts (ADR-0036).
 - If a hook fails on Windows with "command not found", run it via Git Bash: `"C:\Program Files\Git\bin\bash.exe" .githooks/pre-commit`
 <!-- COMMON-GEMINI:END -->
+
+---
+
+## Session Start Checklist
+
+<!-- Shared 5-step checklist (matches CLAUDE.md Section 1) — platform overrides in each file -->
+
+Load project files at session start using the `@` syntax:
+*(Ref: `docs/context.md` -> `Initial Context Files`)*
+
+```
+@docs/context.md                            # full project knowledge (ABAP rules, build, codebase map)
+@AGENTS.md                                  # canonical agent roster
+@memory/MEMORY.md                           # recent changes (skip if file does not exist)
+@skills/abap-dev/SKILL.md                   # SAP development workflows
+@skills/post-write-chain/SKILL.md           # mandatory QA chain after any write
+```
+
+---
+
+## vsp MCP Configuration
+
+### Recommended Mode
+
+Use `--mode hyperfocused` for all Gemini sessions. In hyperfocused mode all 101 MCP operations are accessible via `sap_execute`; the single entry point reduces tool-selection hallucinations without restricting capability.
+
+```bash
+vsp mcp --mode hyperfocused
+```
+
+### Settings File
+
+Gemini reads `.gemini/settings.json` in the project root. Confirm `mcpServers.abap.args`
+contains `["--mode", "hyperfocused"]` before starting a session.
+
+### Tool Usage in Hyperfocused Mode
+
+All operations are routed through `sap_execute` with an `action` parameter:
+
+```json
+{ "action": "GetSource", "object_type": "PROG", "name": "ZPROG_SBOOK_QUERY" }
+{ "action": "EditSource", "object_url": "/sap/bc/adt/...", "old_string": "...", "new_string": "..." }
+{ "action": "GrepPackages", "packages": ["$TMP"], "pattern": "ZPROG_" }
+```
+
+See [docs/mcp_usage.md](docs/mcp_usage.md) for the full tool catalog and parameter reference.
+
+---
+
+## Gemini Skill Additions
+
+The following capabilities extend those in [skills/abap-dev/SKILL.md](skills/abap-dev/SKILL.md):
+
+- **Role-Based Execution**: Switch between Business and Technical roles defined in `AGENTS.md`
+  by explicitly stating the active role at the start of a task.
+- **Multi-Agent Coordination**: Delegate long-running research to background sessions;
+  keep write operations (EditSource, WriteSource) in the primary session.
+- **Advanced Diagnostics**: Use `vsp health` to validate architecture and
+  `vsp slim` for context optimization before large read sessions.
+- **Post-Write Test Chain**: Hooks are not supported. After any write operation, execute the mandatory chain manually via `sap_execute` as defined in `docs/context.md`.
+  ```json
+  { "action": "SyntaxCheck",   "object_url": "/sap/bc/adt/..." }
+  { "action": "RunUnitTests",  "object_url": "/sap/bc/adt/..." }
+  { "action": "RunATCCheck",   "object_url": "/sap/bc/adt/..." }
+  ```
+
+> **Common engineering rules** (memory logging, language, file isolation, post-write chain, git): [docs/context.md § Project-Wide Rules](docs/context.md#project-wide-rules-all-tools).
+
+---
+
+## Coexistence, Precedence & Migration of `.claude/`
+
+This project contains a `.claude/` directory. To prevent configuration drift and avoid issues when transitioning away from Claude Code, Gemini follows these rules:
+- **Absolute Precedence**: `.gemini/` always takes absolute precedence over `.claude/`. If `.gemini/` exists, `.claude/` is ignored by Gemini to prevent duplicate or conflicting configurations.
+- **Fallback (Coexistence Phase)**: If a project lacks a `.gemini/` directory but contains `.claude/`, Gemini will temporarily read and respect `.claude/settings.json`, `.claude/settings.local.json`, and `.claude/commands/` as the fallback source of truth.
+- **Command Emulation**: Custom slash commands defined as markdown files in `.claude/commands/` must be emulated by Gemini. Read the `.md` file to understand the underlying script execution and run those commands directly via terminal tools.
+
+---
+
+*Last Updated: 2026-09-26 — resynced Gemini-Specific & Antigravity Workflows with the current
+templates/common/GEMINI.md baseline (Role Declaration, Language Policy, Execution Plan
+Boilerplate, Git & PR Additions, Pre-Edit Quality Gate had drifted out of sync — only 1 of 4
+COMMON-GEMINI markers remained); kept all vsp/ABAP-specific content (Session Start Checklist,
+vsp MCP Configuration, Gemini Skill Additions, `.claude/` coexistence) as the project-specific
+tail, matching the structure used across co-hr, co-safety, and other co-* projects. Companion
+fix to the CLAUDE.md correction (PR #102).*

@@ -21,6 +21,13 @@
 12. [Troubleshooting](#12-troubleshooting)
 13. [Team Onboarding Checklist](#13-team-onboarding-checklist)
 
+> **Other supported agent surfaces**: skills also mirror to Codex CLI (`.codex/`,
+> ADR-0077) and Hermes Agent (`.hermes/skills/`, ADR-0088). Hermes reads `AGENTS.md`
+> natively as its project instruction file and invokes skills as `/<skill-name>`.
+> Hermes loads project skills only after you add this repository to its user-side
+> `skills.trusted_project_dirs` trust list — this step is intentional (prompt-injection
+> defense) and stays on the user side.
+
 ---
 
 ## 1. Prerequisites
@@ -196,12 +203,19 @@ gemini auth login
 gemini --version
 ```
 
-### 3-D. Automation Scripts (Bun / TypeScript)
+### 3-D. Automation Scripts (Bash & PowerShell)
 
-This project uses TypeScript automation scripts executed via the **Bun** runtime for task initialization and repository synchronization. A few bootstrap scripts (`install-bun`, `install-vsp`) remain as shell scripts since they must run before Bun is installed.
+This project uses automation scripts for task initialization and repository synchronization.
 
-- **Bun**: Required for all utility scripts (`sync-md.ts`, `audit.ts`, `dev-sync.ts`, etc.).
-  - Install: [bun.sh](https://bun.sh) or use `scripts/install-bun.sh` / `scripts/install-bun.ps1`
+- **Windows**: Requires **PowerShell 7+** (pwsh).
+  - Download: [PowerShell Releases](https://github.com/PowerShell/PowerShell/releases/latest)
+- **macOS/Linux**: Requires **Bash** (v4+) and standard utilities (`awk`, `sed`).
+
+Verify on Windows:
+```bash
+pwsh --version
+# Expected: PowerShell 7.x.x
+```
 
 ---
 
@@ -210,7 +224,7 @@ This project uses TypeScript automation scripts executed via the **Bun** runtime
 **Windows** (Git Bash):
 ```bash
 # Clone directly into your home folder
-git clone https://github.com/<your-org>/abap_vibe_coding.git ~/abap
+git clone https://github.com/<your-org>/co-abap.git ~/abap
 cd ~/abap
 ```
 
@@ -220,7 +234,7 @@ cd ~/abap
 **macOS/Linux**:
 ```bash
 # Clone directly into your home folder
-git clone https://github.com/<your-org>/abap_vibe_coding.git ~/abap
+git clone https://github.com/<your-org>/co-abap.git ~/abap
 cd ~/abap
 ```
 
@@ -251,13 +265,11 @@ git config core.hooksPath .githooks
 ├── memory\                    ← Date-stamped development logs
 ├── scratch\                   ← Temporary ABAP files
 ├── scripts\
-│   ├── dev-sync.ts            ← Full sync pipeline (memlog→changelog→audit→commit→PR)
-│   ├── audit.ts               ← Documentation integrity audit
-│   ├── sync-md.ts             ← Update memory/MEMORY.md index
-│   ├── vsp-task.ts            ← Initialize new tasks from template
-│   ├── setup.ts               ← Project setup automation
-│   ├── install-bun.sh/.ps1    ← Bootstrap: install Bun runtime
-│   └── install-vsp.sh/.ps1    ← Bootstrap: install vsp binary
+│   ├── dev-sync.ts             ← Full sync pipeline (memlog→changelog→audit→commit→PR)
+│   ├── audit.ts                ← Documentation integrity audit
+│   ├── sync-md.ts              ← Update memory/MEMORY.md index
+│   ├── vsp-task.ts             ← Initialize new tasks from template
+│   └── vsp-audit.ts            ← Legacy audit wrapper
 ├── .env                       ← SAP credentials (create manually — gitignored)
 ├── .mcp.json                  ← MCP server config for Claude Code CLI (create manually — gitignored)
 ├── .gitignore
@@ -296,9 +308,7 @@ git config core.hooksPath .githooks
 │   ├── audit.ts               ← Documentation integrity audit
 │   ├── sync-md.ts             ← Update memory/MEMORY.md index
 │   ├── vsp-task.ts            ← Initialize new tasks from template
-│   ├── setup.ts               ← Project setup automation
-│   ├── install-bun.sh         ← Bootstrap: install Bun runtime
-│   └── install-vsp.sh         ← Bootstrap: install vsp binary
+│   └── vsp-audit.ts           ← Legacy audit wrapper
 ├── .env                       ← SAP credentials (create manually — gitignored)
 ├── .mcp.json                  ← MCP server config for Claude Code CLI (create manually — gitignored)
 ├── .gitignore

@@ -25,7 +25,7 @@ Adopt the upstream skill-graph feature into this project:
 1. **Pipeline scripts** refreshed from the common template: `generate-skill-graph.ts`
    1.7.0, `verify-skill-graph.ts` 1.5.0, `validate-skills.ts` 1.3.0,
    `validate-decisions.ts` 1.0.0 (fail-closed skill/decision chain validators).
-2. **Typed `relates_to` relations** adopted for 11 skill(s) whose
+2. **Typed `relates_to` relations** adopted for 16 skill(s) whose
    upstream definitions gained them (procedure-derived `follows` / symmetric
    `composes_with` edges). Project-local modifications to other skills are untouched.
 3. **Per-scope experimental layer**: `docs/skill-graph.overrides.json` seeded;
@@ -35,7 +35,7 @@ Adopt the upstream skill-graph feature into this project:
 
 ## Consequences
 
-- Project graph after adoption: 80 nodes / 179 edges
+- Project graph after adoption: 58 nodes / 101 edges
   (typed relation edges: 43).
 - Relations flow this project's skills → L1 (common) or same-project targets only.
 - The graph is a derived artifact: regenerate with
@@ -49,3 +49,14 @@ Adopt the upstream skill-graph feature into this project:
 - ai_workspace ADR-0060 (Amendments 1–6) — skill relationship graph as generated projection
 - ai_workspace `docs/designs/2026-08-29-relation-graph-evolution-and-decision-chain-design.md`
 - ai_workspace ADR-0063 — Procedure Schema as canonical workflow source
+
+## Addendum (2026-08-29): Procedures Adoption
+
+Adopted the variant template's procedure corpus into `procedures/` (ADR-0063):
+schema.yaml workflows + `_output-types.yaml` vocabulary. Procedure/output_type nodes
+and step edges now participate in the regenerated project graph. Retained upstream:
+- new-project scaffolds copy `procedures/` via the variant overlay (generic copy),
+- `upgrade-project.ts` v1.15.0 adds the PROCEDURES SYNC pass (add-if-missing,
+  project-owned entries preserved),
+- the L3→variant promotion scan (scan-l3-project) carries `procedures/` so promotion
+  includes the workflow corpus.

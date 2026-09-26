@@ -4,7 +4,7 @@ description: Celebrate the successful completion of a task to boost team morale.
 version: 1.0.0
 last_reviewed: 2026-08-15
 status: active
-scope: co-abap-plugin
+scope: co-abap
 owner: pm
 prerequisites: none
 metadata:
@@ -17,7 +17,7 @@ metadata:
 
 # source-command-celebrate
 
-Use this skill when the user asks to run the migrated source command `celebrate`.
+Use this skill when the user asks to run the migrated source command celebrate (a workspace convention, not a skill).
 
 ## Command Template
 

@@ -4,7 +4,7 @@
 [![Claude Code Plugin](https://img.shields.io/badge/Claude_Code-Plugin-blue)](https://claude.com/claude-code)
 [![MCP Compatible](https://img.shields.io/badge/MCP-Compatible-green)](https://modelcontextprotocol.io)
 
-SAP ABAP 개발을 위한 완전한 **AI 하네스 엔지니어링** 프레임워크를 제공하는 Claude Code 플러그인입니다. 20개의 전문 에이전트, 15개의 스킬, 7개의 커맨드, 그리고 `vsp` 서버를 통한 MCP 연동을 포함합니다.
+SAP ABAP 개발을 위한 완전한 **AI 하네스 엔지니어링** 프레임워크를 제공하는 Claude Code 플러그인입니다. 21개의 전문 에이전트, 47개의 스킬, 7개의 커맨드, 그리고 `vsp` 서버를 통한 MCP 연동을 포함합니다.
 
 > **하네스 엔지니어링이란?**
 > 전문화된 AI 에이전트들이 구조화된 환경 안에서 협업하는 방법론으로, AI 기반 SAP 개발을 예측 가능하고 거버넌스가 적용된 방식으로 수행할 수 있게 합니다. PM 주도의 거버넌스 모델은 실제 소프트웨어 엔지니어링 팀을 모방합니다. 비즈니스 애널리스트가 요구사항을 정의하고, 아키텍트가 설계하며, 개발자가 구현하고, QA가 검증합니다. [참조 구현체 참조](https://github.com/5throck/abap_vibe_coding).
@@ -13,8 +13,8 @@ SAP ABAP 개발을 위한 완전한 **AI 하네스 엔지니어링** 프레임�
 
 ## 주요 기능
 
-- **20개 에이전트**: 글로벌 PM, 기술 아키텍트, 코드 작성자, DBA, 인터페이스 전문가, DevOps/Admin, Fiori 개발자, 폼 전문가, GUI 스크립터, 보안 모니터, 비즈니스 애널리스트(SD/MM/FI/CO/PP/LE), QA 실행자, 스키마 검사자, SAP 조사자, 읽기 전용 애널리스트
-- **15개 스킬**: ABAP 개발 워크플로우, Post-Write 품질 게이트, Desktop App 폴백, 덤프 모니터링, 성능 튜닝, 미팅 퍼실리테이션, 프로젝트 리뷰, 세션 셀러브레이션, dev-sync 파이프라인, SAP ERP 모듈 지식 베이스 6종(SD, MM, FI, CO, PP, LE)
+- **21개 에이전트**: 글로벌 PM, 기술 아키텍트, 코드 작성자, DBA, 인터페이스 전문가, DevOps/Admin, Fiori 개발자, 폼 전문가, GUI 스크립터, 보안 모니터, i18n 전문가, 비즈니스 애널리스트(SD/MM/FI/CO/PP/LE), QA 실행자, 스키마 검사자, SAP 조사자, 읽기 전용 애널리스트
+- **47개 스킬**: ABAP 개발 워크플로우, Post-Write 품질 게이트, 디자인 파운데이션, 핸드북, 의사결정 기록, 증거 장부, i18n 도구, 수명주기 관리자, SAP ERP 모듈 지식 베이스 6종(SD, MM, FI, CO, PP, LE)
 - **7개 커맨드**: `/triage`, `/transport`, `/post-write`, `/sync`, `/new-task`, `/memlog`, `/celebrate`
 - **MCP 연동**: `vsp` 서버를 통한 하이퍼포커스 모드의 SAP ADT 전체 접근
 - **Bun 스크립트**: 교차 플랫폼 TypeScript 스크립트 (시작 시간 ~50ms, 단일 소스 유지보수)

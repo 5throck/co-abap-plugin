@@ -3,7 +3,7 @@
   "name": "co-abap-plugin",
   "displayName": "ABAP Harness Engineering",
   "version": "0.1.0",
-  "description": "AI Harness Engineering framework for SAP ABAP development — 19 agents, 15 skills, 7 commands, and MCP integration for the full ABAP lifecycle.",
+  "description": "AI Harness Engineering framework for SAP ABAP development — 21 agents, 47 skills, 7 commands, and MCP integration for the full ABAP lifecycle.",
   "author": {
     "name": "5throck",
     "url": "https://github.com/5throck/co-abap-plugin"
@@ -12,10 +12,9 @@
   "repository": "https://github.com/5throck/co-abap-plugin",
   "license": "AGPL-3.0-only",
   "keywords": ["sap", "abap", "harness", "mcp", "erp", "vsp", "abap-dev", "s4hana"],
-  "hooks": "./hooks/hooks.json",
   "mcpServers": {
     "abap": {
-      "command": "vsp",
+      "command": "${CLAUDE_PLUGIN_ROOT}/vsp",
       "args": ["--mode", "hyperfocused"],
       "env": {
         "SAP_URL": "${user_config.sap_url}",

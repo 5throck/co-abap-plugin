@@ -1,8 +1,13 @@
 #!/usr/bin/env bun
 /**
  * verify-scripts.ts — Script Lifecycle Registry Verifier
- * @version 1.7.0
+ * @version 1.9.0
  *
+ * v1.8.0 (2026-09-23, adopt-project engine prerequisites): walkScripts() skips
+ *         scripts/_legacy/ — the archive where adopt-project parks preserved
+ *         foreign scripts. Archived files keep their original languages and carry
+ *         no @version headers by design, so they are exempt from the registry
+ *         scan; they remain visible to gitleaks and the adopt report.
  * v1.7.0 (ADR-0081 / T-20260919-002): new `--fix` mode — auto-registers the
  *         scripts Check 1 flags as unregistered. A row per script (version
  *         from its @version header, today's date, placeholder description) is
@@ -253,6 +258,12 @@ function walkScripts(dir: string): string[] {
       // Dependency installs (scripts/-local bun install on CI runners) are not
       // workspace scripts — their files must not be flagged as unregistered.
       if (entry.name === "node_modules") return [];
+      // Archived foreign scripts parked by adopt-project (v1.2.0 of this checker's
+      // adoption contract) are preserved project content, not registry-governed
+      // workspace scripts — they keep their original languages and carry no
+      // @version headers by design. The archive stays visible to gitleaks and to
+      // the adopt report instead.
+      if (entry.name === "_legacy") return [];
       // A variant directory with its OWN SCRIPTS.md sub-registry governs itself
       // (the main registry doesn't list its files). Without a sub-registry, the
       // variant's scripts belong to the main registry via their `co-*/…` relative
@@ -554,6 +565,55 @@ function verify(): boolean {
         errors.push(
           `Template propagation mismatch: \`${file}\` ships in templates/common/scripts/ but its template-registry row is tagged \`${entry.layer}\` — fix the propagation tag to L0+L1 or remove the file from the template`
         );
+      }
+    }
+  }
+
+  // Check 8: header @version vs const VERSION consistency (T-20260926-014).
+  // A script whose printed version (const VERSION, surfaced by --help)
+  // disagrees with its header @version misleads operators and tickets; the
+  // drift class already bit resync-audit.ts and backport-diff.ts. Both
+  // markers optional (a script may carry only one); a disagreement errors.
+  for (const script of actualScripts) {
+    if (!script.endsWith(".ts")) continue;
+    const abs = join(scriptsDir, script);
+    let content: string;
+    try {
+      content = readFileSync(abs, "utf-8");
+    } catch {
+      continue;
+    }
+    const header = content.slice(0, 4000).match(/@version\s+(\d+\.\d+\.\d+)/);
+    const constant = content.match(/const VERSION\s*=\s*["'](\d+\.\d+\.\d+)["']/);
+    if (header && constant && header[1] !== constant[1]) {
+      errors.push(
+        `Version-const drift: \`${script}\` header @version ${header[1]} ≠ const VERSION ${constant[1]} — align the two (the const is what --help prints)`
+      );
+    }
+  }
+
+  // Check 9: typecheck-baseline.json integrity (L0 only, T-20260926-017).
+  // The baseline is a soft target: hand-raising `count` silently loosens the
+  // typecheck gate. Recorded policy (2026-09-11 triage): count 0 — any type
+  // error fails the gate. The baseline file itself is now gated.
+  if (contextLayer === "L0") {
+    const baselinePath = join(scriptsDir, "helpers", "typecheck-baseline.json");
+    if (!existsSync(baselinePath)) {
+      errors.push(
+        `Typecheck baseline missing: \`scripts/helpers/typecheck-baseline.json\` — the typecheck gate cannot run without it`
+      );
+    } else {
+      try {
+        const baseline = JSON.parse(readFileSync(baselinePath, "utf-8")) as { count?: unknown };
+        if (typeof baseline.count !== "number") {
+          errors.push(`Typecheck baseline malformed: \`count\` is not a number`);
+        } else if (baseline.count > 0) {
+          errors.push(
+            `Typecheck baseline loosened: \`count\` is ${baseline.count}, recorded policy is 0 (2026-09-11 triage: any type error fails) — fix the errors instead of raising the baseline`
+          );
+        }
+      } catch {
+        errors.push(`Typecheck baseline unparseable: \`scripts/helpers/typecheck-baseline.json\` is not valid JSON`);
       }
     }
   }

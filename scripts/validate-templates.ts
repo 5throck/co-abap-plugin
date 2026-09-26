@@ -1,7 +1,117 @@
 #!/usr/bin/env bun
 /**
  * Template Lifecycle Validation Script
- * @version 1.36.0
+ * @version 1.46.2
+ *
+ * v1.46.2 (2026-09-26, project-review remediation Phase 2): detached L3
+ *          projects identified by their scaffold provenance
+ *          (`.claude/template-version.txt`) and `docs/context.md` now emit a
+ *          justified [SKIP] when they do not carry the L0-only `templates/`
+ *          source tree. Repositories that are not proven L3 projects retain
+ *          the hard failure for a missing templates/ directory.
+ *
+ * v1.46.1 (2026-09-26, ADR-0090 program closure — design Addendum 3): the
+ *         size-budget arm's WARN message and header note record the user
+ *         decision that the W4 FAIL promotion is cancelled and the budget
+ *         stays a WARN-level visibility metric permanently.
+ * v1.46.0 (2026-09-26, ADR-0090 W0): two WARN-stage arms precede the AGENTS.md
+ *         thin-dispatcher restructure — `agents-md-size-budget` (every
+ *         AGENTS.md ≤15,000 chars at L0/L1/L2; per user decision 2026-09-26
+ *         (design Addendum 3) this stays a WARN-level visibility metric — the
+ *         W4 FAIL promotion is cancelled) and
+ *         `agents-md-pointer-integrity` (markdown references to
+ *         docs/governance/*.md, docs/constitution/*.md and the layer's
+ *         context.md must resolve on disk; multi-base resolution: workspace
+ *         root, templates/common, layer dir). Vacuous until W1 populates
+ *         pointers — by design (C: validators precede restructuring).
+ * v1.44.0 → v1.45.0 (2026-09-25, registry & platform-policy completeness batch
+ *          — spec docs/designs/2026-09-25-registry-policy-completeness-design.md,
+ *          W5/R5.6): new VA-08 skill-registry-sync check — one cross-surface
+ *          pass over every skill registry table (root Workspace Skills rows,
+ *          root Variant-Exclusive catalog, common scaffold seed, curated
+ *          variant registries) via collectWorkspaceRegistryFindings
+ *          (skills-registry helper v1.2.0), asserting rows match the SKILL.md
+ *          frontmatter they document. Wired once in the main flow next to the
+ *          mirror-parity checks. Severity: WARN per ADR-0055 soak.
+ *          TODO(promotion): flip VA-08 findings to fail when
+ *          tickets/governance/T-20260925-007.yaml promotes (not_before 2026-10-09).
+ * v1.43.0 → v1.44.0 (2026-09-25, registry & platform-policy completeness batch
+ *          — spec docs/designs/2026-09-25-registry-policy-completeness-design.md,
+ *          R3): new VA-07 variant-mirror version-sync check (verifier-expansion
+ *          §17.1 advisory A1 follow-up) — collectMirrorVersionMismatches (pure,
+ *          exported) compares SKILL.md frontmatter versions across a variant's
+ *          .claude/.gemini/.agents/.codex mirror skills (present in >= 2
+ *          mirrors; missing version is a finding), cross-checks curated
+ *          skills/SKILLS.md registry rows where they exist (mirror-only
+ *          adapted copies skipped), honors the VA-03 mirror-parity: skip /
+ *          gemini-parity: skip vocabulary, and is wired beside VA-03 in the
+ *          stable-variant loop. Severity: WARN soak per ADR-0055 — promotion
+ *          ticket T-20260925-006 (not_before 2026-10-09, separate from
+ *          T-20260925-002 whose enumerated scope stays intact). Day-one green:
+ *          0 mismatches across the 13-variant fleet.
+ * v1.42.0 → v1.43.0 (2026-09-25, inventory decisions batch — spec
+ *          docs/designs/2026-09-25-inventory-decisions-batch-design.md,
+ *          T-20260924-002 R1.3-R1.5): C-CM-04 platform-skills sweep consumes
+ *          the contract's new common_platform_skill_exclusions section (five
+ *          documented exclusions: create-variant/promote-variant/simulate-
+ *          pipeline L0-only, graft claude-only, sound-synth variant-scoped);
+ *          a stale exclusion (dir gone from every mirror tree) FAILs;
+ *          PLATFORM_SOURCE_KEYS gains codex_source (C-CM-03b now verifies
+ *          .codex mirror-copy version parity for all 22 entries); the
+ *          exemptSkills build uses variant_scoped_skills VALUES (skill names)
+ *          instead of keys (variant names), aligning with C-CM-05 semantics.
+ *          Pure helpers exported for unit test: collectSchemaExemptSkills,
+ *          unlistedPlatformSkillDirs, stalePlatformSkillExclusions.
+ * v1.41.0 → v1.42.0 (2026-09-25, variant hygiene batch — spec
+ *          docs/designs/2026-09-25-variant-hygiene-batch-design.md, R4):
+ *          new `variant-agent-references` check (T-20260924-007c) — every
+ *          agent reference in templates/co-<v>/AGENTS.md and the variant
+ *          scripts tree (agents/<name>.md path refs +
+ *          backtick `<name>` agent mentions) must resolve at
+ *          templates/<v>/agents/, templates/common/agents/, or the workspace
+ *          root agents/. Catches the stack setup phantom class (10 variant
+ *          AGENTS.md copies + co-abap setup.ts shipped guidance naming an
+ *          agent the variant never had). Pure cores exported for unit test
+ *          (T-004 convention): classifyAgentReference (resolution decision,
+ *          explicit AGENT_REFERENCE_EXEMPT escape hatch) +
+ *          extractAgentReferenceCandidates (path/backtick extraction with
+ *          line numbers). Wired next to WS-05a in the per-variant loop.
+ *          Severity: WARN per ADR-0055 soak — dated WARN->FAIL promotion
+ *          ticket filed at implementation (see the PR).
+ * v1.41.0 (2026-09-25, platform verifier expansion — spec
+ *          docs/designs/2026-09-25-verifier-platform-expansion-design.md,
+ *          sites 3a-3e/3g + R6): command checks gain the .codex/prompts mapping
+ *          leg (C-CM-04 codex coverage derived from `source` per Ruling K;
+ *          .agents/commands excluded per Finding D); C-CM-04 platform-skills
+ *          sweep iterates all four mirror trees; VA-03 becomes 4-mirror parity
+ *          with the skip marker generalized (mirror-parity: skip, gemini-parity:
+ *          skip accepted as legacy alias); P-01b gains an existsSync-guarded
+ *          CODEX.md leg; new mirror-hygiene check (mirrors carry only skill
+ *          directories). Net-new coverage soaks in WARN per ADR-0055.
+ * v1.39.0 (2026-09-24, scaffold identity overview — spec
+ *          docs/designs/2026-09-24-scaffold-identity-overview-design.md):
+ *          new `project-identity-placeholder` — fleet-level, WARN-only sweep of
+ *          every delivered Projects/<name>/docs/ pair, reusing audit.ts's
+ *          live-placeholder regex family (no new marker vocabulary): a project
+ *          docs/project.md still carrying the TODO(project-overview) identity
+ *          fallback, or a docs/context.md still carrying literal template
+ *          placeholders (pre-2.13 residue), warns until the project team fills
+ *          the identity seed. The regrowth-prevention sibling of
+ *          T-20260924-004/007 for the identity class; per-project counterpart
+ *          lives in audit.ts v2.41.0.
+ *
+ * v1.38.1 (2026-09-23, 2026-09-23-upgrade-engine-l0-only-completion-design):
+ *          C-SK-02 allowedWithExtends gains `description` — the persona-integrity
+ *          field (validate-agents 1.3.2) required on extends-stubs whose extends
+ *          cannot resolve in project layout; the 2026-09-23 fleet repair inlined
+ *          the base persona's description into all 13 variant pm.md stubs.
+ *
+ * v1.38.0 (ADR-0077 twin parity): new VA-06 cross-twin common section parity — the
+ *           three instruction twins (CLAUDE/GEMINI/CODEX at root and templates/common)
+ *           must each carry the shared policy anchors (Language Policy, Execution Plan
+ *           Boilerplate, 3-Tier Cost Optimization, Error Recovery, Windows, Git & PR).
+ *           Catches a policy section landed on two twins but never ported to the third
+ *           (the 2026-09 CODEX.md Language Policy gap VA-05 cannot see).
  *
  * v1.36.0 (ADR-0081 fleet sweep / T-20260919-001): new `common-agents-parity`
  *           (PM-04b) — every variant templates/co-<v>/AGENTS.md must carry the
@@ -175,8 +285,10 @@ import { join, dirname, resolve, basename, relative } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { load } from 'js-yaml';
+import { parseSkillRegistryRows, collectWorkspaceRegistryFindings } from './helpers/skills-registry.ts';
 import { getScriptLayer, getSkillLayer, includeScriptInL1, parseScriptLayers, parseSkillLayers } from './helpers/layer-filter.ts';
 import { isTransientTestFixture } from './helpers/scaffold-markers.ts';
+import { scanMirrorHygiene } from './helpers/mirror-hygiene.ts';
 import { collectMirrorFreshnessDrift, PLATFORM_MIRROR_DIRS } from './lib/platform-mirror-freshness.ts';
 import {
   validatePropagationMap,
@@ -235,11 +347,15 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, '..');
 const TEMPLATES_DIR = join(ROOT, 'templates');
 
-if (!existsSync(TEMPLATES_DIR)) {
-  console.error(`\x1b[31m[ERROR] templates/ directory not found at: ${TEMPLATES_DIR}\x1b[0m`);
-  if (import.meta.main) {
-    process.exit(1);
-  }
+export function isDetachedL3Project(root: string): boolean {
+  return !existsSync(join(root, 'templates'))
+    && existsSync(join(root, '.claude', 'template-version.txt'))
+    && existsSync(join(root, 'docs', 'context.md'));
+}
+
+export function templateValidationDisposition(root: string): 'validate' | 'skip-detached-l3' | 'error-missing-templates' {
+  if (existsSync(join(root, 'templates'))) return 'validate';
+  return isDetachedL3Project(root) ? 'skip-detached-l3' : 'error-missing-templates';
 }
 
 const args = process.argv.slice(2);
@@ -1172,25 +1288,42 @@ function checkAgentsRoster(variant: string): void {
 }
 
 // Check 6: commands structure — shared in common/, variant-specific only in variants
+// Command surfaces (spec 2026-09-25-verifier-platform-expansion-design site 3a):
+// .claude/commands and .gemini/commands are 1:1 mirrors (modulo gemini-parity:
+// skip); .codex/prompts is the codex mapping of the same SSOT (ADR-0077 D4).
+// .agents/commands is EXCLUDED — L0-resident by design, consumed by the
+// Antigravity CLI at the workspace root (spec
+// docs/designs/2026-09-25-propagation-engine-batch-design.md §6-D8, ticket
+// T-20260925-003); recorded exclusion, not a silent skip.
+const COMMAND_SURFACES: ReadonlyArray<readonly [string, string]> = [
+  ['.claude', 'commands'],
+  ['.gemini', 'commands'],
+  ['.codex', 'prompts'],
+];
+/** Net-new surfaces soaking in WARN (ADR-0055); promotion ticket flips to fail. */
+const SOAK_COMMAND_SURFACES = new Set(['.codex/prompts']);
+
 function checkCommands(variant: string): void {
   if (!JSON_MODE) console.log(`\n=== Check 6: commands in ${variant} ===`);
 
   const allSharedCommands = ['changelog.md', 'commit-push-pr.md', 'gateguard.md', 'meeting.md', 'memlog.md', 'new-task.md', 'project-review.md', 'sync.md'];
 
   if (variant === 'common') {
-    // common/ must have all shared commands in BOTH .claude/commands/ and .gemini/commands/
-    for (const platform of ['.claude', '.gemini']) {
-      const commandsDir = join(TEMPLATES_DIR, 'common', platform, 'commands');
+    // common/ must have all shared commands in every command surface
+    for (const [platform, leaf] of COMMAND_SURFACES) {
+      const commandsDir = join(TEMPLATES_DIR, 'common', platform, leaf);
       if (!existsSync(commandsDir)) {
-        fail('common', 'commands-dir', `templates/common/${platform}/commands/ not found`);
+        fail('common', 'commands-dir', `templates/common/${platform}/${leaf}/ not found`);
         continue;
       }
+      const soak = SOAK_COMMAND_SURFACES.has(`${platform}/${leaf}`);
+      const emit = soak ? warn : fail;
       for (const cmd of allSharedCommands) {
         if (!existsSync(join(commandsDir, cmd))) {
-          fail('common', 'command-missing', `${platform}/commands/${cmd} not found in common/`);
+          emit('common', 'command-missing', `${platform}/${leaf}/${cmd} not found in common/`);
         }
       }
-      pass(`common/${platform}/commands: ${allSharedCommands.length} shared commands OK`);
+      pass(`common/${platform}/${leaf}: ${allSharedCommands.length} shared commands OK${soak ? ' (soak: WARN until promotion)' : ''}`);
     }
     return;
   }
@@ -1198,15 +1331,17 @@ function checkCommands(variant: string): void {
   // Variants must NOT have shared commands (inherited from common/ via new-project.sh overlay)
   // Only security-check.md is allowed as a variant-specific command
   const allowedVariantCommands = new Set(['security-check.md']);
-  for (const platform of ['.claude', '.gemini']) {
-    const commandsDir = join(TEMPLATES_DIR, variant, platform, 'commands');
+  for (const [platform, leaf] of COMMAND_SURFACES) {
+    const commandsDir = join(TEMPLATES_DIR, variant, platform, leaf);
     if (!existsSync(commandsDir)) continue;
+    const soak = SOAK_COMMAND_SURFACES.has(`${platform}/${leaf}`);
+    const emit = soak ? warn : fail;
     const files = readdirSync(commandsDir);
     const unexpected = files.filter(f => !allowedVariantCommands.has(f));
     if (unexpected.length > 0) {
-      fail(variant, 'command-duplicate', `${platform}/commands/ contains shared commands that belong in common/ only: ${unexpected.join(', ')}`);
+      emit(variant, 'command-duplicate', `${platform}/${leaf}/ contains shared commands that belong in common/ only: ${unexpected.join(', ')}`);
     } else {
-      pass(`${variant}/${platform}/commands: OK (${files.length} variant-specific file(s))`);
+      pass(`${variant}/${platform}/${leaf}: OK (${files.length} variant-specific file(s))`);
     }
   }
 }
@@ -1634,6 +1769,20 @@ function checkPlatformDocumentationParity(): void {
     } else if (claudeList || geminiList) {
       pass(`${tpl}: Specialist Agent List parity OK`);
     }
+
+    // P-01b codex leg (spec site 3g): when a variant carries CODEX.md, its
+    // Specialist Agent List must match too. existsSync-guarded — no variant
+    // carries CODEX.md today (no-op), future-proof when one does.
+    // Net-new coverage soaking in WARN — TODO(promotion): flip to fail.
+    const codexVariant = join(tplPath, 'CODEX.md');
+    if (claudeList && existsSync(codexVariant)) {
+      const codexList = extractAgentList(readFileSync(codexVariant, 'utf-8'));
+      if (codexList && codexList !== claudeList) {
+        warn(tpl, 'agent-list-parity', `templates/${tpl}/CODEX.md has different Specialist Agent List content from CLAUDE.md (soak: WARN until promotion)`, 'Apply identical §5 changes to CLAUDE.md and CODEX.md');
+      } else if (codexList) {
+        pass(`${tpl}: Specialist Agent List parity OK (CODEX.md)`);
+      }
+    }
   }
 }
 
@@ -1884,6 +2033,275 @@ function checkPlatformMirrorFreshness(): void {
   }
 }
 
+// Check: variant-mirror-parity — a variant template's four platform skill mirrors
+// should carry exactly (variant skills/ minus mirror:false|security-gate skills) ∪
+// (common skills/ minus flagged skills). T-20260921-009, review H-3. Two failure
+// classes, both WARN (heal = delete the stray directory; sync-skills never prunes):
+//   1. stale mirror entry — a mirrored skill that is absent from both trees, or
+//      whose owning tree flags it mirror:false / security-gate:true (it must never
+//      be mirrored; the pre-flag .claude/.gemini copies of co-safety's 52
+//      agent-dispatched skills are the live example)
+//   2. unmirrored variant skill — a variant skill WITHOUT the flags missing from a
+//      mirror (four-mirror parity, ADR-0077 W1)
+function checkVariantMirrorParity(): void {
+  if (!JSON_MODE) console.log('\n=== Check variant-mirror-parity: variant platform skill mirrors carry exactly the mirrorable set ===');
+  const variantsDir = TEMPLATES_DIR;
+  const neverMirror = (skillMd: string): boolean => {
+    try {
+      const content = readFileSync(skillMd, 'utf-8');
+      return /^mirror:\s*false\b/m.test(content) || /^security-gate:\s*true\b/m.test(content);
+    } catch {
+      return false; // unreadable — treat as mirrorable rather than guess
+    }
+  };
+  const listSkillDirs = (dir: string): Set<string> =>
+    new Set(
+      existsSync(dir)
+        ? readdirSync(dir, { withFileTypes: true }).filter(e => e.isDirectory() && existsSync(join(dir, e.name, 'SKILL.md'))).map(e => e.name)
+        : [],
+    );
+  let checked = 0;
+  let warnings = 0;
+  let errors = 0;
+  if (!existsSync(variantsDir)) return;
+
+  // T-20260924-004 pre-pass: fleet-wide mirror census for peer counting —
+  // which variants' platform mirrors carry each skill.
+  const mirrorCarriers = new Map<string, Set<string>>();
+  const readFmVersion = (skillMd: string): string | null => {
+    try {
+      const fm = readFileSync(skillMd, 'utf-8').match(/^---\n([\s\S]*?)\n---/);
+      if (!fm) return null;
+      const v = fm[1].match(/^version:\s*["']?(\d+\.\d+\.\d+)/m);
+      return v ? v[1] : null;
+    } catch {
+      return null;
+    }
+  };
+  const commonSkillVersions = new Map<string, string>();
+  for (const name of listSkillDirs(join(TEMPLATES_DIR, 'common', 'skills'))) {
+    const v = readFmVersion(join(TEMPLATES_DIR, 'common', 'skills', name, 'SKILL.md'));
+    if (v !== null) commonSkillVersions.set(name, v);
+  }
+  for (const entry of readdirSync(variantsDir, { withFileTypes: true })) {
+    if (!entry.isDirectory() || !entry.name.startsWith('co-')) continue;
+    for (const mirror of PLATFORM_MIRROR_DIRS) {
+      for (const name of listSkillDirs(join(variantsDir, entry.name, mirror))) {
+        if (!mirrorCarriers.has(name)) mirrorCarriers.set(name, new Set());
+        mirrorCarriers.get(name)!.add(entry.name);
+      }
+    }
+  }
+  const semverOlder = (a: string, b: string): boolean => {
+    const pa = a.split('.').map(Number); const pb = b.split('.').map(Number);
+    for (let i = 0; i < 3; i++) { const d = (pa[i] || 0) - (pb[i] || 0); if (d !== 0) return d < 0; }
+    return false;
+  };
+
+  for (const entry of readdirSync(variantsDir, { withFileTypes: true })) {
+    if (!entry.isDirectory() || !entry.name.startsWith('co-')) continue;
+    const vdir = join(variantsDir, entry.name);
+    const vSkills = join(vdir, 'skills');
+    if (!existsSync(vSkills)) continue;
+    checked++;
+    const variantSkills = listSkillDirs(vSkills);
+    const commonSkills = listSkillDirs(join(TEMPLATES_DIR, 'common', 'skills'));
+    for (const mirror of PLATFORM_MIRROR_DIRS) {
+      const mirrorDir = join(vdir, mirror);
+      for (const name of listSkillDirs(mirrorDir)) {
+        const inVariant = variantSkills.has(name);
+        const inCommon = commonSkills.has(name);
+        const flagged = (inVariant && neverMirror(join(vSkills, name, 'SKILL.md')))
+          || (!inVariant && inCommon && neverMirror(join(TEMPLATES_DIR, 'common', 'skills', name, 'SKILL.md')));
+        if ((inVariant || inCommon) && !flagged) {
+          // T-20260924-004: stale variant platform-mirror copy of a COMMON
+          // skill without variant declaration/SSOT and with no peer carrying
+          // it — the D1/D2 drift class must not regrow silently.
+          if (!inVariant && inCommon) {
+            const mirrorVersion = readFmVersion(join(mirrorDir, name, 'SKILL.md'));
+            const commonVersion = commonSkillVersions.get(name) ?? null;
+            const peerCount = (mirrorCarriers.get(name)?.size ?? 1) - 1;
+            console.log(`TRACE mirror-check: ${entry.name}/${mirror}/${name} inV=${inVariant} inC=${inCommon} flag=${flagged} mv=${mirrorVersion} cv=${commonVersion} peers=${peerCount}`);
+            const verdict = classifyVariantMirrorCopy({
+              inVariant, inCommon, flagged,
+              mirrorVersion, commonVersion, peerCount,
+            });
+            console.log(`TRACE verdict: ${verdict}`);
+            if (verdict === 'fail-stale-orphan') {
+              fail(entry.name, 'variant-mirror-parity',
+                `${mirror}/${name}/ is a stale platform-mirror copy of common skill "${name}" (mirror v${mirrorVersion} vs common v${commonVersion}) with no variant declaration, no skills/ SSOT copy, and no peer carrying it — regrown D1/D2-class drift`,
+                `Delete templates/${entry.name}/${mirror}/${name}/ (stale copy of common v${commonVersion}) or declare the variant-specific copy in variant.json`);
+              errors++;
+              continue;
+            }
+          }
+          continue;
+        }
+        warn(entry.name, 'variant-mirror-parity',
+          `${mirror}/${name}/ must not be mirrored — ${flagged ? 'the owning skill is flagged mirror:false/security-gate:true' : 'absent from both the variant and the common skills/ tree'}`,
+          `Delete templates/${entry.name}/${mirror}/${name}/ (sync-skills never prunes; it will not be resurrected while the flag stands)`);
+        warnings++;
+      }
+      for (const name of variantSkills) {
+        if (variantSkills.has(name) && neverMirror(join(vSkills, name, 'SKILL.md'))) continue;
+        if (!existsSync(join(vdir, mirror, name, 'SKILL.md'))) {
+          warn(entry.name, 'variant-mirror-parity', `${mirror}/${name}/ missing — mirrorable variant skill not mirrored to ${mirror}`,
+            `Run bun scripts/sync-skills.ts --all-variants (or --dir templates/${entry.name}) to heal`);
+          warnings++;
+        }
+      }
+    }
+  }
+  if (!JSON_MODE) {
+    if (checked === 0) console.log('  (no variant templates with a skills/ tree found)');
+    else if (warnings === 0) console.log(`  ✓ ${checked} variant template(s): platform mirrors carry exactly the mirrorable set`);
+  }
+}
+
+// T-20260924-004: classify a variant platform-mirror copy of a skill against
+// its owning trees — pure decision core for checkVariantMirrorParity so the
+// stale-orphan arm is unit-testable (positive fixture must FAIL, clean
+// fixture must PASS; the convention from the 09-22 detector review).
+export type VariantMirrorCopyVerdict = 'ok' | 'warn-undeclared' | 'fail-stale-orphan';
+export function classifyVariantMirrorCopy(opts: {
+  inVariant: boolean;
+  inCommon: boolean;
+  flagged: boolean;
+  mirrorVersion: string | null;
+  commonVersion: string | null;
+  peerCount: number; // other variants whose mirrors carry the same skill
+}): VariantMirrorCopyVerdict {
+  const { inVariant, inCommon, flagged } = opts;
+  // Owning-tree flagged skills must not be mirrored.
+  if (flagged) return 'warn-undeclared';
+  // T-20260924-004: stale variant platform-mirror copy of a COMMON skill —
+  // older than the common SSOT, absent from the variant skills/ tree, not
+  // declared in variant.json, and carried by no peer variant → regrown
+  // D1/D2-class drift. Fail so it cannot regrow silently.
+  if (!inVariant && inCommon
+      && opts.mirrorVersion !== null && opts.commonVersion !== null
+      && opts.mirrorVersion !== opts.commonVersion
+      && opts.peerCount === 0) {
+    return 'fail-stale-orphan';
+  }
+  // Same-version undecorated copies (uniform baseline set) or peer-shared
+  // mirrors stay at the pre-existing WARN level; variant skills mirrored to
+  // their own platform dirs are correct.
+  return 'ok';
+}
+
+// Check: roster-tier-consistency (T-20260921-020, validator-hardening) — an
+// AGENTS.md roster row's Tier cell must match the referenced agent's effective
+// frontmatter tier (resolving the extends chain: variant stub → common → root;
+// scalar `tier:` or per-platform map, `claude` value), and must not ELEVATE
+// above the L0 baseline tier for agents that exist at the root (AGENTS.md §3.5
+// Tier Ceiling Rule) unless the variant agent frontmatter declares
+// `tier_ceiling_exempt: <reason>`. Live instance: PM was downgraded to Medium
+// at the root on 2026-09-15 but all 13 variant rosters kept High until
+// 2026-09-21 — hand-maintained rosters drift silently, so the machine owns it now.
+const TIER_RANK: Record<string, number> = { low: 0, medium: 1, high: 2 };
+
+function readFrontmatterTier(fmPath: string): string | null {
+  if (!existsSync(fmPath)) return null;
+  let fm: string;
+  try {
+    const m = readFileSync(fmPath, 'utf-8').match(/^---\n([\s\S]*?)\n---/);
+    if (!m) return null;
+    fm = m[1];
+  } catch {
+    return null;
+  }
+  const scalar = fm.match(/^tier:\s*(\S+)\s*$/m);
+  if (scalar) return scalar[1].toLowerCase();
+  const map = fm.match(/^tier:\s*$[\s\S]*?^\s{2}claude:\s*(\S+)/m);
+  return map ? map[1].toLowerCase() : null;
+}
+
+function resolveTierViaExtends(fmPath: string, depth = 0): string | null {
+  if (depth > 3 || !existsSync(fmPath)) return null;
+  const direct = readFrontmatterTier(fmPath);
+  if (direct) return direct;
+  let content: string;
+  try {
+    content = readFileSync(fmPath, 'utf-8');
+  } catch {
+    return null;
+  }
+  const ext = content.match(/^extends:\s*(\S+)\s*$/m);
+  if (!ext) return null;
+  return resolveTierViaExtends(join(dirname(fmPath), ext[1]), depth + 1);
+}
+
+function rosterTierRows(agentsMd: string): Array<{ name: string; tier: string; line: number }> {
+  const out: Array<{ name: string; tier: string; line: number }> = [];
+  let lines: string[] = [];
+  try {
+    lines = readFileSync(agentsMd, 'utf-8').split('\n');
+  } catch {
+    return out;
+  }
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (!line.trim().startsWith('|') || !line.includes('agents/')) continue;
+    const cells = line.trim().replace(/^\|/, '').replace(/\|$/, '').split('|').map(c => c.trim());
+    for (let j = 0; j < cells.length; j++) {
+      const m = cells[j].match(/agents\/([A-Za-z0-9_-]+)\.md/);
+      if (!m) continue;
+      const next = (cells[j + 1] ?? '').replace(/\*\*/g, '').trim().toLowerCase();
+      if (/^(high|medium|low)$/.test(next)) out.push({ name: m[1], tier: next, line: i + 1 });
+      break; // the first agent-file cell in the row owns the tier cell
+    }
+  }
+  return out;
+}
+
+function checkRosterTierConsistency(): void {
+  if (!JSON_MODE) console.log('\n=== Check roster-tier-consistency: AGENTS.md roster tiers match resolved agent frontmatter tiers ===');
+  let checked = 0;
+
+  // 1. Workspace root self-check (AGENTS.md vs agents/*.md frontmatter)
+  for (const row of rosterTierRows(join(ROOT, 'AGENTS.md'))) {
+    const resolved = resolveTierViaExtends(join(ROOT, 'agents', `${row.name}.md`));
+    if (resolved && resolved !== row.tier) {
+      fail('common', 'roster-tier-consistency',
+        `AGENTS.md roster row for agents/${row.name}.md says ${row.tier} but agents/${row.name}.md frontmatter resolves to ${resolved}`,
+        'Update the roster row or the agent frontmatter — hand-maintained rosters drift silently (PM 2026-09-15 instance)');
+    }
+    checked++;
+  }
+
+  // 2. Variant templates: roster tier vs extends-chain resolution + L0 tier ceiling
+  if (!existsSync(TEMPLATES_DIR)) return;
+  for (const entry of readdirSync(TEMPLATES_DIR, { withFileTypes: true })) {
+    if (!entry.isDirectory() || !entry.name.startsWith('co-')) continue;
+    const vdir = join(TEMPLATES_DIR, entry.name);
+    const agentsMd = join(vdir, 'AGENTS.md');
+    if (!existsSync(agentsMd)) continue;
+    for (const row of rosterTierRows(agentsMd)) {
+      checked++;
+      let resolved = resolveTierViaExtends(join(vdir, 'agents', `${row.name}.md`))
+        ?? resolveTierViaExtends(join(TEMPLATES_DIR, 'common', 'agents', `${row.name}.md`))
+        ?? resolveTierViaExtends(join(ROOT, 'agents', `${row.name}.md`));
+      if (resolved && resolved !== row.tier) {
+        fail(entry.name, 'roster-tier-consistency',
+          `AGENTS.md:${row.line} roster row for agents/${row.name}.md says ${row.tier} but the agent resolves to ${resolved} via the extends chain`,
+          `Update the roster row (or the agent frontmatter) — every scaffold inherits this table`);
+      }
+      const baseline = resolveTierViaExtends(join(ROOT, 'agents', `${row.name}.md`));
+      if (baseline && resolved && TIER_RANK[resolved] > TIER_RANK[baseline]) {
+        const vAgent = join(vdir, 'agents', `${row.name}.md`);
+        const exempt = existsSync(vAgent) && /^tier_ceiling_exempt:\s*\S/m.test(readFileSync(vAgent, 'utf-8'));
+        if (!exempt) {
+          fail(entry.name, 'roster-tier-consistency',
+            `agents/${row.name}.md resolves to ${resolved}, above the L0 baseline ${baseline} (AGENTS.md §3.5 Tier Ceiling Rule)`,
+            `Lower the tier to the L0 baseline, or declare \`tier_ceiling_exempt: <reason>\` in the variant agent frontmatter`);
+        }
+      }
+    }
+  }
+  if (!JSON_MODE && checked > 0) console.log(`  ✓ ${checked} roster row(s) checked`);
+}
+
 // Check B-12: L0/L1 style neutrality — variant-owned design identity literals
 // (palette hex/rgb()/hsl() colors, typeface names harvested from variant
 // tokens.json files) must not appear in L0 governance text or L1 normative
@@ -1949,7 +2367,7 @@ function checkStyleNeutrality() {
 
   // 2. Normative L0 governance text + L1 normative docs.
   const normativeFiles: string[] = [
-    'CONSTITUTION.md', 'AGENTS.md', 'CLAUDE.md', 'GEMINI.md',
+    'context.md', 'AGENTS.md', 'CLAUDE.md', 'GEMINI.md',
   ];
   for (const dir of [join(ROOT, 'docs', 'constitution'), join(ROOT, 'docs', 'governance')]) {
     if (existsSync(dir)) {
@@ -2421,10 +2839,14 @@ function checkWorkspaceSchema(): void {
 
 // Platform-tree source keys declared on common_platform_skills entries → the
 // platform directory the propagated copy lives under under templates/common/.
+// codex_source (T-20260924-002, spec 2026-09-25-inventory-decisions-batch-design
+// R1.4): the .codex mirror was previously invisible to C-CM-03b — a version bump
+// on a .codex copy drifted silently. All 22 listed skills carry .codex copies.
 const PLATFORM_SOURCE_KEYS: Readonly<Record<string, string>> = {
   claude_source: '.claude',
   gemini_source: '.gemini',
   agents_source: '.agents',
+  codex_source: '.codex',
 };
 
 /** Map a common_platform_skills entry's declared *_source keys to platform tree dirs. */
@@ -2450,6 +2872,53 @@ export function versionParityIssue(contractVersion: string | undefined, artifact
   if (!contractVersion) return 'missing-contract-version';
   if (!artifactVersion) return 'missing-artifact-version';
   return contractVersion !== artifactVersion ? 'mismatch' : null;
+}
+
+/**
+ * Exempt-skill set for the C-CM-04 exists→listed sweeps, built from
+ * docs/workspace-schema.json. country_scoped_assets.skills is keyed by skill
+ * name; variant_scoped_skills is keyed by VARIANT NAME with skill names as
+ * VALUES — the values are the exempt set. This matches C-CM-05 semantics
+ * (T-20260924-002 R1.5: the pre-1.43 build exempted the variant-scoped KEYS —
+ * variant names, not skill names — a latent inconsistency).
+ */
+export function collectSchemaExemptSkills(schema: {
+  country_scoped_assets?: { skills?: Record<string, unknown> };
+  variant_scoped_skills?: Record<string, string[]>;
+}): Set<string> {
+  return new Set([
+    ...Object.keys(schema.country_scoped_assets?.skills ?? {}),
+    ...Object.values(schema.variant_scoped_skills ?? {}).flat(),
+  ]);
+}
+
+/**
+ * C-CM-04 platform-skills sweep core (pure): from a mirror tree's skill-dir
+ * names (directories carrying a SKILL.md), return those covered by neither the
+ * contract listings (common_skills + common_platform_skills) nor the
+ * schema-exempt / contract-excluded sets.
+ */
+export function unlistedPlatformSkillDirs(
+  dirNames: readonly string[],
+  listed: ReadonlySet<string>,
+  exempt: ReadonlySet<string>,
+  excluded: ReadonlySet<string>,
+): string[] {
+  return dirNames.filter(e => !listed.has(e) && !exempt.has(e) && !excluded.has(e));
+}
+
+/**
+ * C-CM-04 contract-exclusion anti-drift (pure): an exclusion naming a skill
+ * dir that exists in NO mirror tree is stale — the directory was deleted, so
+ * the exclusion record must go too (same direction as the C-CM-05
+ * SINGLE_PLATFORM_EXCEPTIONS stale rule).
+ */
+export function stalePlatformSkillExclusions(
+  exclusions: Iterable<string>,
+  existingNames: Iterable<string>,
+): string[] {
+  const live = new Set(existingNames);
+  return [...exclusions].filter(name => !live.has(name));
 }
 
 export interface ScriptsRegistryRow {
@@ -2583,7 +3052,7 @@ function checkCommonContract(): void {
   for (const [skillName, entry] of platformSkillEntries) {
     const platforms = declaredPlatformTrees(entry as Record<string, unknown>);
     if (platforms.length === 0) {
-      fail('common', 'C-CM-03b', `common-contract.json platform skill '${skillName}' declares no platform source key (claude_source/gemini_source/agents_source)`, `Add the *_source key(s) for the platform tree(s) that carry '${skillName}'`);
+      fail('common', 'C-CM-03b', `common-contract.json platform skill '${skillName}' declares no platform source key (claude_source/gemini_source/agents_source/codex_source)`, `Add the *_source key(s) for the platform tree(s) that carry '${skillName}'`);
     }
     for (const platform of platforms) {
       const copyPath = join(TEMPLATES_DIR, 'common', platform, 'skills', skillName, 'SKILL.md');
@@ -2616,22 +3085,38 @@ function checkCommonContract(): void {
   // contract never declares — scaffolding propagates it, governance is blind to it.
   const contractCommands = contract.common_commands as Record<string, { source?: string; gemini_source?: string }> | undefined;
   if (contractCommands) {
-    for (const platform of ['.claude', '.gemini'] as const) {
-      const cmdDir = join(TEMPLATES_DIR, 'common', platform, 'commands');
+    // Codex leg is DERIVED from `source` (Ruling K, spec
+    // 2026-09-25-verifier-platform-expansion-design): sync-skills Phase 1b maps
+    // .claude/commands/<x>.md → .codex/prompts/<x>.md unconditionally, so no
+    // codex_source key exists for COMMANDS. This couples the check to the
+    // sync-skills mapping; if ADR-0077 D4 changes, this leg moves with it.
+    // Platform SKILLS are different: their .codex copies are declared
+    // explicitly (codex_source on common_platform_skills entries, R1.4 of
+    // 2026-09-25-inventory-decisions-batch-design) and C-CM-03b verifies their
+    // version parity like any other platform tree.
+    // .agents has no command surface (Finding D exclusion).
+    const reverseSurfaces: ReadonlyArray<readonly [string, string, 'source' | 'gemini_source']> = [
+      ['.claude', 'commands', 'source'],
+      ['.gemini', 'commands', 'gemini_source'],
+      ['.codex', 'prompts', 'source'],
+    ];
+    for (const [platform, leaf, sourceKey] of reverseSurfaces) {
+      const cmdDir = join(TEMPLATES_DIR, 'common', platform, leaf);
       if (!existsSync(cmdDir)) continue;
-      const sourceKey = platform === '.claude' ? 'source' : 'gemini_source';
+      const soak = platform === '.codex'; // TODO(promotion): flip to fail after soak
+      const emit = soak ? warn : fail;
       let listedCount = 0;
       for (const file of readdirSync(cmdDir).filter(f => f.endsWith('.md'))) {
         const name = file.replace(/\.md$/, '');
         listedCount++;
         if (!contractCommands[name]) {
-          fail('common', 'C-CM-04', `templates/common/${platform}/commands/${file} exists but is not declared in common-contract.json common_commands`, `Add a "${name}" entry to common_commands (source + gemini_source + description)`);
+          emit('common', 'C-CM-04', `templates/common/${platform}/${leaf}/${file} exists but is not declared in common-contract.json common_commands`, `Add a "${name}" entry to common_commands (source + gemini_source + description)`);
         } else if (!contractCommands[name][sourceKey]) {
-          fail('common', 'C-CM-04', `common-contract.json command "${name}" is missing "${sourceKey}" for ${platform}/commands/`, `Set "${sourceKey}" on the "${name}" entry`);
+          emit('common', 'C-CM-04', `common-contract.json command "${name}" is missing "${sourceKey}" for ${platform}/${leaf}/`, `Set "${sourceKey}" on the "${name}" entry`);
         }
       }
       if (listedCount > 0) {
-        pass(`C-CM-04: all ${listedCount} ${platform}/commands/ file(s) declared in common_commands`);
+        pass(`C-CM-04: all ${listedCount} ${platform}/${leaf}/ file(s) declared in common_commands${soak ? ' (soak: WARN until promotion)' : ''}`);
       }
     }
   }
@@ -2841,9 +3326,15 @@ function checkCommonContract(): void {
         // `lifecycle` is required L2 metadata for variants shipping their own
         // recursive validate-agents.ts (e.g. co-safety) that enforces
         // lifecycle.phase/lifecycle.governance per-file, independent of `extends`.
+        // `description` is the persona-integrity field (validate-agents 1.3.2):
+        // a stub whose extends cannot resolve in project layout would otherwise
+        // fail the gate with no description to inherit — stubs inline the base
+        // persona's description (2026-09-23 fleet repair,
+        // 2026-09-22-agent-persona-integrity-gate).
         const allowedWithExtends = new Set([
           'extends', 'name', 'variant', 'version', 'last_updated', 'status',
           'remove_sections', 'variant_overrides', 'owner', 'capabilities', 'lifecycle',
+          'description',
         ]);
         const fieldKeys = Object.keys(variantFields);
         const unexpectedKeys = fieldKeys.filter(k => !allowedWithExtends.has(k));
@@ -2950,11 +3441,13 @@ function checkCommonContract(): void {
 // templates/common/skills/*/ → common_skills, templates/common/.claude|.gemini/commands/*.md →
 // common_commands. Documented exemptions (contract description): country-scoped skills
 // (workspace-schema.json country_scoped_assets.skills) and variant-scoped skills
-// (variant_scoped_skills keys). The platform skill trees (.claude + .gemini, T-20260915-013 —
+// (variant_scoped_skills VALUES — skill names; R1.5 of 2026-09-25-inventory-decisions-
+// batch-design), plus the contract's own common_platform_skill_exclusions records for the
+// platform-skill trees. The platform skill trees (.claude + .gemini, T-20260915-013 —
 // the .gemini tree previously had no reverse arm, so a skill dir could appear there without
-// any contract listing while .claude stayed covered) are checked at WARN only:
-// common_platform_skills records L0 workspace overrides (propagated_to_common), not a full
-// platform inventory — promoting it to a hard inventory is an open scope decision.
+// any contract listing while .claude stayed covered) are checked at WARN only;
+// since the 2026-09-25 full-inventory ruling (T-20260924-002) every dir must be
+// listed, schema-exempt, or contract-excluded — the aggregated WARN signals drift.
 function checkCommonContractReverseCoverage(): void {
   if (!JSON_MODE) console.log('\n=== Check C-CM-04: common-contract.json reverse coverage (exists→listed) ===');
 
@@ -2967,18 +3460,24 @@ function checkCommonContractReverseCoverage(): void {
     return; // already reported by WS-02
   }
 
-  // Exemptions declared by docs/workspace-schema.json
+  // Exemptions declared by docs/workspace-schema.json (country-scoped keys +
+  // variant-scoped VALUES — skill names; R1.5 of 2026-09-25-inventory-decisions-
+  // batch-design fixed the keys-based build that exempted variant NAMES).
   let exemptSkills = new Set<string>();
   const schemaPath = join(ROOT, 'docs', 'workspace-schema.json');
   if (existsSync(schemaPath)) {
     try {
       const schema = JSON.parse(readFileSync(schemaPath, 'utf-8')) as Record<string, any>;
-      exemptSkills = new Set([
-        ...Object.keys(schema.country_scoped_assets?.skills ?? {}),
-        ...Object.keys(schema.variant_scoped_skills ?? {}).filter(k => k !== 'description'),
-      ]);
+      exemptSkills = collectSchemaExemptSkills(schema);
     } catch { /* fall through with no exemptions */ }
   }
+  // Contract-declared exclusions (T-20260924-002 R1.2/R1.3): platform skills
+  // deliberately outside the common inventory (L0-only operator skills, the
+  // claude-only graft tool skill, the variant-scoped sound-synth). A stale
+  // exclusion — the dir is gone from every mirror tree — is a failure below.
+  const platformSkillExclusions = new Set(
+    Object.keys((contract.common_platform_skill_exclusions as Record<string, Record<string, string>>) ?? {}),
+  );
 
   const commonAgents = new Set(Object.keys((contract.common_agents as Record<string, unknown>) ?? {}));
   const commonSkills = new Set(Object.keys((contract.common_skills as Record<string, unknown>) ?? {}));
@@ -3014,8 +3513,10 @@ function checkCommonContractReverseCoverage(): void {
     }
   }
 
-  // ── commands: templates/common/.claude|.gemini/commands/*.md must be listed in common_commands ──
+  // ── commands: templates/common/.claude|.gemini/commands/*.md + .codex/prompts/*.md
+  // must be listed in common_commands (codex leg: spec site 3c, WARN soak) ──
   const unlistedCommands = new Set<string>();
+  const unlistedCodexCommands = new Set<string>();
   for (const platformDir of ['.claude', '.gemini']) {
     const cmdDir = join(TEMPLATES_DIR, 'common', platformDir, 'commands');
     if (!existsSync(cmdDir)) continue;
@@ -3025,32 +3526,99 @@ function checkCommonContractReverseCoverage(): void {
       if (!commonCommands.has(name)) unlistedCommands.add(name);
     }
   }
+  const codexPromptsDir = join(TEMPLATES_DIR, 'common', '.codex', 'prompts');
+  if (existsSync(codexPromptsDir)) {
+    for (const f of readdirSync(codexPromptsDir)) {
+      if (!f.endsWith('.md')) continue;
+      const name = f.replace(/\.md$/, '');
+      if (!commonCommands.has(name)) unlistedCodexCommands.add(name);
+    }
+  }
   if (unlistedCommands.size > 0) {
     fail('common', 'C-CM-04', `templates/common/.claude|.gemini/commands/ has command(s) not listed in common-contract.json common_commands: ${[...unlistedCommands].join(', ')}`, `Add the command(s) to common_commands with their source/gemini_source paths`);
   } else {
     pass('C-CM-04: all common command files are listed in common_commands');
   }
+  if (unlistedCodexCommands.size > 0) {
+    // TODO(promotion): flip to fail after soak (T-20261009 ticket)
+    warn('common', 'C-CM-04', `templates/common/.codex/prompts/ has prompt(s) not listed in common-contract.json common_commands: ${[...unlistedCodexCommands].join(', ')} (soak: WARN until promotion)`, `Add the command(s) to common_commands with their source paths`);
+  }
 
-  // ── platform skills: templates/common/.claude|.gemini/skills/*/ — WARN (aggregated), see doc comment ──
-  // T-20260915-013: the sweep now mirrors over both platform trees.
+  // ── platform skills: templates/common/.{claude,gemini,agents,codex}/skills/*/
+  // — WARN (aggregated), see doc comment. Sweep iterates all four mirror trees
+  // (spec site 3d); filesystem-driven and name-keyed, so no contract keys needed.
+  // Contract exclusions (common_platform_skill_exclusions) cover the rest —
+  // full-inventory ruling T-20260924-002: every dir is listed, exempt, or
+  // explicitly excluded; silent omission is gone.
   let platformTreesCovered = 0;
   let platformTreeCount = 0;
-  for (const platform of ['.claude', '.gemini']) {
-    const platformDir = join(TEMPLATES_DIR, 'common', platform, 'skills');
+  const listedPlatformNames = new Set([...commonSkills, ...commonPlatformSkills]);
+  for (const platform of PLATFORM_MIRROR_DIRS) {
+    const platformDir = join(TEMPLATES_DIR, 'common', platform);
     if (!existsSync(platformDir)) continue;
     platformTreeCount++;
-    const unlistedPlatform = readdirSync(platformDir).filter(e => {
-      if (!existsSync(join(platformDir, e, 'SKILL.md'))) return false;
-      return !commonPlatformSkills.has(e) && !commonSkills.has(e) && !exemptSkills.has(e);
-    });
+    const unlistedPlatform = unlistedPlatformSkillDirs(
+      readdirSync(platformDir).filter(e => existsSync(join(platformDir, e, 'SKILL.md'))),
+      listedPlatformNames,
+      exemptSkills,
+      platformSkillExclusions,
+    );
     if (unlistedPlatform.length > 0) {
-      warn('common', 'C-CM-04', `${unlistedPlatform.length} platform skill dir(s) under templates/common/${platform}/skills/ are not in common_platform_skills or common_skills: ${unlistedPlatform.slice(0, 12).join(', ')}${unlistedPlatform.length > 12 ? `, +${unlistedPlatform.length - 12} more` : ''}`, `Decide the common_platform_skills inventory scope (full platform inventory vs override record) and list or exempt accordingly`);
+      warn('common', 'C-CM-04', `${unlistedPlatform.length} platform skill dir(s) under templates/common/${platform}/ are not in common_platform_skills or common_skills: ${unlistedPlatform.slice(0, 12).join(', ')}${unlistedPlatform.length > 12 ? `, +${unlistedPlatform.length - 12} more` : ''}`, `Decide the common_platform_skills inventory scope (full platform inventory vs override record) and list or exempt accordingly`);
     } else {
       platformTreesCovered++;
     }
   }
+  // Exclusion anti-drift: an exclusion whose skill dir has vanished from every
+  // mirror tree is stale — the record must be deleted with the directory.
+  if (platformSkillExclusions.size > 0) {
+    const existingPlatformSkillNames = new Set<string>();
+    for (const platform of PLATFORM_MIRROR_DIRS) {
+      const dir = join(TEMPLATES_DIR, 'common', platform);
+      if (!existsSync(dir)) continue;
+      for (const e of readdirSync(dir)) {
+        if (existsSync(join(dir, e, 'SKILL.md'))) existingPlatformSkillNames.add(e);
+      }
+    }
+    for (const name of stalePlatformSkillExclusions(platformSkillExclusions, existingPlatformSkillNames)) {
+      fail('common', 'C-CM-04', `common-contract.json common_platform_skill_exclusions names '${name}' but no templates/common/.{claude,gemini,agents,codex}/skills/${name}/ directory exists — remove the stale exclusion`, `Delete the '${name}' entry from common-contract.json common_platform_skill_exclusions`);
+    }
+  }
   if (platformTreeCount > 0 && platformTreesCovered === platformTreeCount) {
     pass(`C-CM-04: all platform skill dirs are covered by common_platform_skills/common_skills (${platformTreesCovered}/${platformTreeCount} tree(s))`);
+  }
+}
+
+// Check: mirror-hygiene (R6, spec 2026-09-25-verifier-platform-expansion-design)
+// — a platform skill mirror contains ONLY skill directories. Stray files
+// (SKILLS.md, README*.md — the 2026-09-25 Finding-B class: 11 files in 9
+// variants) and non-skill directories are drift; the producer cannot re-emit
+// them (generateSkillDirectories empty-rel guard), so the only correct state
+// is absence. WARN during the ADR-0055 soak — TODO(promotion): flip to fail.
+function checkMirrorHygiene(): void {
+  if (!JSON_MODE) console.log('\n=== Check mirror-hygiene: platform skill mirrors carry only skill directories ===');
+  let checked = 0;
+  let findings = 0;
+  const scanRoots: ReadonlyArray<readonly [string, string]> = [
+    [join(TEMPLATES_DIR, 'common'), 'common'],
+    ...readdirSync(TEMPLATES_DIR, { withFileTypes: true })
+      .filter(e => e.isDirectory() && e.name.startsWith('co-'))
+      .map(e => [join(TEMPLATES_DIR, e.name), e.name] as const),
+  ];
+  for (const [rootPath, label] of scanRoots) {
+    for (const mirror of PLATFORM_MIRROR_DIRS) {
+      const mirrorDir = join(rootPath, mirror);
+      if (!existsSync(mirrorDir)) continue;
+      checked++;
+      for (const f of scanMirrorHygiene(mirrorDir)) {
+        warn(label, 'mirror-hygiene', `templates/${label}/${mirror}/${f.entry} — mirrors contain only skill directories (${f.kind})`, `Delete templates/${label}/${mirror}/${f.entry} (sync-skills never re-emits non-skill entries)`);
+        findings++;
+      }
+    }
+  }
+  if (!JSON_MODE) {
+    if (checked === 0) console.log('  (no platform skill mirrors found)');
+    else if (findings === 0) console.log(`  ✓ ${checked} mirror dir(s) clean: only skill directories present`);
   }
 }
 
@@ -3140,15 +3708,27 @@ function checkWorkspaceRootAgentIntrusion(variant: string): void {
   pass(`VA-02: ${variant} AGENTS.md Phase Summary workspace-root agent intrusion check complete`);
 }
 
-// Check VA-03: .claude/skills/ vs .gemini/skills/ Platform Parity
+// Check VA-03: .claude/skills/ vs the other platform mirrors — 4-mirror parity
+// (spec 2026-09-25-verifier-platform-expansion-design site 3e). The frontmatter
+// skip marker is generalized: `mirror-parity: skip` means "claude-only parity"
+// for ALL three non-claude mirrors; `gemini-parity: skip` is accepted as a
+// legacy alias (same pattern as validate-md-language's i18n-format → lang:).
 function checkSkillPlatformParity(variant: string): void {
-  if (!JSON_MODE) console.log(`\n=== Check VA-03: .claude/skills vs .gemini/skills platform parity (${variant}) ===`);
+  if (!JSON_MODE) console.log(`\n=== Check VA-03: .claude/skills vs platform mirrors parity (${variant}) ===`);
 
   const claudeSkillsDir = join(TEMPLATES_DIR, variant, '.claude', 'skills');
   if (!existsSync(claudeSkillsDir)) {
     if (!JSON_MODE) console.log(`  (no .claude/skills/ directory for ${variant} -- skipping VA-03)`);
     return;
   }
+
+  // [.gemini leg is pre-existing fail semantics; .agents/.codex legs are
+  // net-new coverage soaking in WARN (ADR-0055) — TODO(promotion): flip to fail.]
+  const counterpartMirrors: ReadonlyArray<readonly [string, boolean]> = [
+    ['.gemini', false],
+    ['.agents', true],
+    ['.codex', true],
+  ];
 
   let skillDirs: string[];
   try {
@@ -3174,17 +3754,166 @@ function checkSkillPlatformParity(variant: string): void {
       } catch { /* ignore parse errors */ }
     }
 
-    if (frontmatter['gemini-parity'] === 'skip') {
-      if (!JSON_MODE) console.log(`  VA-03: ${variant}/.claude/skills/${skillName} -- gemini-parity: skip`);
+    const skipMarker =
+      frontmatter['mirror-parity'] === 'skip' || frontmatter['gemini-parity'] === 'skip';
+    if (skipMarker) {
+      if (!JSON_MODE) console.log(`  VA-03: ${variant}/.claude/skills/${skillName} -- mirror-parity: skip (claude-only)`);
       continue;
     }
 
-    const geminiSkillPath = join(TEMPLATES_DIR, variant, '.gemini', 'skills', skillName, 'SKILL.md');
-    if (!existsSync(geminiSkillPath)) {
-      fail(variant, 'VA-03', `${variant}/.claude/skills/${skillName}/SKILL.md exists but ${variant}/.gemini/skills/${skillName}/SKILL.md is missing -- platform parity required`, `Create templates/${variant}/.gemini/skills/${skillName}/SKILL.md or add 'gemini-parity: skip' to the SKILL.md frontmatter`);
-    } else {
-      pass(`VA-03: ${variant} skill '${skillName}' -- .gemini/skills counterpart present`);
+    for (const [mirror, soak] of counterpartMirrors) {
+      const emit = soak ? warn : fail;
+      const counterpartPath = join(TEMPLATES_DIR, variant, mirror, 'skills', skillName, 'SKILL.md');
+      if (!existsSync(counterpartPath)) {
+        emit(variant, 'VA-03', `${variant}/.claude/skills/${skillName}/SKILL.md exists but ${variant}/${mirror}/skills/${skillName}/SKILL.md is missing -- platform parity required${soak ? ' (soak: WARN until promotion)' : ''}`, `Create templates/${variant}/${mirror}/skills/${skillName}/SKILL.md or add 'mirror-parity: skip' to the SKILL.md frontmatter`);
+      } else {
+        pass(`VA-03: ${variant} skill '${skillName}' -- ${mirror}/skills counterpart present`);
+      }
     }
+  }
+}
+
+// Check VA-07: SKILL.md frontmatter version sync across a variant's platform
+// mirrors (spec 2026-09-25-registry-policy-completeness-design.md R3, the
+// verifier-expansion design §17.1 accepted advisory A1 follow-up). Primary
+// rule: mirror-to-mirror equality per skill (present in >= 2 mirrors, version
+// via extractFrontmatterVersion; a missing version is a finding — fail-closed).
+// Secondary rule: when the variant's curated skills/SKILLS.md registry yields a
+// row for the skill, each present mirror's version must equal the row version
+// (mirror-only adapted copies have no row and are out of scope by
+// construction — e.g. the WS-05a adapted set). Exemption: the VA-03 vocabulary
+// (`mirror-parity: skip`, legacy `gemini-parity: skip`) excludes the skill.
+// Severity: WARN per ADR-0055 soak.
+// TODO(promotion): flip VA-07 findings to fail when
+// tickets/governance/T-20260925-006.yaml promotes (not_before 2026-10-09).
+export interface MirrorVersionMismatch {
+  skill: string;
+  message: string;
+}
+
+const VA07_MIRROR_DIRS = ['.claude', '.gemini', '.agents', '.codex'] as const;
+
+/**
+ * Pure core of VA-07 (T-004 convention): enumerate the union of skill dirs
+ * across the variant's existing platform-mirror `skills/` trees and collect
+ * version-sync findings. Reads only; emits nothing.
+ */
+export function collectMirrorVersionMismatches(variantDir: string, variant: string): MirrorVersionMismatch[] {
+  const findings: MirrorVersionMismatch[] = [];
+
+  // Authored registry rows (curated SKILLS.md) — the secondary cross-check's
+  // expected versions. An unparseable/absent registry simply contributes no rows.
+  const registryRows = new Map<string, string>();
+  const registryPath = join(variantDir, 'skills', 'SKILLS.md');
+  if (existsSync(registryPath)) {
+    try {
+      const { rows } = parseSkillRegistryRows(readFileSync(registryPath, 'utf-8'));
+      for (const [name, row] of rows) registryRows.set(name, row.version);
+    } catch { /* unreadable registry — no cross-check rows */ }
+  }
+
+  // skill name -> mirror -> frontmatter version (undefined = present but unparseable)
+  const versionsBySkill = new Map<string, Map<string, string | undefined>>();
+  for (const mirror of VA07_MIRROR_DIRS) {
+    const skillsDir = join(variantDir, mirror, 'skills');
+    if (!existsSync(skillsDir)) continue;
+    let skillDirs: string[];
+    try {
+      skillDirs = readdirSync(skillsDir).filter(e => {
+        try { return statSync(join(skillsDir, e)).isDirectory(); } catch { return false; }
+      });
+    } catch { continue; }
+    for (const skill of skillDirs) {
+      const skillMdPath = join(skillsDir, skill, 'SKILL.md');
+      if (!existsSync(skillMdPath)) continue;
+      let version: string | undefined;
+      try {
+        const raw = readFileSync(skillMdPath, 'utf-8');
+        version = extractFrontmatterVersion(raw);
+        // VA-03 exemption vocabulary — one exemption language for the file class.
+        const fmMatch = raw.match(/^---\n([\s\S]*?)\n---/);
+        if (fmMatch) {
+          let fm: Record<string, unknown> = {};
+          try { fm = (load(fmMatch[1]) as Record<string, unknown>) ?? {}; } catch { /* ignore */ }
+          if (fm['mirror-parity'] === 'skip' || fm['gemini-parity'] === 'skip') continue;
+        }
+      } catch { /* unreadable SKILL.md — treated as missing version */ }
+      if (!versionsBySkill.has(skill)) versionsBySkill.set(skill, new Map());
+      versionsBySkill.get(skill)!.set(mirror, version);
+    }
+  }
+
+  for (const [skill, byMirror] of versionsBySkill) {
+    if (byMirror.size < 2) continue; // VA-03 owns presence; VA-07 compares versions
+    const present = [...byMirror.entries()];
+    const versionList = present.map(([m, v]) => `${m}=${v ?? '(missing)'}`).join(', ');
+
+    if (present.some(([, v]) => v === undefined)) {
+      findings.push({
+        skill,
+        message: `${variant}/skills/${skill}: a platform-mirror SKILL.md has no parseable frontmatter version (${versionList})`,
+      });
+      continue; // mirror-to-mirror comparison is meaningless until versions parse
+    }
+
+    const [[baseMirror, baseVersion], ...rest] = present as Array<[string, string]>;
+    const divergent = rest.find(([, v]) => v !== baseVersion);
+    if (divergent) {
+      findings.push({
+        skill,
+        message: `${variant}/skills/${skill}: SKILL.md frontmatter version differs across platform mirrors (${baseMirror}=${baseVersion}, ${divergent[0]}=${divergent[1]}; all: ${versionList})`,
+      });
+    }
+
+    // Secondary rule: registry cross-check (only when a curated row exists —
+    // mirror-only adapted copies are skipped by construction).
+    const rowVersion = registryRows.get(skill);
+    if (rowVersion !== undefined) {
+      for (const [mirror, version] of present as Array<[string, string]>) {
+        if (version !== rowVersion) {
+          findings.push({
+            skill,
+            message: `${variant}/${mirror}/skills/${skill}/SKILL.md version ${version} != ${variant}/skills/SKILLS.md registry row version ${rowVersion}`,
+          });
+        }
+      }
+    }
+  }
+
+  return findings;
+}
+
+/** VA-07 wrapper — wired immediately after checkSkillPlatformParity (VA-03 family). */
+function checkSkillMirrorVersionSync(variant: string): void {
+  if (!JSON_MODE) console.log(`\n=== Check VA-07: skill version sync across platform mirrors (${variant}) ===`);
+  const findings = collectMirrorVersionMismatches(join(TEMPLATES_DIR, variant), variant);
+  // WARN soak per ADR-0055 — severity flip is ticket-gated (T-20260925-006).
+  for (const f of findings) {
+    warn(variant, 'VA-07', `${f.message} (soak: WARN until promotion)`, `Align the SKILL.md frontmatter version across all platform mirrors of ${variant} (and the curated registry row)`);
+  }
+  if (findings.length === 0) {
+    pass(`VA-07: ${variant} -- mirror skill versions in sync (mirrors and registry rows)`);
+  }
+}
+
+// Check VA-08: skill registry tables vs the SKILL.md frontmatter they
+// document (spec 2026-09-25-registry-policy-completeness-design.md W5/R5.6).
+// One cross-surface pass via collectWorkspaceRegistryFindings (skills-registry
+// helper v1.2.0): root Workspace Skills rows, the root Variant-Exclusive
+// catalog, the common scaffold seed, and each curated variant registry.
+// Remediation path: `bun scripts/sync-skill-registries.ts` (dev-sync Step
+// 4.63 re-converges on every /sync). Severity: WARN per ADR-0055 soak.
+// TODO(promotion): flip VA-08 findings to fail when
+// tickets/governance/T-20260925-007.yaml promotes (not_before 2026-10-09).
+function checkSkillRegistrySync(): void {
+  if (!JSON_MODE) console.log(`\n=== Check VA-08: skill registry tables match SKILL.md frontmatter ===`);
+  const findings = collectWorkspaceRegistryFindings(ROOT);
+  // WARN soak per ADR-0055 — severity flip is ticket-gated (T-20260925-007).
+  for (const f of findings) {
+    warn('registries', 'VA-08', `${f.message} (soak: WARN until promotion)`, 'Run: bun scripts/sync-skill-registries.ts (dev-sync Step 4.63 re-converges on every /sync)');
+  }
+  if (findings.length === 0) {
+    pass('VA-08: all skill registry tables match SKILL.md frontmatter');
   }
 }
 
@@ -3424,6 +4153,47 @@ function checkDocumentCommonSections(variant: string): void {
   }
 }
 
+// Check VA-06: cross-twin common section parity (ADR-0077 twin doctrine).
+// VA-05 compares each twin root↔variant-template per file, so a policy section
+// added to two twins but never ported to the third was invisible (the 2026-09
+// CODEX.md Language Policy gap). The three instruction twins must each carry
+// the shared policy set — checked by anchor substring, not full content
+// equality, because platform-specific sections legitimately differ.
+const TWIN_FILES = ['CLAUDE.md', 'GEMINI.md', 'CODEX.md'];
+const TWIN_COMMON_ANCHORS = [
+  'Language Policy for Documentation',
+  'Execution Plan Boilerplate',
+  'Cost Optimization (3-Tier Model Strategy)',
+  'Custom Command Error Recovery',
+  'Windows Platform Requirement',
+  'Git & PR Additions',
+];
+
+function checkTwinCommonSectionParity(): void {
+  if (!JSON_MODE) console.log(`\n=== Check VA-06: Cross-twin common section parity ===`);
+  const layers = [
+    { label: 'root', dir: ROOT, variant: 'root' },
+    { label: 'templates/common', dir: join(TEMPLATES_DIR, 'common'), variant: 'common' },
+  ];
+  for (const layer of layers) {
+    for (const file of TWIN_FILES) {
+      const twinPath = join(layer.dir, file);
+      if (!existsSync(twinPath)) {
+        fail(layer.variant, 'VA-06', `${layer.label}/${file}: platform twin not found — ADR-0077 requires all three instruction twins`, 'Restore the twin from its sibling platforms or templates/common');
+        continue;
+      }
+      const content = readFileSync(twinPath, 'utf-8');
+      for (const anchor of TWIN_COMMON_ANCHORS) {
+        if (!content.includes(anchor)) {
+          fail(layer.variant, 'VA-06', `${layer.label}/${file}: common policy section "${anchor}" missing — the instruction twins must all carry the shared policy set`, `Port the section from a sibling twin (see ${layer.dir === ROOT ? 'CLAUDE.md' : 'templates/common/CLAUDE.md'}) — governance-l1 then deploys it (bun run propagate:governance)`);
+        } else {
+          pass(`VA-06: ${layer.label}/${file} carries "${anchor}"`);
+        }
+      }
+    }
+  }
+}
+
 // Check WS-04: L0 scripts must NOT exist in templates/co-*/scripts/
 function checkL0ScriptsNotInVariants(variant: string, scriptLayerMap: Map<string, import('./helpers/layer-filter.js').LayerValue>): void {
   if (!JSON_MODE) console.log(`\n=== Check WS-04: L0 scripts must not exist in ${variant}/scripts/ ===`);
@@ -3517,6 +4287,150 @@ function checkL0OnlyToolRefsInVariantCommandSkills(variant: string): void {
   }
 
   if (checked > 0) pass(`WS-05a: ${variant} command/skill markdown has no L0-only tool references (${checked} file(s) checked)`);
+}
+
+// ============================================================================
+// T-20260924-007c: unresolvable agent-reference detector
+// (spec: docs/designs/2026-09-25-variant-hygiene-batch-design.md, R4)
+//
+// Sibling of T-20260924-004's checkVariantMirrorParity/classifyVariantMirrorCopy
+// — that check covers skill platform-mirror DIRECTORIES and version comparison;
+// this one covers agent-name REFERENCES in variant AGENTS.md prose and variant
+// scripts. The live instance: 10 variant AGENTS.md copies + co-abap setup.ts
+// routed work to a phantom stack setup agent the variant never shipped (user-facing
+// broken guidance, invisible to every standing detector). Distinct inputs, no
+// shared logic beyond the variant iteration loop.
+//
+// Pure cores are exported for tests/unit/variant-agent-reference.test.ts
+// (T-004 convention: decision table + injected-phantom fixture).
+// ============================================================================
+
+/** Explicit exemption list (R4 escape hatch): agent names allowed to appear in
+ *  variant deliverables without a resolvable agent file. Keep minimal — every
+ *  entry needs a written justification here. Names that resolve at any of the
+ *  three trees never need an entry. */
+const AGENT_REFERENCE_EXEMPT = new Set<string>([
+  // (empty at v1.42.0 — the healed fleet resolves cleanly)
+]);
+
+export type AgentReferenceVerdict = 'resolved' | 'unresolved';
+
+/** Pure resolution decision: a reference resolves when the name is exempt or
+ *  an agent file exists at the variant, common, or workspace-root agents/ tree
+ *  (resolution order per design R4). */
+export function classifyAgentReference(opts: {
+  name: string;
+  inVariantAgents: boolean;  // templates/<v>/agents/<name>.md exists
+  inCommonAgents: boolean;   // templates/common/agents/<name>.md exists
+  inRootAgents: boolean;     // agents/<name>.md exists (L0)
+  exempt: boolean;           // name on AGENT_REFERENCE_EXEMPT
+}): AgentReferenceVerdict {
+  if (opts.exempt) return 'resolved';
+  if (opts.inVariantAgents || opts.inCommonAgents || opts.inRootAgents) return 'resolved';
+  return 'unresolved';
+}
+
+export interface AgentReferenceCandidate {
+  /** Extracted agent name. */
+  name: string;
+  /** 1-based line number of the reference (for WARN file:line naming). */
+  line: number;
+}
+
+// Reference shape 1: `agents/<name>.md` path references (prose links, code
+// strings, roster rows). Underscore-leading internal fragments (agents/_COMMON)
+// are not agent references and don't match.
+const AGENT_PATH_REF_RE = /\bagents\/([A-Za-z0-9][A-Za-z0-9_-]*)\.md\b/g;
+// Reference shape 2: backtick-adjacent `<name>` agent mentions ("the
+// stack setup agent").
+const AGENT_BACKTICK_MENTION_RE = /`([A-Za-z0-9][A-Za-z0-9_-]*)`\s+agents?\b/g;
+
+/** Pure extraction: every agent-reference candidate in one file's content,
+ *  deduplicated per (name, line). */
+export function extractAgentReferenceCandidates(content: string): AgentReferenceCandidate[] {
+  const candidates: AgentReferenceCandidate[] = [];
+  const seen = new Set<string>();
+  const lines = content.split(/\r?\n/);
+  for (let i = 0; i < lines.length; i++) {
+    for (const m of lines[i].matchAll(AGENT_PATH_REF_RE)) {
+      const key = `${m[1]}:${i + 1}`;
+      if (!seen.has(key)) { seen.add(key); candidates.push({ name: m[1], line: i + 1 }); }
+    }
+    for (const m of lines[i].matchAll(AGENT_BACKTICK_MENTION_RE)) {
+      const key = `${m[1]}:${i + 1}`;
+      if (!seen.has(key)) { seen.add(key); candidates.push({ name: m[1], line: i + 1 }); }
+    }
+  }
+  return candidates;
+}
+
+/** Check: variant-agent-references — agent references in templates/<v>/AGENTS.md
+ *  and the variant scripts tree (.ts files, recursive) must resolve at
+ *  templates/<v>/agents/, templates/common/agents/, or the workspace-root
+ *  agents/. WARN-mode per ADR-0055 soak (dated promotion ticket filed at
+ *  implementation). */
+function checkVariantAgentReferences(variant: string, opts?: {
+  /** Directory-root override for fixture tests (defaults to the real templates/). */
+  templatesDir?: string;
+  /** Finding sink override for fixture tests (defaults to the module warn()). */
+  report?: (finding: string) => void;
+}): void {
+  const templatesDir = opts?.templatesDir ?? TEMPLATES_DIR;
+  const quiet = opts !== undefined;
+  const FIX =
+    'Fix the reference so it names an agent that exists at templates/<variant>/agents/, templates/common/agents/, or the workspace-root agents/ — or remove it. A legitimately agent-shaped name that must stay unresolvable goes on AGENT_REFERENCE_EXEMPT with a justification.';
+  const report = opts?.report ?? ((finding: string) => warn(variant, 'variant-agent-references', finding, FIX));
+
+  if (!quiet && !JSON_MODE) {
+    console.log(`\n=== Check T-007c: agent references resolve in ${variant} AGENTS.md and scripts ===`);
+  }
+
+  const variantAgentsDir = join(templatesDir, variant, 'agents');
+  const commonAgentsDir = join(TEMPLATES_DIR, 'common', 'agents');
+  const rootAgentsDir = join(ROOT, 'agents');
+  const resolves = (name: string): boolean =>
+    existsSync(join(variantAgentsDir, `${name}.md`)) ||
+    existsSync(join(commonAgentsDir, `${name}.md`)) ||
+    existsSync(join(rootAgentsDir, `${name}.md`));
+
+  // Scan set: the variant's AGENTS.md + every .ts under its scripts/ tree.
+  const scanFiles: Array<{ abs: string; rel: string }> = [];
+  const agentsMd = join(templatesDir, variant, 'AGENTS.md');
+  if (existsSync(agentsMd)) scanFiles.push({ abs: agentsMd, rel: `templates/${variant}/AGENTS.md` });
+  const scriptsDir = join(templatesDir, variant, 'scripts');
+  const walkTs = (dir: string): void => {
+    if (!existsSync(dir)) return;
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      const full = join(dir, entry.name);
+      if (entry.isDirectory()) { walkTs(full); continue; }
+      if (entry.name.endsWith('.ts')) scanFiles.push({ abs: full, rel: relative(ROOT, full).replace(/\\/g, '/') });
+    }
+  };
+  walkTs(scriptsDir);
+
+  let unresolvedCount = 0;
+  let candidatesChecked = 0;
+  for (const file of scanFiles) {
+    let content: string;
+    try { content = readFileSync(file.abs, 'utf-8'); } catch { continue; }
+    for (const candidate of extractAgentReferenceCandidates(content)) {
+      candidatesChecked++;
+      const verdict = classifyAgentReference({
+        name: candidate.name,
+        inVariantAgents: existsSync(join(variantAgentsDir, `${candidate.name}.md`)),
+        inCommonAgents: existsSync(join(commonAgentsDir, `${candidate.name}.md`)),
+        inRootAgents: existsSync(join(rootAgentsDir, `${candidate.name}.md`)),
+        exempt: AGENT_REFERENCE_EXEMPT.has(candidate.name),
+      });
+      if (verdict === 'resolved') continue;
+      unresolvedCount++;
+      report(`${file.rel}:${candidate.line} references agent "${candidate.name}" — no templates/${variant}/agents/${candidate.name}.md, no templates/common/agents/${candidate.name}.md, no agents/${candidate.name}.md`);
+    }
+  }
+
+  if (!quiet && unresolvedCount === 0 && scanFiles.length > 0) {
+    pass(`variant-agent-references: ${variant} agent references all resolve (${candidatesChecked} candidate(s) in ${scanFiles.length} file(s))`);
+  }
 }
 
 // Check WS-06: Skills in templates/co-*/skills/ must be variant-scoped (L0+L2)
@@ -4423,7 +5337,63 @@ function checkPmExtendsStubBodies(): void {
   }
 }
 
+// Check: project-identity-placeholder (spec
+// docs/designs/2026-09-24-scaffold-identity-overview-design.md, R9/D4) — the
+// fleet-level, WARN-only sibling of audit.ts's per-project live-placeholder
+// scan (audit.ts v2.41.0 added docs/project.md to its scope). Scans every
+// delivered Projects/<name>/docs/ for residual identity placeholders using the
+// SAME regex family as audit.ts (no new marker vocabulary): a docs/project.md
+// still carrying the TODO(project-overview) fallback, or a docs/context.md
+// still carrying the literal template placeholders (pre-2.13 residue), stays
+// visible until the project team fills the identity seed. Regrowth-prevention
+// sibling of T-20260924-004/007 for the identity class.
+function checkProjectIdentityPlaceholders(): void {
+  const projectsDir = join(ROOT, 'Projects');
+  if (!existsSync(projectsDir)) return;
+  const placeholderRe = /\[(Project Name|One-sentence description[^\]]*|TODO|TBD)\]|<variant-name>|<project-name>/i;
+  for (const entry of readdirSync(projectsDir, { withFileTypes: true })) {
+    if (!entry.isDirectory()) continue;
+    if (isTransientTestFixture(entry.name)) continue; // E2E staging dirs (T-20260916-001)
+    const project = entry.name;
+    const projectMdPath = join(projectsDir, project, 'docs', 'project.md');
+    const contextMdPath = join(projectsDir, project, 'docs', 'context.md');
+    if (existsSync(projectMdPath) && placeholderRe.test(readFileSync(projectMdPath, 'utf-8'))) {
+      warn(project, 'project-identity-placeholder',
+        `Projects/${project}/docs/project.md still carries the TODO(project-overview) identity fallback`,
+        'Fill Description/Type in docs/project.md (scaffold flags --description/--type, or edit the file by hand — upgrades never overwrite it)');
+    }
+    if (existsSync(contextMdPath) && placeholderRe.test(readFileSync(contextMdPath, 'utf-8'))) {
+      warn(project, 'project-identity-placeholder',
+        `Projects/${project}/docs/context.md still carries literal template placeholders (pre-2.13 residue)`,
+        'Run upgrade-project (the 2.13 footer delivers the docs/project.md pointer section), then fill docs/project.md');
+    }
+  }
+}
+
 function main(): number {
+  const disposition = templateValidationDisposition(ROOT);
+  if (disposition !== 'validate') {
+    if (disposition === 'skip-detached-l3') {
+      if (!JSON_MODE) {
+        console.log(`${colors.cyan}[SKIP]${colors.reset} templates/ validation is L0-only and this detached L3 project has no templates/ source tree (verified by .claude/template-version.txt and docs/context.md).`);
+      } else {
+        console.log(JSON.stringify({
+          variantsScanned: 0,
+          errors: [],
+          warnings: [],
+          skipped: [{
+            check: 'templates',
+            reason: 'Detached L3 project: templates/ is an L0 source tree and is intentionally absent.',
+          }],
+          summary: '0 error(s), 0 warning(s), 1 skipped check',
+        }, null, 2));
+      }
+      return 0;
+    }
+    console.error(`${colors.red}[ERROR]${colors.reset} templates/ directory not found at: ${TEMPLATES_DIR}. This validator requires templates/ outside a detached L3 project.`);
+    return 1;
+  }
+
   if (!JSON_MODE) {
     console.log(`${colors.cyan}Template Lifecycle Validator${colors.reset}`);
     console.log(`${colors.dim}Root: ${ROOT}${colors.reset}`);
@@ -4443,9 +5413,13 @@ function main(): number {
   // Check common/ commands and parity
   checkCommands('common');
   checkModelLiteralPlacement();
+  checkTwinCommonSectionParity(); // VA-06: CLAUDE/GEMINI/CODEX twins carry the shared policy set
   // Script parity check removed (dead code after ADR-0036 TypeScript migration)
   checkVariantScopedSkillLeak();  // B-11: variant_scoped_skills must not live in common
   checkPlatformMirrorFreshness(); // T-20260916-008: platform skill mirrors carry SSOT versions
+  checkVariantMirrorParity();     // T-20260921-009: variant mirrors carry the variant skill set
+  checkSkillRegistrySync();       // VA-08: registry rows match SKILL.md frontmatter (WARN soak, T-20260925-007)
+  checkRosterTierConsistency();   // T-20260921-020: roster tiers match resolved agent frontmatter tiers
   checkStyleNeutrality();         // B-12: L0/L1 style neutrality (ADR-0064/0066)
 
   let variantsChecked = 0;
@@ -4466,6 +5440,7 @@ function main(): number {
       checkPhaseSummaryAgents(variant);
       checkWorkspaceRootAgentIntrusion(variant);
       checkSkillPlatformParity(variant);
+      checkSkillMirrorVersionSync(variant);     // VA-07: mirror version sync (WARN soak, T-20260925-006)
       checkDocumentCommonSections(variant);
       checkCommands(variant);
       // Script parity check removed (dead code after ADR-0036 TypeScript migration)
@@ -4488,6 +5463,7 @@ function main(): number {
       checkL0ScriptsNotInVariants(variant, scriptLayerMap);       // WS-04
       checkL0L1ScriptsNotInVariants(variant, scriptLayerMap);     // WS-05
       checkL0OnlyToolRefsInVariantCommandSkills(variant);         // WS-05a
+      checkVariantAgentReferences(variant);                        // T-007c: agent references resolve (WARN soak)
       checkVariantSkillsLayer(variant, skillLayerMap);             // WS-06
     checkNoVariantLocalContextMd(variant);                       // WS-07
     checkNoVariantVersionManifest(variant);                      // T-20260916-010: no stub/full manifest in variant templates
@@ -4497,7 +5473,82 @@ function main(): number {
     checkUserGuidePair(variant);                                 // WS-11
   }
 
+
+// ── ADR-0090 W0: AGENTS.md thin-dispatcher precursor arms (WARN until W4 promotion) ──
+
+const AGENTS_MD_SIZE_BUDGET = 15_000;
+
+/** Size budget: every AGENTS.md at L0/L1/L2 must fit the thin-dispatcher budget. */
+function checkAgentsMdSizeBudget(): void {
+  if (!JSON_MODE) console.log('\n=== Check agents-md-size-budget: AGENTS.md ≤15,000 chars at every layer (ADR-0090) ===');
+  const targets: Array<{ variant: string; path: string }> = [
+    { variant: 'common', path: join(ROOT, 'AGENTS.md') },
+    { variant: 'common', path: join(TEMPLATES_DIR, 'common', 'AGENTS.md') },
+  ];
+  if (existsSync(TEMPLATES_DIR)) {
+    for (const entry of readdirSync(TEMPLATES_DIR, { withFileTypes: true })) {
+      if (entry.isDirectory() && entry.name.startsWith('co-')) {
+        targets.push({ variant: entry.name, path: join(TEMPLATES_DIR, entry.name, 'AGENTS.md') });
+      }
+    }
+  }
+  for (const t of targets) {
+    if (!existsSync(t.path)) continue;
+    const size = readFileSync(t.path, 'utf-8').length;
+    if (size > AGENTS_MD_SIZE_BUDGET) {
+      warn(t.variant, 'agents-md-size-budget',
+        `${t.path}: ${size.toLocaleString()} chars exceeds the 15,000-char thin-dispatcher budget (ADR-0090) — user decision 2026-09-26 (design Addendum 3): WARN-only visibility metric, no FAIL promotion and no further reduction; Hermes consumers use the documented context_file_max_chars config`,
+        `If truncation matters for a harness, see the config backstop in AGENTS.md §6`);
+    } else {
+      pass(`${t.path}: ${size.toLocaleString()} chars (within budget)`);
+    }
+  }
+}
+
+/** Pointer integrity: docs/governance|docs/constitution markdown references in any AGENTS.md must resolve on disk. */
+function checkAgentsMdPointerIntegrity(): void {
+  if (!JSON_MODE) console.log('\n=== Check agents-md-pointer-integrity: AGENTS.md reference pointers resolve (ADR-0090) ===');
+  const targets: Array<{ variant: string; path: string; base: string }> = [
+    { variant: 'common', path: join(ROOT, 'AGENTS.md'), base: ROOT },
+    { variant: 'common', path: join(TEMPLATES_DIR, 'common', 'AGENTS.md'), base: join(TEMPLATES_DIR, 'common') },
+  ];
+  if (existsSync(TEMPLATES_DIR)) {
+    for (const entry of readdirSync(TEMPLATES_DIR, { withFileTypes: true })) {
+      if (entry.isDirectory() && entry.name.startsWith('co-')) {
+        targets.push({ variant: entry.name, path: join(TEMPLATES_DIR, entry.name, 'AGENTS.md'), base: join(TEMPLATES_DIR, entry.name) });
+      }
+    }
+  }
+  let checked = 0;
+  const candidateBases = (base: string): string[] => [ROOT, TEMPLATES_DIR ? join(TEMPLATES_DIR, 'common') : '', base].filter(Boolean);
+  for (const t of targets) {
+    if (!existsSync(t.path)) continue;
+    const refs = [...readFileSync(t.path, 'utf-8').matchAll(/\]\((docs\/(?:governance|constitution)\/[^)`]+)\)/g)].map(m => m[1]);
+    for (const ref of refs) {
+      checked++;
+      const resolvedSomewhere = candidateBases(t.base).some(b => existsSync(join(b, ref)));
+      if (!resolvedSomewhere) {
+        if (ref.startsWith('docs/constitution/')) {
+          warn(t.variant, 'agents-md-pointer-integrity',
+            `${t.path} references '${ref}' — resolves only post-scaffold (constitution docs are delivered at project creation)`,
+            `Verify the file exists in templates delivery; if permanently absent, fix the pointer`);
+        } else {
+          fail(t.variant, 'agents-md-pointer-integrity',
+            `${t.path} references '${ref}' but it does not exist at the workspace root, templates/common, or ${t.base}`,
+            `Create the referenced governance file or fix the pointer`);
+        }
+      }
+    }
+  }
+  if (checked === 0) {
+    pass('agents-md-pointer-integrity: no pointer tables yet (populated at W1) — vacuous pass');
+  } else {
+    pass(`agents-md-pointer-integrity: ${checked} pointer reference(s) resolve`);
+  }
+}
+
   checkVariantIndexCoverage(manifests);                          // WS-12
+  checkMirrorHygiene();                                          // R6: mirrors carry only skill dirs (spec 2026-09-25-verifier-platform-expansion-design)
 
   checkCountryProfileDivergence();                               // B-05: cross-variant last_verified divergence
 
@@ -4513,6 +5564,9 @@ function main(): number {
   checkScaffoldMarkerSources();                                  // T-20260915-002: scaffolder markers vs source templates
   checkPmExtendsStubBodies();                                    // T-20260915-010: variant pm.md extends-stub bodies
   checkVariantReadinessGate();   // VRG-01: continuous Variant Readiness Gate enforcement
+  checkProjectIdentityPlaceholders(); // fleet WARN: Projects/*/docs identity placeholders (spec 2026-09-24-scaffold-identity-overview-design)
+  checkAgentsMdSizeBudget();          // ADR-0090 W0: thin-dispatcher ≤15k budget (WARN; FAIL promotion at W4)
+  checkAgentsMdPointerIntegrity();    // ADR-0090 W0: pointer-table references resolve on disk
 
   // B-07: Sync validated variant info back to VERSION_REGISTRY.json
   if (!JSON_MODE) console.log('\n=== B-07: VERSION_REGISTRY.json sync ===');
