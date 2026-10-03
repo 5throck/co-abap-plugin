@@ -23,6 +23,7 @@
 | `explain-me` | L3 | — | — | — | — | — |
 | `finishing-a-development-branch` | L3 | — | — | — | — | — |
 | `gateguard` | L3 | — | — | — | — | — |
+| `graft` | L3 | — | — | — | — | — |
 | `handbook` | L3 | — | — | — | — | — |
 | `handbook-sync-audit` | L3 | — | — | — | — | — |
 | `i18n-audit` | L3 | i18n-specialist | — | — | — | — |
@@ -44,6 +45,7 @@
 | `sap-sd` | L3 | — | — | sap-mm (follows) | — | — |
 | `script-lifecycle-manager` | L3 | — | — | — | — | — |
 | `security-scan` | L3 | — | — | — | — | — |
+| `service-design` | L3 | — | — | accessibility-audit (follows), token-usage-lint (follows), ui-ux-design-intelligence (follows) | — | — |
 | `skill-lifecycle-manager` | L3 | — | — | script-lifecycle-manager (composes_with) | — | — |
 | `source-command-celebrate` | L3 | — | — | — | — | — |
 | `source-command-commit-push-pr` | L3 | — | — | — | — | — |
@@ -92,6 +94,7 @@ Catalog table above — not skill references and not yet resolved as graph edges
 |----------|------|--------------|------------|------------|
 | `adr:0001` | adr | — | — | — |
 | `adr:0002` | adr | — | — | — |
-| `doc:AGENTS.md` | doc | `agent-lifecycle-manager`, `decision-record`, `evidence-ledger`, `explain-me`, `handbook`, `handbook-sync-audit`, `i18n-audit`, `i18n-formatting`, `i18n-layout`, `i18n-locale-config`, `meeting-facilitation`, `project-review`, `security-scan`, `skill-lifecycle-manager`, `sync` | — | — |
+| `doc:AGENTS.md` | doc | `agent-lifecycle-manager`, `decision-record`, `evidence-ledger`, `explain-me`, `graft`, `handbook`, `handbook-sync-audit`, `i18n-audit`, `i18n-formatting`, `i18n-layout`, `i18n-locale-config`, `meeting-facilitation`, `project-review`, `security-scan`, `skill-lifecycle-manager`, `sync` | — | — |
 | `doc:CLAUDE.md` | doc | `abap-dev`, `desktop-app-fallback`, `post-write-chain` | — | — |
+| `doc:CODEX.md` | doc | `meeting-facilitation` | — | — |
 | `doc:GEMINI.md` | doc | `abap-dev`, `post-write-chain` | — | — |

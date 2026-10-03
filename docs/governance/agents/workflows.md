@@ -106,7 +106,7 @@ Phase 6 - Quality Assurance & Finalization (autonomous per `docs/workspace-schem
   PM (variants) executes qa scripts
   Validates: workspace audit, project tests, documentation consistency
   Maximum 2 iterations before PM escalation → GATE
-  PM runs /sync "type: description" → PR opened
+  Gate passed → PM closes out (not a phase): runs /sync "type: description" → PR opened → hand-off to user
 ```
 
 ---
@@ -169,8 +169,8 @@ PM does NOT execute finalization updates for: pure documentation changes (body t
 
 ## §10: Periodic Skill Review Schedule
 
-**Frequency**: Quarterly (every 3 months)
-**Owner**: lifecycle-manager
+**Frequency**: Quarterly (every 3 months)  
+**Owner**: lifecycle-manager  
 **Tool**: `bun scripts/skill-dependency-analysis.ts --report`
 
 ### Review Cadence
@@ -236,3 +236,4 @@ When a new skill is created in `skills/` or `.claude/skills/`:
 > **For individual projects**: Keep AGENTS.md in sync with `docs/context.md ## Agents` per [docs/context.md](docs/context.md).
 
 ---
+

@@ -1,4 +1,24 @@
-// @version 1.17.0
+// @version 1.21.0
+// v1.21.0 (2026-10-01, ADR-0076 amendment): the `.claude/skills/graft/**` → TEMPLATE TREE
+//          SYNC special case is removed. graft moved into the skills/ SSOT, so it is delivered
+//          by the platform-mirror rule (sync-skills.ts) to all five platform dirs like any skill.
+// v1.20.0 (2026-10-01, T-20260930-026 PR-A, ADR-0094): `.github/workflows/ci.yml` joins
+//          MERGE_MANAGED_FILES (was the final SYNC whole-file overwrite, which erased any
+//          project job — co-newbiz lost its unit-test job twice). The MERGE pass routes it
+//          to lib/ci-workflow-merge.ts: template-owned jobs stay authoritative, only the
+//          validated PROJECT-JOBS region is project-owned; fail-closed, atomic write.
+// v1.19.0 (2026-09-30, T-20260927-010): `region-profiles/**` claims ADD_IF_MISSING on
+//          the new dedicated REGION PROFILES pass — the ADR-0091 structured regulatory
+//          layer is delivered once and never overwritten (project deltas are
+//          intentional; prevents the procedures/** clobber class on co-price KR.yaml).
+// v1.18.0 (2026-09-27, ADR-0093 — spec
+//          docs/designs/2026-09-27-hermes-md-instruction-file-design.md):
+//          HERMES.md joins MERGE_MANAGED_FILES — the Hermes member of the
+//          CLAUDE/GEMINI/CODEX instruction-file family (a Hermes-specific
+//          behavioral file, not an AGENTS.md copy). Same rationale as
+//          CODEX.md's v1.13.0 join: resolveClaim('HERMES.md') must hit the
+//          MERGE pass so TEMPLATE TREE SYNC never wholesale-overwrites a
+//          project's copy; the MERGE push delivers it for hermes/all.
 // v1.17.0 (2026-09-25, ADR-0088 W2): `.hermes` joins the platform set —
 //          `.hermes/skills` claims SYNC via sync-skills.ts (platform mirror)
 //          above every blanket rule (the graft fleet-gap ordering invariant),
@@ -132,6 +152,14 @@ export const TEMPLATE_TREE_SYNC_PASS = 'TEMPLATE TREE SYNC';
  *  TEMPLATE_TREE_SYNC_PASS exists to prevent (T-20260924-011, design D2/D3). */
 export const VARIANT_ASSET_DIRS_PASS = 'VARIANT ASSET DIRS';
 
+/** Pass id of the dedicated REGION PROFILES delivery pass (T-20260927-010): add-if-missing
+ *  per file for `region-profiles/**` — the ADR-0091 structured regulatory layer. Project
+ *  deltas (Tooling & Skill Mapping, maintainer fields — ADR-0091 R2) are intentional, so a
+ *  template update must never overwrite a delivered file (the procedures/** clobber class,
+ *  T-20260924-011). Without the claim the resolveClaim fallthrough assigned these paths
+ *  plain SYNC on the VARIANT ASSET DIRS pass. */
+export const REGION_PROFILES_PASS = 'REGION PROFILES';
+
 // ── Legacy pass inventories (mirrored from scripts/upgrade-project.ts; drift-guarded by tests) ──
 
 /** GOVERNANCE FILES SYNC list (upgrade-project.ts). SECURITY.md added per design D5. */
@@ -242,7 +270,7 @@ const LOCKED_FILES = new Set(['.gitattributes', '.gitleaks.toml']);
  * in managed-block-merge MANAGED_PATTERNS); when that pattern lands
  * (T-20260924-010) union-merge activates with no further claim change.
  */
-export const MERGE_MANAGED_FILES = new Set(['CLAUDE.md', 'GEMINI.md', 'CODEX.md', '.gitignore', 'AGENTS.md', 'agents/pm.md']);
+export const MERGE_MANAGED_FILES = new Set(['CLAUDE.md', 'GEMINI.md', 'CODEX.md', 'HERMES.md', '.gitignore', 'AGENTS.md', 'agents/pm.md', '.github/workflows/ci.yml']);
 
 /** Common-owned scaffold files: delivered by templates/common/ and sacred to the
  *  project — a variant template must never carry them (WS-07) and new-project's
@@ -328,10 +356,11 @@ export function resolveClaim(relPath: string, variant = ''): UpgradeClaim {
 
   if (underDir(rel, 'procedures')) return { policy: 'ADD_IF_MISSING', pass: 'PROCEDURES' };
 
-  // graft repo-index skill (ADR-0076): hand-maintained OUTSIDE the SSOT skills/ (claude-only
-  // by design, C-CM-05 exception), so the post-upgrade sync-skills.ts run can never deliver
-  // it — the TEMPLATE TREE SYNC pass must claim it explicitly or the fleet never receives it.
-  if (underDir(rel, '.claude/skills/graft')) return { policy: 'SYNC', pass: TEMPLATE_TREE_SYNC_PASS };
+  // region-profiles/** (T-20260927-010): the ADR-0091 structured regulatory layer is
+  // delivered once (scaffold or first upgrade carrying it) and is never overwritten —
+  // project deltas are intentional (ADR-0091 R2). Dedicated REGION PROFILES pass.
+  if (underDir(rel, 'region-profiles')) return { policy: 'ADD_IF_MISSING', pass: REGION_PROFILES_PASS };
+
   // Platform skill mirrors are distributed by the post-upgrade sync-skills.ts run, not file
   // passes. Codex mirrors (ADR-0077 W1/W4) joined them in the 2026-09-21 review (C-1); the
   // Hermes mirror (ADR-0088 W2) joins the same group. This group MUST stay ABOVE the blanket
