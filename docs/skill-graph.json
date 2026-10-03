@@ -93,6 +93,11 @@
       "layer": "L3"
     },
     {
+      "id": "doc:CODEX.md",
+      "type": "doc",
+      "layer": "L3"
+    },
+    {
       "id": "doc:GEMINI.md",
       "type": "doc",
       "layer": "L3"
@@ -139,6 +144,11 @@
     },
     {
       "id": "gateguard",
+      "type": "skill",
+      "layer": "L3"
+    },
+    {
+      "id": "graft",
       "type": "skill",
       "layer": "L3"
     },
@@ -419,6 +429,11 @@
     },
     {
       "id": "security-scan",
+      "type": "skill",
+      "layer": "L3"
+    },
+    {
+      "id": "service-design",
       "type": "skill",
       "layer": "L3"
     },
@@ -888,6 +903,12 @@
     {
       "type": "cites_skill",
       "from": "doc:AGENTS.md",
+      "to": "graft",
+      "source": "workflow-doc"
+    },
+    {
+      "type": "cites_skill",
+      "from": "doc:AGENTS.md",
       "to": "handbook",
       "source": "workflow-doc"
     },
@@ -967,6 +988,12 @@
       "type": "cites_skill",
       "from": "doc:CLAUDE.md",
       "to": "post-write-chain",
+      "source": "workflow-doc"
+    },
+    {
+      "type": "cites_skill",
+      "from": "doc:CODEX.md",
+      "to": "meeting-facilitation",
       "source": "workflow-doc"
     },
     {
@@ -2162,6 +2189,39 @@
       "from": "security-scan",
       "to": "update-bun-packages",
       "source": "prose"
+    },
+    {
+      "type": "follows",
+      "from": "service-design",
+      "to": "accessibility-audit",
+      "source": "relates_to",
+      "provenance": {
+        "file": "skills/service-design/SKILL.md",
+        "field": "relates_to",
+        "index": 0
+      }
+    },
+    {
+      "type": "follows",
+      "from": "service-design",
+      "to": "token-usage-lint",
+      "source": "relates_to",
+      "provenance": {
+        "file": "skills/service-design/SKILL.md",
+        "field": "relates_to",
+        "index": 2
+      }
+    },
+    {
+      "type": "follows",
+      "from": "service-design",
+      "to": "ui-ux-design-intelligence",
+      "source": "relates_to",
+      "provenance": {
+        "file": "skills/service-design/SKILL.md",
+        "field": "relates_to",
+        "index": 1
+      }
     },
     {
       "type": "references",

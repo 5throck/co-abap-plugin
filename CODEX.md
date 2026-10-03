@@ -84,6 +84,8 @@ args = ["@nanonets/graft", "mcp"]
 Keep command executable paths relative to the project directory for portable cross-platform runs; Codex resolves them against the project root. Per-project MCP servers (e.g. co-abap's `vsp`) live in the project's own `config.toml` and are never overwritten by template upgrades (ADD_IF_MISSING).
 
 <!-- COMMON-CODEX:START -->
+> **Mandatory**: Read [`AGENTS.md`](AGENTS.md) first and follow its content in every task. It is the SSOT registry for the agent roster, PM Gateway workflow, tier model, skill resolution priority, and universal baseline behaviors; this file carries platform-specific behavior only.
+
 ### 4.5 Skill Resolution Priority
 
 When a user request matches a skill trigger, apply this priority order — **enforced every session, regardless of platform**:
@@ -94,7 +96,7 @@ When a user request matches a skill trigger, apply this priority order — **enf
 | **2** | Platform config skills | `.codex/skills/` in the project root |
 | **3 (lowest)** | Global plugin skills | e.g. `superpowers/brainstorming`, `superpowers/writing-plans` |
 
-**Rule**: If a local skill's `metadata.triggers` matches the user request, use it — do **not** fall through to a global plugin with overlapping intent. Explicit invocation: `/meeting "topic" [--agents a,b] [--rounds N] [--dialogue]`
+**Rule**: If a local skill's `metadata.triggers` matches the user request, use it — do **not** fall through to a global plugin with overlapping intent. Explicit invocation: the `meeting-facilitation` skill with the meeting topic and options (`--agents a,b`, `--rounds N`, `--dialogue`) — the legacy `/meeting` slash command is retired (2026-09-26).
 
 ### 4.6 Language Policy for Documentation
 
@@ -123,7 +125,7 @@ When writing Korean documentation or Korean translation output, prefer native Ko
 
 For the **4-level enforcement model**, **mandatory criteria**, **execution plan format**, and **phase determination**, see [AGENTS.md §3 and §5](AGENTS.md).
 
-**Execution Plan Boilerplate**: the table format, the Design Gate (Row 0) rule, exemption categories, and the `/sync`-as-final-step rule are the Single Source of Truth in [AGENTS.md §5.1](AGENTS.md#51-standard-execution-plan-template) and [§5.1.1](AGENTS.md#511-design-gate-exemptions).
+**Execution Plan Boilerplate**: the table format, the Design Gate (Row 0) rule, exemption categories, and the `/sync`-as-final-step rule are the Single Source of Truth in [Execution Plan Templates §5.1](docs/governance/agents/execution-plan-templates.md#51-standard-execution-plan-template) and [§5.1.1](docs/governance/agents/execution-plan-templates.md#511-design-gate-exemptions).
 
 > **Note (Codex-specific)**: Use the literal model ID (e.g. `gpt-5.6-sol`) in the `Model` column, not a Claude-style short alias. With no native subagent tool, each plan row is executed sequentially in-session under the row's named specialist role.
 

@@ -1,4 +1,11 @@
-// @version 2.45.0
+// @version 2.46.0
+// v2.46.0: Docs relative-link gate — spawns scripts/validate-docs-links.ts
+//           (workspace root only, placed after the docs-cluster checks) covering
+//           docs/ root-level files plus templates/common/docs/** recursively,
+//           with the validator's documented post-scaffold resolution allowance
+//           (design-foundation v1.2 PR-2; the design-foundation.md §8 stale
+//           project path rotted under review-only checking). Fails on any
+//           broken relative link or unresolvable anchor fragment.
 // v2.45.0: Variant agent sections resolves extends-stubs before checking (spec:
 //           docs/designs/2026-09-25-registry-policy-completeness-design.md R2.2)
 //           — checkVariantAgentSections composes ADR-0033 stub bodies through
@@ -635,6 +642,7 @@ if (!LIFECYCLE_ONLY) {
     const STANDARD_ROOT_MD = new Set([
         'README.md', 'README_ko.md', 'CHANGELOG.md', 'AGENTS.md',
         'SECURITY.md', 'CONSTITUTION.md', 'CLAUDE.md', 'GEMINI.md', 'CODEX.md',
+        'HERMES.md',
         'PROMOTION_CHECKLIST.md', '_ORIGIN.md', '_COMMON_VERSION.md'
     ]);
     const rootMdFiles = fs.readdirSync('.')
@@ -1677,6 +1685,36 @@ function checkDesignLint() {
 }
 checkDesignLint();
 
+// T-20261002-008 (review H1 doc-command lint): governance docs may only name
+// ticket.ts subcommands that exist — the CLI's usage line is the SSOT, so a doc
+// referencing a removed/renamed/never-shipped subcommand fails the audit.
+// Remedy: fix the doc (or, if the CLI changed intentionally, update §3.12 / pm.md).
+if (fs.existsSync(path.join('scripts', 'validate-ticket-doc-commands.ts'))) {
+    const { status, stdout, stderr } = spawnSync('bun', ['scripts/validate-ticket-doc-commands.ts'], { encoding: 'utf-8' });
+    if (status !== 0) {
+        if (stdout) console.log(stdout);
+        if (stderr) console.error(stderr);
+        Fail('ticket.ts doc-command lint: governance docs reference non-existent ticket.ts subcommands (see output above)');
+    } else {
+        Pass('ticket.ts doc-command lint: governance docs name only real ticket.ts subcommands');
+    }
+}
+
+// T-20261002-011: variant .claude/settings.json SessionStart entries managed by the
+// workspace (pm-role-bootstrap) must stay in sync with templates/common — a stale
+// hook on 13 variants is exactly the drift class the propagation map exists to close.
+// Remedy: bun scripts/sync-variant-settings.ts
+if (fs.existsSync(path.join('scripts', 'sync-variant-settings.ts'))) {
+    const { status, stdout, stderr } = spawnSync('bun', ['scripts/sync-variant-settings.ts', '--check'], { encoding: 'utf-8' });
+    if (status !== 0) {
+        if (stdout) console.log(stdout);
+        if (stderr) console.error(stderr);
+        Fail('variant settings.json SessionStart drift — run: bun scripts/sync-variant-settings.ts');
+    } else {
+        Pass('variant settings.json SessionStart: managed entries in sync with templates/common');
+    }
+}
+
 // Variant script drift detection (WARN-only, first-pass heuristic).
 // Flags templates/co-*/scripts files that duplicate templates/common/scripts files by >50% content overlap.
 // See docs/designs/2026-08-16-august-regression-coverage-design.md §2 for design, rationale, and denominator choice.
@@ -2167,6 +2205,26 @@ checkTemplateDependencyMirror();
 // Workspace root detection: presence of context.md (and absence of variant.json)
 // distinguishes the governance root from generated project copies.
 const IS_WORKSPACE_ROOT = fs.existsSync('CONSTITUTION.md') && !fs.existsSync('variant.json');
+
+// ── Docs relative-link gate (design-foundation v1.2 PR-2) ────────────────────
+// design-foundation.md §8 previously shipped a stale project path and rotted
+// under review-only checking (stale path fixed in PR #1102). Spawn the existing
+// validator — the same gate dev-sync runs as pre-flight — which checks docs/
+// root-level files plus templates/common/docs/** (recursive) with a documented
+// post-scaffold resolution allowance. Workspace-root only: the validator is
+// hard-scoped to the L0 docs layout, so project (L2) contexts self-skip.
+if (IS_WORKSPACE_ROOT && fs.existsSync(path.join('scripts', 'validate-docs-links.ts'))) {
+    const { status, stdout, stderr } = spawnSync('bun', ['scripts/validate-docs-links.ts'], {
+        encoding: 'utf-8',
+    });
+    if (status !== 0) {
+        if (stdout) console.log(stdout);
+        if (stderr) console.error(stderr);
+        Fail('docs link validation failed — run scripts/validate-docs-links.ts for details');
+    } else {
+        Pass('Docs link gate: relative links in docs/ root and templates/common/docs resolve');
+    }
+}
 
 // Check: Agent files must have a non-empty ## Required Tools section (workspace root only)
 if (IS_WORKSPACE_ROOT && fs.existsSync('agents')) {
@@ -3208,6 +3266,25 @@ if (fs.existsSync(path.join('scripts', 'check-upgrade-coverage.ts'))) {
         Fail('Upgrade coverage gate failed — bun scripts/check-upgrade-coverage.ts (without --strict) lists the violations');
     } else {
         Pass('Upgrade coverage gate: every effective template file keeps a delivery claim (strict checks clean)');
+    }
+}
+
+// ── §11.0 surface registry gate (T-20261001-018, ADR-0097) ────────────────────
+// When scripts/validate-surface-registry.ts exists, the CONSTITUTION §11.0 registry
+// must be backed by the filesystem: instruction files at L0/L1 (+ static L2 files),
+// platform dirs per family, L2 skill mirroring (mirror:false honored), and the
+// templates/common/docs/context.md table identical to CONSTITUTION (one source).
+// Documented gaps (docs/surface-gaps.json) surface as WARNs; undocumented gaps FAIL.
+if (fs.existsSync(path.join('scripts', 'validate-surface-registry.ts'))) {
+    const { status, stdout, stderr } = spawnSync('bun', ['scripts/validate-surface-registry.ts', '--strict'], {
+        encoding: 'utf-8',
+    });
+    if (status !== 0) {
+        if (stdout) console.log(stdout);
+        if (stderr) console.error(stderr);
+        Fail('Surface registry gate failed — bun scripts/validate-surface-registry.ts lists the violations');
+    } else {
+        Pass('Surface registry gate: §11.0 coverage verified at L0/L1/L2 (strict)');
     }
 }
 

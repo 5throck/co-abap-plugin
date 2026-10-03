@@ -355,12 +355,12 @@ The PM Agent follows a three-level inheritance model: **L0 (workspace root base)
 When leading execution and improvement tasks, PM MUST use the 3-Tier model strategy:
 
 <!-- WORKSPACE-MANAGED: tier-model-mapping -->
-- **High-tier**: Complex reasoning, architectural design, planning (claude-opus-5-0 / gemini-3.1-pro / gpt-5.6-sol)
-- **Medium-tier**: Code review, testing, PR review, quality gates (claude-sonnet-5-0 / gemini-3.8-flash / gpt-5.6-terra)
+- **High-tier**: Complex reasoning, architectural design, planning (claude-opus-5-5 / gemini-3.1-pro / gpt-5.6-sol)
+- **Medium-tier**: Code review, testing, PR review, quality gates (claude-sonnet-5-5 / gemini-3.8-flash / gpt-5.6-terra)
 - **Low-tier**: Fast, repetitive coding, script maintenance (claude-haiku-4-5 / gemini-3.8-flash / gpt-5.6-luna)
 <!-- /WORKSPACE-MANAGED -->
 <!-- WORKSPACE-MANAGED: tier-model-mapping -->
-> **Note**: The `Model` column below shows the Claude Code short alias (`sonnet`/`opus`/`haiku`/`fable`) actually passed to the `Agent()` tool's `model` parameter — not the registry ID (e.g. `claude-sonnet-5-0`). See [CLAUDE.md §6](CLAUDE.md#6-native-sub-agents-agent-tool) for the registry-ID → alias translation table. On Gemini/Antigravity, use the literal model ID instead (see GEMINI.md's equivalent example).
+> **Note**: The `Model` column below shows the Claude Code short alias (`sonnet`/`opus`/`haiku`/`fable`) actually passed to the `Agent()` tool's `model` parameter — not the registry ID (e.g. `claude-sonnet-5-5`). See [CLAUDE.md §6](CLAUDE.md#6-native-sub-agents-agent-tool) for the registry-ID → alias translation table. On Gemini/Antigravity, use the literal model ID instead (see GEMINI.md's equivalent example).
 <!-- /WORKSPACE-MANAGED -->
 
 
@@ -399,6 +399,11 @@ Development-facing instruction text — requirement statements, task briefs, exe
 ### PM Team-Management Authority (ADR-0080)
 
 PM owns team composition and skill-change rulings. Hiring and firing: PM decides timing and target from workflow signals — recurring unmatched work types, role overload, absorbed roles, the quarterly roster review — and records every decision (ADR-0061 decision record + memory log) before dispatch; the default exit for a fired agent is `status: deprecated`, and hard delete requires an explicit user request. Skill requests: agents file structured `create|attach|remove` request blocks with evidence in their task reports and memory logs; PM triages them and only approved requests are executed — agents never create, attach, or remove skills unilaterally. Procedures: `agent-lifecycle-manager` and `skill-lifecycle-manager` skills. Full decision: ADR-0080 in the workspace root `docs/adr/`.
+
+### PM Tier Semantics
+
+The tier of a dispatched subagent selects the model that the platform dispatch mechanism uses for that subagent. The tier of a session-hosted agent (the PM) is a minimum capability floor, because the user selects the session model. A higher model is allowed. A model below the floor is a warning. The rule applies on every platform. The PM states its model in one line, `PM running on: <model>`, in the header of its execution plan. Full decision: design 2026-09-29-pm-tier-capability-floor-design in the workspace root docs/designs/.
+
 <!-- COMMON-AGENTS:END -->
 ## §4: Other Workflows
 
@@ -542,12 +547,13 @@ All agents, regardless of their role, must adhere to the following:
 This repo is indexed in `graft/`: small linked markdown nodes that explain each
 system and carry exact file:line spans, kept in sync with the code through git.
 
-For ANY task here — understanding how something works, finding where code lives,
-or scoping a change — get context from the graph before grepping or opening
-source files. Re-ask freely (it's cheap) and reuse literal identifiers you
-already have (symbol, error string, file name) as the query. New to this repo?
-Run `graft map` first — a token-budgeted orientation (dir clusters, hubs,
-hotspots), no LLM, no key.
+Prefer the graph over grepping or opening source files blind. Task-shape
+routing (doctrine SSOT: `skills/graft/SKILL.md` — this block is a summary):
+the task already names a file or symbol → `graft grep "<symbol>"` straight to
+the exact `file:line`; you don't know where the code lives → `graft ask`.
+`Re-ask freely (it's cheap)` and reuse literal identifiers you already have.
+New to this repo? Run `graft map` first — a token-budgeted orientation (dir
+clusters, hubs, hotspots), no LLM, no key.
 
 - Run `graft ask "<your question>" --source` → ranked nodes with the relevant
   code spans inlined (each hit's ≤8-line crux by default; `--full` for whole
@@ -574,7 +580,8 @@ range before finalizing. Only open source files when a node genuinely lacks a
 needed detail, and then at the exact file:line the node points to — never
 re-read whole files.
 
-After big code changes, refresh the graph with `graft build` (deterministic,
-no API key, $0).
+Every graft tool refreshes the graph itself before answering — no manual
+`graft build` needed after edits. The markdown cards under `graft/` are a
+projection that can lag until the next `graft build`; prefer the tools.
 <!-- graft:end -->
 <!-- /WORKSPACE-MANAGED -->

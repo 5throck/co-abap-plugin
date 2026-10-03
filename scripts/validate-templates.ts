@@ -1,15 +1,29 @@
 #!/usr/bin/env bun
 /**
  * Template Lifecycle Validation Script
- * @version 1.46.2
+ * @version 1.50.5
  *
- * v1.46.2 (2026-09-26, project-review remediation Phase 2): detached L3
- *          projects identified by their scaffold provenance
- *          (`.claude/template-version.txt`) and `docs/context.md` now emit a
- *          justified [SKIP] when they do not carry the L0-only `templates/`
- *          source tree. Repositories that are not proven L3 projects retain
- *          the hard failure for a missing templates/ directory.
+ * v1.50.5 (2026-10-03, design 2026-10-03-validator-warning-fixes-design):
+ *          repoint size-budget Fix string to HERMES.md "Hermes Platform Mechanics" +
+ *          context.md §11; v1.50.4 (2026-10-02): pointer-integrity strips the
+ *          #anchor fragment before the file existence check — anchored references
+ *          misclassified as post-scaffold-only WARNs.
+ * v1.50.3 (2026-10-02): C-SK-02 allowedWithExtends gains `tier` and `model` — the PM
+ *          Tier Semantics fields (design 2026-09-29) are documented optional fields that the
+ *          11 variant pm.md extends-stubs legitimately carry; the WARNs were schema lag.
  *
+ * v1.50.2: When templates/common is absent (variant or project context), main() returns 0 and reports "not applicable" in JSON and text modes.
+ * v1.48.0 → v1.49.0 (2026-09-28, sound-synth orphan-mirror follow-up — spec
+ *         docs/designs/2026-09-28-sound-synth-orphan-mirror-cleanup-design.md
+ *         §5 blind-spot note): B-11 widened from the canonical templates/common/
+ *         skills/ tree to the five platform mirrors (.claude/.gemini/.agents/
+ *         .codex/.hermes/skills) via variantScopedSkillLeaks (pure, exported) —
+ *         the 2026-09-06-class sound-synth orphans survived in exactly those
+ *         mirrors (l2_propagate:false copies contradicting the variant-overlay
+ *         re-delivery) because the original check never scanned them. Severity
+ *         stays fail (a mirror leak actively breaks the nightly scaffold E2E's
+ *         Test 26 delivery parity). Day-one green: 0 leaks across the common
+ *         tree post-cleanup (PR #1162).
  * v1.46.1 (2026-09-26, ADR-0090 program closure — design Addendum 3): the
  *         size-budget arm's WARN message and header note record the user
  *         decision that the W4 FAIL promotion is cancelled and the budget
@@ -347,15 +361,11 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, '..');
 const TEMPLATES_DIR = join(ROOT, 'templates');
 
-export function isDetachedL3Project(root: string): boolean {
-  return !existsSync(join(root, 'templates'))
-    && existsSync(join(root, '.claude', 'template-version.txt'))
-    && existsSync(join(root, 'docs', 'context.md'));
-}
-
-export function templateValidationDisposition(root: string): 'validate' | 'skip-detached-l3' | 'error-missing-templates' {
-  if (existsSync(join(root, 'templates'))) return 'validate';
-  return isDetachedL3Project(root) ? 'skip-detached-l3' : 'error-missing-templates';
+if (!existsSync(TEMPLATES_DIR)) {
+  console.error(`\x1b[31m[ERROR] templates/ directory not found at: ${TEMPLATES_DIR}\x1b[0m`);
+  if (import.meta.main) {
+    process.exit(1);
+  }
 }
 
 const args = process.argv.slice(2);
@@ -681,6 +691,33 @@ function checkVariantManifests(): Map<string, VariantManifest> {
         }
       }
 
+      // B-04 (ADR-0091 R3, T-20260927-002): uniform country_config declaration —
+      // adopting or not, every variant.json declares the mechanism
+      // ({ profiles_dir: "docs/countries", supported: [], default: null } for
+      // non-adopting variants); divergence by omission is eliminated.
+      const cc = raw.country_config as Record<string, unknown> | undefined;
+      if (!cc || typeof cc !== 'object' || Array.isArray(cc)) {
+        fail(dir, 'country-config',
+          `templates/${dir}/variant.json missing 'country_config' (ADR-0091 R3 uniform declaration)`,
+          `Add "country_config": { "profiles_dir": "docs/countries", "supported": [], "default": null } (empty supported = non-adopting)`);
+      } else {
+        let ccOk = true;
+        if (cc.profiles_dir !== 'docs/countries') {
+          fail(dir, 'country-config', `country_config.profiles_dir must be "docs/countries", got ${JSON.stringify(cc.profiles_dir)}`);
+          ccOk = false;
+        }
+        if (!Array.isArray(cc.supported)) {
+          fail(dir, 'country-config', `country_config.supported must be an array (empty for non-adopting variants)`);
+          ccOk = false;
+        }
+        if (cc.default !== null) {
+          fail(dir, 'country-config', `country_config.default must be null (country-profiles rule; ADR-0091 R2)`,
+            `Set "default": null — the active country is selected per-project via docs/countries/ACTIVE.md`);
+          ccOk = false;
+        }
+        if (ccOk) pass(`templates/${dir}/variant.json country_config declaration OK (ADR-0091 R3)`);
+      }
+
       // B-03: script_manifest path existence check
       const scriptManifest = raw.script_manifest as { local?: Array<{ name: string; path: string }> } | undefined;
       if (scriptManifest?.local && Array.isArray(scriptManifest.local)) {
@@ -762,8 +799,12 @@ function checkVariantManifests(): Map<string, VariantManifest> {
         if (!countryConfig.profiles_dir || countryConfig.profiles_dir.trim() === '') {
           fail(dir, 'country-config', `templates/${dir}/variant.json country_config.profiles_dir is missing or empty`);
         }
-        if (!countryConfig.supported || !Array.isArray(countryConfig.supported) || countryConfig.supported.length === 0) {
-          fail(dir, 'country-config', `templates/${dir}/variant.json country_config.supported is missing or empty`);
+        // T-20260927-002 (ADR-0091 R3): an EMPTY supported array is now the
+        // canonical non-adopting declaration — divergence by omission is what
+        // B-04 above eliminates. Only a MALFORMED value fails here; the
+        // adopting-path profile-file checks run for each declared code.
+        if (!countryConfig.supported || !Array.isArray(countryConfig.supported)) {
+          fail(dir, 'country-config', `templates/${dir}/variant.json country_config.supported is missing or not an array (use [] for non-adopting variants)`);
         } else {
           // Check each supported code has a profile file
           for (const code of countryConfig.supported) {
@@ -1306,7 +1347,7 @@ const SOAK_COMMAND_SURFACES = new Set(['.codex/prompts']);
 function checkCommands(variant: string): void {
   if (!JSON_MODE) console.log(`\n=== Check 6: commands in ${variant} ===`);
 
-  const allSharedCommands = ['changelog.md', 'commit-push-pr.md', 'gateguard.md', 'meeting.md', 'memlog.md', 'new-task.md', 'project-review.md', 'sync.md'];
+  const allSharedCommands = ['changelog.md', 'commit-push-pr.md', 'gateguard.md', 'memlog.md', 'new-task.md', 'project-review.md', 'sync.md'];
 
   if (variant === 'common') {
     // common/ must have all shared commands in every command surface
@@ -1348,26 +1389,7 @@ function checkCommands(variant: string): void {
 
 // Check 7: scripts and .githooks parity — removed (dead code after ADR-0036 TypeScript migration)
 
-// Check 8: Shared file sync warning
-function checkSharedFileSync(): void {
-  if (!JSON_MODE) console.log('\n=== Check 8: Shared file sync ===');
-  const workspaceMeeting = join(ROOT, '.claude', 'commands', 'meeting.md');
-  const templateMeeting = join(TEMPLATES_DIR, 'common', '.claude', 'commands', 'meeting.md');
-
-  if (!existsSync(workspaceMeeting) || !existsSync(templateMeeting)) {
-    // One or both missing — skip silently
-    return;
-  }
-
-  const wsContent = normalizeContent(readFileSync(workspaceMeeting, 'utf-8'));
-  const tplContent = normalizeContent(readFileSync(templateMeeting, 'utf-8'));
-
-  if (wsContent !== tplContent) {
-    warn('root', 'shared-sync', 'meeting.md differs between workspace and templates/common', 'Run: cp .claude/commands/meeting.md templates/common/.claude/commands/meeting.md');
-  } else {
-    pass('meeting.md: workspace and common are in sync');
-  }
-}
+// Check 8: shared file sync warning — removed (meeting command retired 2026-09-26, spec 2026-09-26-meeting-command-retirement)
 
 // Check 11: README presence in stable variants
 function checkReadmePresence(variant: string): void {
@@ -1978,11 +2000,14 @@ function checkVariantScriptsLayout(variant: string): void {
   }
 }
 
-// Check B-11: variant_scoped_skills must not leak into templates/common/skills/
-// (registry: docs/workspace-schema.json variant_scoped_skills — see the sound-synth
-// leak of 2026-08-06 that reached 10 of 11 projects via common-promotion + upgrade).
+// Check B-11: variant_scoped_skills must not leak into templates/common — the
+// canonical skills/ tree AND the five platform mirrors (v1.49.0; registry:
+// docs/workspace-schema.json variant_scoped_skills — see the sound-synth leak
+// of 2026-08-06 that reached 10 of 11 projects via common-promotion + upgrade,
+// and its 2026-09-27 orphan-mirror recurrence that broke the nightly scaffold
+// E2E's Test 26 precisely because the platform mirrors were never scanned).
 function checkVariantScopedSkillLeak(): void {
-  if (!JSON_MODE) console.log(`\n=== Check B-11: variant-scoped skills must not live in templates/common ===`);
+  if (!JSON_MODE) console.log(`\n=== Check B-11: variant-scoped skills must not live in templates/common (canonical + platform mirrors) ===`);
   const schemaPath = join(ROOT, 'docs', 'workspace-schema.json');
   if (!existsSync(schemaPath)) {
     warn('root', 'B-11', 'docs/workspace-schema.json not found — variant_scoped_skills check skipped');
@@ -1990,18 +2015,21 @@ function checkVariantScopedSkillLeak(): void {
   }
   const schema = JSON.parse(readFileSync(schemaPath, 'utf-8'));
   const map = schema?.variant_scoped_skills || {};
-  let leaks = 0;
+  const skillNames = new Set<string>();
+  const ownerBySkill = new Map<string, string>();
   for (const [ownerVariant, skills] of Object.entries(map as Record<string, string[]>)) {
     if (ownerVariant === 'description' || !Array.isArray(skills)) continue;
     for (const skill of skills as string[]) {
-      const leaked = join(TEMPLATES_DIR, 'common', 'skills', skill, 'SKILL.md');
-      if (existsSync(leaked)) {
-        fail('root', 'B-11', `variant-exclusive skill '${skill}' (owner: ${ownerVariant}) exists in templates/common/skills/`, `Delete templates/common/skills/${skill}/ — it would be copied into every project by upgrade-project`);
-        leaks++;
-      }
+      skillNames.add(skill);
+      ownerBySkill.set(skill, ownerVariant);
     }
   }
-  if (leaks === 0) pass('templates/common/skills/: no variant-scoped skill leaks');
+  const leaks = variantScopedSkillLeaks(join(TEMPLATES_DIR, 'common'), skillNames);
+  for (const leak of leaks) {
+    const skill = leak.split('/').pop()!;
+    fail('root', 'B-11', `variant-exclusive skill '${skill}' (owner: ${ownerBySkill.get(skill)}) exists in templates/common/${leak}/`, `Delete templates/common/${leak}/ — mirror copies of a variant-scoped skill contradict its variant-overlay re-delivery at scaffold time and break delivery-derivation parity (the 2026-09-27 sound-synth orphan class)`);
+  }
+  if (leaks.length === 0) pass('templates/common (skills/ + 5 platform mirrors): no variant-scoped skill leaks');
 }
 
 // Check: platform-mirror-freshness — L1 platform skill mirrors must carry the
@@ -2921,6 +2949,33 @@ export function stalePlatformSkillExclusions(
   return [...exclusions].filter(name => !live.has(name));
 }
 
+/**
+ * B-11 variant-scoped leak core (pure): return the common-relative locations
+ * where a variant-scoped skill (SSOT: templates/co-<variant>/skills/, registry:
+ * workspace-schema.json variant_scoped_skills) leaks into the common tree —
+ * the canonical skills/ tree AND the five platform mirrors alike. The 2026-09-06
+ * sound-synth orphans survived precisely in the platform mirrors because the
+ * original B-11 scanned only the canonical tree (fixed v1.49.0).
+ */
+export function variantScopedSkillLeaks(
+  commonDir: string,
+  variantScopedSkills: Iterable<string>,
+  mirrorDirs: readonly string[] = PLATFORM_MIRROR_DIRS,
+): string[] {
+  const leaks: string[] = [];
+  for (const skill of variantScopedSkills) {
+    if (existsSync(join(commonDir, 'skills', skill, 'SKILL.md'))) {
+      leaks.push(`skills/${skill}`);
+    }
+    for (const mirror of mirrorDirs) {
+      if (existsSync(join(commonDir, mirror, skill, 'SKILL.md'))) {
+        leaks.push(`${mirror}/${skill}`);
+      }
+    }
+  }
+  return leaks.sort();
+}
+
 export interface ScriptsRegistryRow {
   name: string;
   version: string;
@@ -3128,9 +3183,8 @@ function checkCommonContract(): void {
   //   mirrored  — a bulk-propagated copy of a workspace skills/<name>/ skill
   //   country   — country-scoped (workspace-schema.json country_scoped_assets.skills)
   //   variant   — variant-scoped (workspace-schema.json variant_scoped_skills)
-  //   claude-only tool skills with no Gemini distribution (graft — the graft/
-  //     index is a Claude Code CLI integration; verified against the exclusion
-  //     allowlist so a silent second exception cannot appear unnoticed)
+  // (graft's former claude-only exception ended with its move into the skills/ SSOT,
+  // ADR-0076 amendment — it is now an ordinary mirrored skill.)
   const platformSkills = contract.common_platform_skills as Record<string, unknown> | undefined;
   if (platformSkills) {
     const schemaPath = join(ROOT, 'docs', 'workspace-schema.json');
@@ -3146,13 +3200,6 @@ function checkCommonContract(): void {
         variantScoped = new Set(Object.values(wsSchema.variant_scoped_skills ?? {}).flat());
       } catch { /* workspace-schema checks report their own drift */ }
     }
-    // Explicit allowlist: platform skills that are intentionally unlisted. Every
-    // entry must carry its reason — the check fails if an allowlisted name
-    // disappears, so the list cannot rot.
-    const SINGLE_PLATFORM_EXCEPTIONS: Record<string, string> = {
-      graft: 'claude-only tool skill — the graft/ repo index is a Claude Code CLI integration with no Gemini distribution',
-    };
-
     const skillDir = join(TEMPLATES_DIR, 'common', '.claude', 'skills');
     if (existsSync(skillDir)) {
       let unlistedErrors = 0;
@@ -3164,27 +3211,8 @@ function checkCommonContract(): void {
         if (existsSync(join(ROOT, 'skills', name, 'SKILL.md'))) continue; // mirrored workspace skill
         if (countryScoped.has(name)) continue; // country-scoped — contract description excludes
         if (variantScoped.has(name)) continue; // variant-scoped — contract description excludes
-        if (SINGLE_PLATFORM_EXCEPTIONS[name]) {
-          // Anti-drift (ADR-0076 D6): the skill is hand-maintained as exactly two
-          // byte-identical copies (root + template) — divergence means an edit
-          // landed on one side only, and the next upgrade would ship the stale one.
-          const rootCopy = join(ROOT, '.claude', 'skills', name, 'SKILL.md');
-          const templateCopy = join(skillDir, name, 'SKILL.md');
-          if (existsSync(rootCopy) && readFileSync(rootCopy, 'utf-8') !== readFileSync(templateCopy, 'utf-8')) {
-            fail('common', 'C-CM-05', `hand-maintained skill '${name}' copies diverge — root .claude/skills/${name}/SKILL.md and templates/common/.claude/skills/${name}/SKILL.md must stay byte-identical`, `Overwrite the stale copy with the fresher one (root and template must match)`);
-            unlistedErrors++;
-          } else {
-            pass(`C-CM-05: platform skill '${name}' unlisted by exception — ${SINGLE_PLATFORM_EXCEPTIONS[name]}`);
-          }
-          continue;
-        }
-        fail('common', 'C-CM-05', `templates/common/.claude/skills/${name}/ exists but is not declared in common-contract.json common_platform_skills and matches no documented exclusion class`, `Add "${name}" to common_platform_skills, or register it in workspace-schema.json country_scoped_assets/variant_scoped_skills, or document an exclusion in the C-CM-05 exception list`);
+        fail('common', 'C-CM-05', `templates/common/.claude/skills/${name}/ exists but is not declared in common-contract.json common_platform_skills and matches no documented exclusion class`, `Add "${name}" to common_platform_skills, or register it in workspace-schema.json country_scoped_assets/variant_scoped_skills`);
         unlistedErrors++;
-      }
-      for (const name of Object.keys(SINGLE_PLATFORM_EXCEPTIONS)) {
-        if (!existsSync(join(skillDir, name, 'SKILL.md'))) {
-          fail('common', 'C-CM-05', `C-CM-05 exception list names '${name}' but templates/common/.claude/skills/${name}/ no longer exists — remove the stale exception`, `Delete the '${name}' entry from the C-CM-05 SINGLE_PLATFORM_EXCEPTIONS allowlist`);
-        }
       }
       if (unlistedErrors === 0) {
         pass('C-CM-05: all templates/common platform skills declared or explicitly excluded');
@@ -3335,6 +3363,10 @@ function checkCommonContract(): void {
           'extends', 'name', 'variant', 'version', 'last_updated', 'status',
           'remove_sections', 'variant_overrides', 'owner', 'capabilities', 'lifecycle',
           'description',
+          // PM Tier Semantics (design 2026-09-29): variant pm.md stubs carry the
+          // per-platform tier mapping and model override — documented optional fields
+          // in docs/architecture/extends-pattern.md, present on the L1 pm.md they extend.
+          'tier', 'model',
         ]);
         const fieldKeys = Object.keys(variantFields);
         const unexpectedKeys = fieldKeys.filter(k => !allowedWithExtends.has(k));
@@ -3889,7 +3921,8 @@ function checkSkillMirrorVersionSync(variant: string): void {
   const findings = collectMirrorVersionMismatches(join(TEMPLATES_DIR, variant), variant);
   // WARN soak per ADR-0055 — severity flip is ticket-gated (T-20260925-006).
   for (const f of findings) {
-    warn(variant, 'VA-07', `${f.message} (soak: WARN until promotion)`, `Align the SKILL.md frontmatter version across all platform mirrors of ${variant} (and the curated registry row)`);
+    // PROMOTED to fail 2026-09-27 (T-20260925-006, zero-WARN precondition verified).
+    fail(variant, 'VA-07', f.message, `Align the SKILL.md frontmatter version across all platform mirrors of ${variant} (and the curated registry row)`);
   }
   if (findings.length === 0) {
     pass(`VA-07: ${variant} -- mirror skill versions in sync (mirrors and registry rows)`);
@@ -3910,7 +3943,8 @@ function checkSkillRegistrySync(): void {
   const findings = collectWorkspaceRegistryFindings(ROOT);
   // WARN soak per ADR-0055 — severity flip is ticket-gated (T-20260925-007).
   for (const f of findings) {
-    warn('registries', 'VA-08', `${f.message} (soak: WARN until promotion)`, 'Run: bun scripts/sync-skill-registries.ts (dev-sync Step 4.63 re-converges on every /sync)');
+    // PROMOTED to fail 2026-09-27 (T-20260925-007, zero-WARN precondition verified).
+    fail('registries', 'VA-08', f.message, 'Run: bun scripts/sync-skill-registries.ts (dev-sync Step 4.63 re-converges on every /sync)');
   }
   if (findings.length === 0) {
     pass('VA-08: all skill registry tables match SKILL.md frontmatter');
@@ -4089,7 +4123,7 @@ function extractMarkedSections(content: string, markerName: string): Array<{head
 // A literal outside a managed section silently stalls at its layer on the next model refresh.
 function checkModelLiteralPlacement(): void {
   if (!JSON_MODE) console.log(`\n=== Check MM-01: Model literal placement (instruction twins) ===`);
-  const LITERAL = /\b(?:gpt-5\.6-(?:sol|terra|luna)|claude-opus-5-0|claude-sonnet-5-0|claude-haiku-4-5|gemini-3\.\d+(?:\.\d+)?-(?:pro|flash))\b/i;
+  const LITERAL = /\b(?:gpt-5\.6-(?:sol|terra|luna)|claude-(?:opus|sonnet)-5-[05]|claude-haiku-4-5|gemini-3\.\d+(?:\.\d+)?-(?:pro|flash))\b/i;
   const STARTS = /<!--\s*(?:COMMON-(?:CLAUDE|GEMINI|CODEX|AGENTS):START|WORKSPACE-MANAGED:[^>]*?)\s*-->/;
   const ENDS = /<!--\s*(?:\/WORKSPACE-MANAGED|COMMON-(?:CLAUDE|GEMINI|CODEX|AGENTS):END)\s*-->/;
   const files = [
@@ -4339,8 +4373,13 @@ export interface AgentReferenceCandidate {
 
 // Reference shape 1: `agents/<name>.md` path references (prose links, code
 // strings, roster rows). Underscore-leading internal fragments (agents/_COMMON)
-// are not agent references and don't match.
-const AGENT_PATH_REF_RE = /\bagents\/([A-Za-z0-9][A-Za-z0-9_-]*)\.md\b/g;
+// are not agent references and don't match. Governance-doc pointers under a
+// `governance/` directory (docs/governance/agents/<name>.md — the ADR-0090
+// thin-dispatcher relocation targets) are NOT agent references: the segment
+// immediately before `agents/` is `governance/`, so a negative lookbehind
+// excludes them (T-20260925-004 precondition — the 33 false positives this
+// removes were the only thing blocking the check's WARN→FAIL promotion).
+const AGENT_PATH_REF_RE = /(?<!governance\/)\bagents\/([A-Za-z0-9][A-Za-z0-9_-]*)\.md\b/g;
 // Reference shape 2: backtick-adjacent `<name>` agent mentions ("the
 // stack setup agent").
 const AGENT_BACKTICK_MENTION_RE = /`([A-Za-z0-9][A-Za-z0-9_-]*)`\s+agents?\b/g;
@@ -4367,8 +4406,9 @@ export function extractAgentReferenceCandidates(content: string): AgentReference
 /** Check: variant-agent-references — agent references in templates/<v>/AGENTS.md
  *  and the variant scripts tree (.ts files, recursive) must resolve at
  *  templates/<v>/agents/, templates/common/agents/, or the workspace-root
- *  agents/. WARN-mode per ADR-0055 soak (dated promotion ticket filed at
- *  implementation). */
+ *  agents/. WARN-mode per ADR-0055 soak at introduction (T-20260924-007c);
+ *  PROMOTED to fail 2026-09-27 (T-20260925-004) after the governance-doc-link
+ *  false positives were fixed at the extractor. */
 function checkVariantAgentReferences(variant: string, opts?: {
   /** Directory-root override for fixture tests (defaults to the real templates/). */
   templatesDir?: string;
@@ -4379,7 +4419,10 @@ function checkVariantAgentReferences(variant: string, opts?: {
   const quiet = opts !== undefined;
   const FIX =
     'Fix the reference so it names an agent that exists at templates/<variant>/agents/, templates/common/agents/, or the workspace-root agents/ — or remove it. A legitimately agent-shaped name that must stay unresolvable goes on AGENT_REFERENCE_EXEMPT with a justification.';
-  const report = opts?.report ?? ((finding: string) => warn(variant, 'variant-agent-references', finding, FIX));
+  // PROMOTED to fail 2026-09-27 (T-20260925-004, user-authorized early promotion):
+  // the ADR-0090 governance-doc-link false positives were root-caused out of the
+  // extractor (governance/ lookbehind), leaving zero findings on the fleet.
+  const report = opts?.report ?? ((finding: string) => fail(variant, 'variant-agent-references', finding, FIX));
 
   if (!quiet && !JSON_MODE) {
     console.log(`\n=== Check T-007c: agent references resolve in ${variant} AGENTS.md and scripts ===`);
@@ -5347,6 +5390,40 @@ function checkPmExtendsStubBodies(): void {
 // still carrying the literal template placeholders (pre-2.13 residue), stays
 // visible until the project team fills the identity seed. Regrowth-prevention
 // sibling of T-20260924-004/007 for the identity class.
+// T-20260927-012 (validator-hardening, ADR-0091 R3): the B-04 uniform country_config
+// declaration check scopes templates/ only — project-side variant.json could drift by
+// omission. Every delivered Projects/<name>/variant.json declares the mechanism too.
+function checkProjectCountryConfigDeclarations(): void {
+  const projectsDir = join(ROOT, 'Projects');
+  if (!existsSync(projectsDir)) return;
+  for (const entry of readdirSync(projectsDir, { withFileTypes: true })) {
+    if (!entry.isDirectory()) continue;
+    if (isTransientTestFixture(entry.name)) continue; // E2E staging dirs (T-20260916-001)
+    const variantJsonPath = join(projectsDir, entry.name, 'variant.json');
+    if (!existsSync(variantJsonPath)) continue; // projects without a variant.json are out of scope
+    let raw: Record<string, unknown> | null = null;
+    try {
+      raw = JSON.parse(readFileSync(variantJsonPath, 'utf-8')) as Record<string, unknown>;
+    } catch {
+      fail(entry.name, 'country-config', `Projects/${entry.name}/variant.json is not valid JSON`,
+        'Fix the JSON syntax — the project-side copy must stay parseable for upgrade tooling');
+      continue;
+    }
+    const cc = raw.country_config as Record<string, unknown> | undefined;
+    if (!cc || typeof cc !== 'object' || Array.isArray(cc)) {
+      fail(entry.name, 'country-config',
+        `Projects/${entry.name}/variant.json missing 'country_config' (ADR-0091 R3 uniform declaration)`,
+        'Copy the country_config block from the variant template\'s variant.json (empty supported = non-adopting)');
+    } else if (cc.profiles_dir !== 'docs/countries' || !Array.isArray(cc.supported)) {
+      fail(entry.name, 'country-config',
+        `Projects/${entry.name}/variant.json country_config diverges from the ADR-0091 R3 shape (profiles_dir="docs/countries", supported array)`,
+        'Re-sync the country_config block from the variant template\'s variant.json');
+    } else {
+      pass(`Projects/${entry.name}/variant.json country_config declaration OK (ADR-0091 R3)`);
+    }
+  }
+}
+
 function checkProjectIdentityPlaceholders(): void {
   const projectsDir = join(ROOT, 'Projects');
   if (!existsSync(projectsDir)) return;
@@ -5371,33 +5448,22 @@ function checkProjectIdentityPlaceholders(): void {
 }
 
 function main(): number {
-  const disposition = templateValidationDisposition(ROOT);
-  if (disposition !== 'validate') {
-    if (disposition === 'skip-detached-l3') {
-      if (!JSON_MODE) {
-        console.log(`${colors.cyan}[SKIP]${colors.reset} templates/ validation is L0-only and this detached L3 project has no templates/ source tree (verified by .claude/template-version.txt and docs/context.md).`);
-      } else {
-        console.log(JSON.stringify({
-          variantsScanned: 0,
-          errors: [],
-          warnings: [],
-          skipped: [{
-            check: 'templates',
-            reason: 'Detached L3 project: templates/ is an L0 source tree and is intentionally absent.',
-          }],
-          summary: '0 error(s), 0 warning(s), 1 skipped check',
-        }, null, 2));
-      }
-      return 0;
-    }
-    console.error(`${colors.red}[ERROR]${colors.reset} templates/ directory not found at: ${TEMPLATES_DIR}. This validator requires templates/ outside a detached L3 project.`);
-    return 1;
-  }
-
   if (!JSON_MODE) {
     console.log(`${colors.cyan}Template Lifecycle Validator${colors.reset}`);
     console.log(`${colors.dim}Root: ${ROOT}${colors.reset}`);
     console.log(`${colors.dim}Variant filter: ${variantArg}${colors.reset}`);
+  }
+
+  // Project (L3) roots carry no templates/common — every check below assumes the
+  // L0/L1 template tree and would fail or crash with ENOENT, so skip cleanly.
+  if (!existsSync(join(TEMPLATES_DIR, 'common'))) {
+    const summary = 'not applicable: no templates/common (variant/project context)';
+    if (JSON_MODE) {
+      console.log(JSON.stringify({ variantsScanned: 0, errors: [], warnings: [], summary }, null, 2));
+    } else {
+      console.log(`\n${colors.green}✓ Template validation ${summary}${colors.reset}`);
+    }
+    return 0;
   }
 
   loadGovernance();
@@ -5498,7 +5564,7 @@ function checkAgentsMdSizeBudget(): void {
     if (size > AGENTS_MD_SIZE_BUDGET) {
       warn(t.variant, 'agents-md-size-budget',
         `${t.path}: ${size.toLocaleString()} chars exceeds the 15,000-char thin-dispatcher budget (ADR-0090) — user decision 2026-09-26 (design Addendum 3): WARN-only visibility metric, no FAIL promotion and no further reduction; Hermes consumers use the documented context_file_max_chars config`,
-        `If truncation matters for a harness, see the config backstop in AGENTS.md §6`);
+        `If truncation matters for a harness, see the config backstop in HERMES.md "Hermes Platform Mechanics" (context_file_max_chars) and CONSTITUTION.md §11`);
     } else {
       pass(`${t.path}: ${size.toLocaleString()} chars (within budget)`);
     }
@@ -5526,7 +5592,12 @@ function checkAgentsMdPointerIntegrity(): void {
     const refs = [...readFileSync(t.path, 'utf-8').matchAll(/\]\((docs\/(?:governance|constitution)\/[^)`]+)\)/g)].map(m => m[1]);
     for (const ref of refs) {
       checked++;
-      const resolvedSomewhere = candidateBases(t.base).some(b => existsSync(join(b, ref)));
+      // v1.50.4: strip the #anchor fragment before the existence check — anchors are
+      // in-page headings, not file names, so `docs/x.md#section` never existsSync'd and
+      // every anchored constitution reference misclassified as post-scaffold-only
+      // (observed 2026-10-02: the AGENTS.md §9.1 weekly-check pointer).
+      const refFile = ref.split('#')[0];
+      const resolvedSomewhere = candidateBases(t.base).some(b => existsSync(join(b, refFile)));
       if (!resolvedSomewhere) {
         if (ref.startsWith('docs/constitution/')) {
           warn(t.variant, 'agents-md-pointer-integrity',
@@ -5552,7 +5623,6 @@ function checkAgentsMdPointerIntegrity(): void {
 
   checkCountryProfileDivergence();                               // B-05: cross-variant last_verified divergence
 
-  checkSharedFileSync();
   checkL0L1ScriptParity();
   checkPlatformDocumentationParity();
   checkRootCommonCommandsParity();
@@ -5565,6 +5635,7 @@ function checkAgentsMdPointerIntegrity(): void {
   checkPmExtendsStubBodies();                                    // T-20260915-010: variant pm.md extends-stub bodies
   checkVariantReadinessGate();   // VRG-01: continuous Variant Readiness Gate enforcement
   checkProjectIdentityPlaceholders(); // fleet WARN: Projects/*/docs identity placeholders (spec 2026-09-24-scaffold-identity-overview-design)
+  checkProjectCountryConfigDeclarations(); // T-20260927-012: project-side half of the ADR-0091 R3 uniform declaration
   checkAgentsMdSizeBudget();          // ADR-0090 W0: thin-dispatcher ≤15k budget (WARN; FAIL promotion at W4)
   checkAgentsMdPointerIntegrity();    // ADR-0090 W0: pointer-table references resolve on disk
 

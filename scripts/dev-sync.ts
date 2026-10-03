@@ -1,4 +1,30 @@
-// @version 1.20.0
+// @version 1.23.0
+// v1.23.0 (T-20261001-015): step 6.5 scoped-staging default flip — exclusion is now the
+// default (soak exit per docs/designs/2026-09-12-dev-sync-scoped-staging-design.md);
+// opt out with SYNC_SCOPED_STAGING=0 or --warn-staging (=1 / --scoped-staging stay no-ops).
+// v1.22.0 (2026-09-30, T-20260929-015): step 4.51 governance-l1 publish passes --apply
+// plus the --docs marker injection (the flagless form was a dry run that always exited 0,
+// so L0 instruction-file edits never reached templates/common during /sync), and a dry-run
+// verification afterwards fails the step when L1 stays out of sync. Regression coverage in
+// tests/unit/dev-sync-pipeline-order.test.ts.
+// v1.21.1 (2026-09-29): step 3.9 auto-E5 parses `git status --porcelain -uall` by column
+//          (slice(3)) — the old `^\S+\s+` strip left `M path` for unstaged-only lines and
+//          directory entries for untracked dirs, so upgrade diffs never matched the manifest.
+// v1.21.0: unborn-main branch detection + fresh-repo remote bootstrap
+//           (T-20260926-031, spec
+//           docs/designs/2026-09-26-dev-sync-unborn-main-bootstrap-design.md).
+//           (1) Step 5 resolves the checked-out branch via
+//           `git symbolic-ref --short -q HEAD` first — `git rev-parse
+//           --abbrev-ref HEAD` fails on an unborn branch (fresh scaffold,
+//           zero commits), leaving an empty branch name that skipped pr/*
+//           creation and committed straight onto main, which pre-push then
+//           blocked. (2) New step 6.7: after the PR-branch push, when
+//           `git ls-remote --heads origin main` shows no main, seed
+//           origin/main via the GitHub Contents API (server-side, the
+//           web-UI "initialize with README" equivalent — not a git push,
+//           so the PR-only-main control holds), merge the seed into the
+//           PR branch with --allow-unrelated-histories -X ours, re-push.
+//           No-op whenever origin/main exists.
 // v1.20.0: Step 3.85 VERSION_MANIFEST pre-convergence — audit.ts auto-activates
 //           the manifest reconciliation gate on every invocation including
 //           Step 3.9's --spec-check call, which failed blocking before 4.7
@@ -164,10 +190,12 @@ if (path.resolve(actualCwd) !== expectedRoot) {
 const rawArgs = process.argv.slice(2);
 let bodyFilePath = '';
 let specExempt = '';
-// Scoped staging (design: docs/designs/2026-09-12-dev-sync-scoped-staging-design.md).
-// Default is the ADR-0055 WARN soak; SYNC_SCOPED_STAGING=1 / --scoped-staging
-// previews the promoted exclude-behavior.
-let scopedStaging = process.env.SYNC_SCOPED_STAGING === '1';
+// Scoped staging (design: docs/designs/2026-09-12-dev-sync-scoped-staging-design.md;
+// T-20261001-015 soak exit). DEFAULT is the promoted exclude-behavior — files that
+// are neither task-staged nor pipeline-generated are left OUT of the commit. Opt OUT
+// (restore the ADR-0055 WARN soak that sweeps them in) with SYNC_SCOPED_STAGING=0
+// or --warn-staging; SYNC_SCOPED_STAGING=1 / --scoped-staging remain accepted no-ops.
+let scopedStaging = process.env.SYNC_SCOPED_STAGING !== '0';
 // Main-integration hardening (ADR-0081 / T-20260918-002):
 //   --require-current-main — escalate the pre-flight main-drift warning to an
 //   abort (default: warn only).
@@ -190,6 +218,9 @@ for (let i = 0; i < rawArgs.length; i++) {
     specExempt = arg.slice('--spec-exempt='.length);
   } else if (arg === '--scoped-staging') {
     scopedStaging = true;
+  } else if (arg === '--warn-staging') {
+    // T-20261001-015: explicit opt-out back to the ADR-0055 WARN soak.
+    scopedStaging = false;
   } else if (arg === '--require-current-main') {
     requireCurrentMain = true;
   } else if (arg === '--conclude-merge') {
@@ -524,9 +555,9 @@ if (fs.existsSync(specRegPath)) {
         if (fs.existsSync(manifestPath)) {
             try {
                 const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'));
-                const st = await $`git status --porcelain`.quiet().nothrow();
+                const st = await $`git status --porcelain -uall`.quiet().nothrow();
                 const changedFiles = String(st.stdout ?? '').split('\n')
-                    .map(l => l.replace(/^\S+\s+/, '').trim().replace(/^"|"$/g, ''))
+                    .map(l => l.slice(3).replace(/^.* -> /, '').trim().replace(/^"|"$/g, ''))
                     .filter(Boolean);
                 if (isDeliveredDiff(changedFiles, manifest.files ?? [])) {
                     console.log(`${YELLOW}ℹ️  Step 3.9: diff fully explained by upgrade delivery — auto-applying E5 (sync-only).${RESET}`);
@@ -706,13 +737,18 @@ if (isWorkspaceRoot) {
 }
 
 // ── Step 4.51: Governance L0→L1 file deployment (CLAUDE/GEMINI/AGENTS/CODEX.md) ──
-//     ADR-0077 D11: the four instruction twins ride governance-l1 so model/registry
+//     ADR-0077 D11: the instruction twins ride governance-l1 so model/registry
 //     edits at L0 reach templates/common in the same sync instead of waiting for a
 //     manual `--governance-l1` run. Fatal in L0 context, same contract as 4.5.
+//     v1.22.0 (T-20260929-015): the invocation now passes --apply (the flagless form
+//     is a dry run that only printed the pending governance deployments and always
+//     exited 0, so L0 edits to CLAUDE/GEMINI/AGENTS/CODEX/HERMES.md never reached
+//     templates/common during /sync) plus the --docs marker injection, and a dry-run
+//     verification afterwards fails the step if L1 is still out of sync.
 if (isWorkspaceRoot && isL0Context) {
     console.log('\n📘 Publishing governance instruction files L0→L1 (CLAUDE/GEMINI/AGENTS/CODEX.md)...');
     try {
-        const govRes = await $`bun scripts/propagate-to-templates.ts --governance-l1`.nothrow();
+        const govRes = await $`bun scripts/propagate-to-templates.ts --apply --governance-l1 --docs`.nothrow();
         if (govRes.exitCode !== 0) {
             console.log(`${RED}❌ governance-l1 publish failed — fatal in L0 context${RESET}`);
             if (import.meta.main) {
@@ -721,6 +757,15 @@ if (isWorkspaceRoot && isL0Context) {
         }
     } catch (e) {
         console.log(`${RED}❌ governance-l1 publish errored — fatal in L0 context: ${e}${RESET}`);
+        if (import.meta.main) {
+          process.exit(1);
+        }
+    }
+    // Fail the step when L1 STAYS out of sync after the apply (belt-and-suspenders:
+    // the dry run exits 1 on any pending diff).
+    const govVerify = await $`bun scripts/propagate-to-templates.ts --governance-l1 --docs`.nothrow();
+    if (govVerify.exitCode !== 0) {
+        console.log(`${RED}❌ governance-l1 still out of sync after apply — fatal in L0 context${RESET}`);
         if (import.meta.main) {
           process.exit(1);
         }
@@ -980,8 +1025,18 @@ if (auditRes.exitCode !== 0) {
 // 5. Branch -> commit -> push -> PR
 let currentBranch = "";
 try {
-    const { stdout } = await $`git rev-parse --abbrev-ref HEAD`.quiet().nothrow();
-    currentBranch = stdout.toString().trim();
+    // T-20260926-031: `git rev-parse --abbrev-ref HEAD` fails on an unborn
+    // branch (fresh scaffold, zero commits) — the empty result skipped pr/*
+    // creation and committed straight onto main. `git symbolic-ref` resolves
+    // the checked-out branch even before the first commit; the rev-parse
+    // fallback keeps detached-HEAD semantics unchanged.
+    const symbolic = await $`git symbolic-ref --short -q HEAD`.quiet().nothrow();
+    if (symbolic.exitCode === 0) {
+        currentBranch = symbolic.stdout.toString().trim();
+    } else {
+        const { stdout } = await $`git rev-parse --abbrev-ref HEAD`.quiet().nothrow();
+        currentBranch = stdout.toString().trim();
+    }
 } catch (err) {
   console.error(`[dev-sync] Error: ${err}`);
 }
@@ -1109,12 +1164,12 @@ const residual = [...s1Paths].filter(p => !committable.has(p)).sort();
 if (residual.length > 0) {
     const disposition = scopedStaging
         ? 'left OUT of this commit by scoped staging'
-        : 'swept INTO this commit by git add -A';
+        : 'swept INTO this commit by git add -A (WARN-soak opt-out)';
     console.log(`${YELLOW}⚠️  Scoped-staging check: ${residual.length} working-tree file(s) were neither staged for this task nor generated by the pipeline — ${disposition}:${RESET}`);
     residual.forEach(f => console.log(`   ${f}`));
     console.log(`${YELLOW}   Stage task files explicitly with 'git add <file>' before /sync, or gitignore scratch paths.${RESET}`);
     if (!scopedStaging) {
-        console.log(`${YELLOW}   Promotion will exclude these; preview with SYNC_SCOPED_STAGING=1 (or --scoped-staging).${RESET}`);
+        console.log(`${YELLOW}   Exclusion is the default (T-20261001-015) — drop SYNC_SCOPED_STAGING=0 / --warn-staging to leave these out.${RESET}`);
     }
 }
 
@@ -1125,7 +1180,7 @@ if (scopedStaging) {
     // as the sensitive-file guard above).
     if (snapshotFailed) {
         console.log(`${RED}❌ Scoped staging could not snapshot the working tree — refusing to stage.${RESET}`);
-        console.log(`${YELLOW}   Re-run without --scoped-staging to fall back to the WARN-soak behavior.${RESET}`);
+        console.log(`${YELLOW}   Re-run with --warn-staging to fall back to the WARN-soak behavior.${RESET}`);
         if (import.meta.main) {
           process.exit(1);
         }
@@ -1255,6 +1310,76 @@ if (!pushRetry.success) {
     }
 }
 
+// 6.7 Fresh-repo remote bootstrap (T-20260926-031, spec
+// docs/designs/2026-09-26-dev-sync-unborn-main-bootstrap-design.md).
+// The first /sync in a brand-new project pushes a pr/* branch to an EMPTY
+// remote: no origin/main exists, so `gh pr create` has no base branch and the
+// flow dead-ends — while the pre-push hook (by design) blocks every direct
+// push to main, so main is unreachable. Seed origin/main with a minimal
+// README through the GitHub Contents API — a server-side commit, the same
+// one the web UI's "initialize with a README" creates; it is NOT a git push,
+// so the PR-only-main control holds, and all real content still lands through
+// the reviewed PR. Then merge the seed into the PR branch (unrelated
+// histories; `-X ours` keeps the PR branch's README in the add/add) and
+// re-push. No-op whenever origin/main already exists — every normal repo
+// skips this block entirely.
+const lsRemoteMain = await $`git ls-remote --heads origin main`.quiet().nothrow();
+const remoteMainExists = lsRemoteMain.exitCode === 0 && lsRemoteMain.stdout.toString().trim().length > 0;
+if (!remoteMainExists) {
+    console.log(`${CYAN}ℹ️  origin/main does not exist yet — running fresh-repo bootstrap (seed main, merge into '${branch}', re-push)${RESET}`);
+    const remoteUrlRes = await $`git remote get-url origin`.quiet().nothrow();
+    const remoteUrl = remoteUrlRes.stdout.toString().trim();
+    const slugMatch = remoteUrl.match(/github\.com[:/](.+\/.+?)(?:\.git)?$/i);
+    if (!slugMatch) {
+        console.error(`${RED}❌ Fresh-repo bootstrap failed: origin '${remoteUrl}' is not a GitHub slug, cannot seed origin/main.${RESET}`);
+        console.error(`${YELLOW}   Seed main manually (or point origin at GitHub), then re-run /sync to open the PR.${RESET}`);
+        if (import.meta.main) {
+          process.exit(1);
+        }
+    }
+    const repoSlug = slugMatch![1];
+    const ghAuth = await $`gh auth status`.quiet().nothrow();
+    if (ghAuth.exitCode !== 0) {
+        console.error(`${RED}❌ Fresh-repo bootstrap failed: gh is not authenticated, cannot seed origin/main on ${repoSlug}.${RESET}`);
+        console.error(`${YELLOW}   Run 'gh auth login', or seed main manually, then re-run /sync.${RESET}`);
+        if (import.meta.main) {
+          process.exit(1);
+        }
+    }
+    const repoName = repoSlug.split('/')[1] || repoSlug;
+    const seedB64 = Buffer.from(`# ${repoName}\n\nBootstrap seed commit created before the first /sync PR merged. See the PR history for the initial import.\n`).toString('base64');
+    const seedRes = await $`gh api repos/${repoSlug}/contents/README.md -X PUT -f message=${'chore: repo bootstrap seed (pre-first-sync)'} -f content=${seedB64} --jq .commit.sha`.quiet().nothrow();
+    if (seedRes.exitCode !== 0) {
+        console.error(`${RED}❌ Fresh-repo bootstrap failed: could not seed origin/main on ${repoSlug}.${RESET}`);
+        console.error(`${YELLOW}   ${seedRes.stderr.toString().trim().split('\n')[0] || 'gh api error'}${RESET}`);
+        console.error(`${YELLOW}   Seed main manually, then re-run /sync to open the PR.${RESET}`);
+        if (import.meta.main) {
+          process.exit(1);
+        }
+    }
+    const fetchSeed = await $`git fetch origin main`.quiet().nothrow();
+    const mergeSeed = fetchSeed.exitCode === 0
+        ? await $`git merge origin/main --allow-unrelated-histories -X ours --no-edit`.nothrow()
+        : { exitCode: 1, stderr: fetchSeed.stderr };
+    if (mergeSeed.exitCode !== 0) {
+        console.error(`${RED}❌ Fresh-repo bootstrap failed: merging the seed into '${branch}' did not resolve cleanly.${RESET}`);
+        console.error(`${YELLOW}   ${(mergeSeed.stderr?.toString() ?? '').trim().split('\n')[0]}${RESET}`);
+        console.error(`${YELLOW}   Resolve the conflict on '${branch}', push, then re-run /sync (step 7 will open the PR).${RESET}`);
+        if (import.meta.main) {
+          process.exit(1);
+        }
+    }
+    const rePush = await $`git push origin ${branch}`.nothrow();
+    if (rePush.exitCode !== 0) {
+        console.error(`${RED}❌ Fresh-repo bootstrap failed: re-push of '${branch}' was rejected.${RESET}`);
+        console.error(`${YELLOW}   ${rePush.stderr.toString().trim().split('\n')[0]}${RESET}`);
+        if (import.meta.main) {
+          process.exit(1);
+        }
+    }
+    console.log(`${GREEN}✓ Fresh-repo bootstrap complete: origin/main seeded, '${branch}' carries the seed merge — continuing to PR creation${RESET}`);
+}
+
 // 7. Generate PR body and open PR — but skip creation if an OPEN PR already exists
 // for this branch (e.g. re-running /sync to push a follow-up commit onto an open PR).
 // The push above already updated it; calling `gh pr create` again would just fail
@@ -1289,7 +1414,7 @@ if (existingPrUrl) {
             } else {
                 // Same English gate as the commit message above.
                 if (hasNonEnglish(agentBody)) {
-                    console.log(`${RED}❌ Agent-written PR body must be written in English (CONSTITUTION.md §3).${RESET}`);
+                    console.log(`${RED}❌ Agent-written PR body must be written in English (context.md §3).${RESET}`);
                     console.log(`${YELLOW}   Regenerate the body in English and re-run /sync.${RESET}`);
                     if (import.meta.main) {
                         process.exit(1);

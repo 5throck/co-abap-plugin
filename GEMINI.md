@@ -116,6 +116,8 @@ The High/Medium/Low tier concept and its usage rules are the Single Source of Tr
 ---
 
 <!-- COMMON-GEMINI:START -->
+> **Mandatory**: Read [`AGENTS.md`](AGENTS.md) first and follow its content in every task. It is the SSOT registry for the agent roster, PM Gateway workflow, tier model, skill resolution priority, and universal baseline behaviors; this file carries platform-specific behavior only.
+
 #### Cost Optimization (3-Tier Model Strategy)
 The High/Medium/Low tier concept and its usage rules are the Single Source of Truth in [AGENTS.md §3.6 3-Tier Strategy](AGENTS.md#36-3-tier-strategy). Gemini/Antigravity's model-ID mapping (overridden per subagent invocation when appropriate):
 - **High-tier** → `gemini-3.1-pro` (Parameter: `thinking_level="medium"`)
@@ -149,7 +151,7 @@ When writing Korean documentation or Korean translation output, prefer native Ko
 <!-- COMMON-GEMINI:START -->
 ## Execution Plan Boilerplate
 
-The execution plan table format, the Design Gate (Row 0) rule, exemption categories, and the `/sync`-as-final-step rule are the Single Source of Truth in **[AGENTS.md §5.1 Standard Execution Plan Template](AGENTS.md#51-standard-execution-plan-template)** and **[§5.1.1 Design Gate Exemptions](AGENTS.md#511-design-gate-exemptions)** — do not restate them here.
+The execution plan table format, the Design Gate (Row 0) rule, exemption categories, and the `/sync`-as-final-step rule are the Single Source of Truth in **[Execution Plan Templates §5.1 Standard Execution Plan Template](docs/governance/agents/execution-plan-templates.md#51-standard-execution-plan-template)** and **[§5.1.1 Design Gate Exemptions](docs/governance/agents/execution-plan-templates.md#511-design-gate-exemptions)** — do not restate them here.
 
 > **Note (Antigravity-specific)**: Use the literal Gemini model ID (e.g. `gemini-3.1-pro`) in the `Model` column, not a Claude-style short alias.
 
@@ -296,7 +298,7 @@ This project contains a `.claude/` directory. To prevent configuration drift and
 
 ---
 
-*Last Updated: 2026-09-26 — resynced Gemini-Specific & Antigravity Workflows with the current
+*Last Updated: 2026-10-03 — resynced Gemini-Specific & Antigravity Workflows with the current
 templates/common/GEMINI.md baseline (Role Declaration, Language Policy, Execution Plan
 Boilerplate, Git & PR Additions, Pre-Edit Quality Gate had drifted out of sync — only 1 of 4
 COMMON-GEMINI markers remained); kept all vsp/ABAP-specific content (Session Start Checklist,

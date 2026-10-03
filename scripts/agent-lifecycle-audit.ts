@@ -9,12 +9,21 @@
  *   bun scripts/agent-lifecycle-audit.ts
  *   bun scripts/agent-lifecycle-audit.ts --json   # JSON output
  *
- * @version 1.3.2
+ * @version 1.7.0
+ *          v1.7.0 (2026-10-03, design 2026-10-03-validator-warning-fixes-design):
+ *          Check 11 skips metadata-only commits via isMetadataOnlyChange
+ *          (amends DEC-20260930-01 ruling 2); v1.6.0 (T-20261001-004): Check 8-10
+ *          resolve the tier through the extends chain for extends-stub agents
+ *          (delivered pm.md copies inherit tier from their target); stubs whose
+ *          template-relative extends cannot be resolved at the audit location are
+ *          exempted instead of failing with "Missing tier".
  * @l2-propagate false
- * @last_updated 2026-09-21
- * v1.3.2: Discover every frontmatter-bearing document in agents/, including
- *         minimal extends stubs such as pm.md. Agent discovery must not depend
- *         on optional role/color metadata.
+ * @last_updated 2026-09-30
+ * v1.5.0: Check 11 compares against the newest non-sync-only commit (DEC-20260930-01
+ *         ruling 2, T-20260930-024) — `chore(upgrade): template sync`,
+ *         `chore(templates): auto-release`, and `propagate sync` cascade commits no
+ *         longer make frontmatter last_updated look stale.
+ * v1.4.0: In root agents/ directory, any .md with a name: frontmatter key is an agent (description: accepted; excludes README*, AGENTS.md). Check 3 accepts role OR description.
  * v1.3.1: Check 12 gated to IS_WORKSPACE_ROOT — project snapshots keep delivered owners as-is (co-safety virtual domain owners would otherwise fail project-side audits).
  * @license MIT
  *
@@ -25,7 +34,7 @@
  */
 
 import { readFileSync, existsSync, readdirSync, statSync } from 'node:fs';
-import { join, relative, dirname, basename } from 'node:path';
+import { join, relative, dirname, basename, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { cwd } from 'node:process';
 
@@ -36,6 +45,8 @@ interface AgentFrontmatter {
   color?: string;
   description?: string;
   responsibilities?: string[];
+  /** Extends-stub pointer to the frontmatter source (delivered pm.md copies). */
+  extends?: string;
   tier?: {
     claude?: 'high' | 'medium' | 'low';
     antigravity?: 'high' | 'medium' | 'low';
@@ -170,8 +181,34 @@ function parseAgentFrontmatter(filePath: string): AgentFrontmatter | null {
   }
 }
 
+/**
+ * T-20261001-004: resolve the effective tier for an agent file. Extends-stub agents
+ * (delivered pm.md copies) inherit frontmatter from their target — a stub legitimately
+ * carries no tier of its own. Follows the extends chain (bounded depth, cycle-safe via
+ * file identity); returns undefined when the chain cannot be resolved at this location
+ * (project-level stubs whose template-relative extends only resolves in the template
+ * tree) — such stubs are EXEMPT from the tier checks rather than failed on inherited
+ * metadata.
+ */
+function resolveEffectiveTier(
+  agentFile: string,
+  frontmatter: Record<string, unknown>,
+  visited: Set<string> = new Set(),
+): AgentFrontmatter['tier'] | undefined {
+  const tier = frontmatter.tier as AgentFrontmatter['tier'] | undefined;
+  if (tier) return tier;
+  const extendsPath = typeof frontmatter.extends === 'string' ? frontmatter.extends.trim() : '';
+  if (!extendsPath) return undefined;
+  const target = resolve(dirname(agentFile), extendsPath);
+  if (visited.has(target) || !existsSync(target)) return undefined;
+  visited.add(target);
+  const parent = parseAgentFrontmatter(target);
+  if (!parent) return undefined;
+  return resolveEffectiveTier(target, parent as unknown as Record<string, unknown>, visited);
+}
+
 // Recursively find all agent files
-export function findAgentFiles(dir: string, depth = 0): string[] {
+export function findAgentFiles(dir: string, depth = 0, explicitAgentsDir = false): string[] {
   const agents: string[] = [];
 
   if (!existsSync(dir)) return agents;
@@ -181,7 +218,7 @@ export function findAgentFiles(dir: string, depth = 0): string[] {
   if (dir === ROOT) {
     const agentsDir = join(dir, 'agents');
     if (existsSync(agentsDir)) {
-      return findAgentFiles(agentsDir);
+      return findAgentFiles(agentsDir, 0, true);
     }
     return agents;
   }
@@ -196,16 +233,27 @@ export function findAgentFiles(dir: string, depth = 0): string[] {
     if (entry.isDirectory()) {
       if (entry.name === 'node_modules' || entry.name === '_archive' ||
           entry.name === 'skills' || entry.name === 'commands') continue;
-      agents.push(...findAgentFiles(fullPath, depth + 1));
+      agents.push(...findAgentFiles(fullPath, depth + 1, explicitAgentsDir));
     } else if (entry.name.endsWith('.md') &&
                entry.name !== 'AGENTS.md' &&
                entry.name !== 'README.md' &&
                entry.name !== 'SKILL.md') {
-      // Every frontmatter-bearing document under agents/ is an agent definition.
-      // In particular, L3 pm.md may be an extends stub and intentionally has no
-      // role/color fields until its workspace base is available.
+      // Check if it looks like an agent file (has frontmatter with role or color)
       const content = readFileSync(fullPath, 'utf-8');
-      if (/^(?:\uFEFF)?---\r?\n[\s\S]*?\r?\n---/m.test(content)) agents.push(fullPath);
+      const frontmatterMatch = content.match(/^---\n([\s\S]*?)\n---/);
+      if (frontmatterMatch) {
+        const fm = frontmatterMatch[1];
+        // Inside the explicit agents/ directory, a named frontmatter is enough
+        // (project agents use description: and no role:).
+        if (explicitAgentsDir) {
+          if (/^name:/m.test(fm) && !entry.name.startsWith('README')) agents.push(fullPath);
+          continue;
+        }
+        // Agents have 'role:' or 'color:' in frontmatter; skills have 'description:' instead
+        if ((fm.includes('role:') || fm.includes('color:')) && !fm.includes('description: This skill should be used')) {
+          agents.push(fullPath);
+        }
+      }
     }
   }
 
@@ -291,6 +339,76 @@ export function isFrontmatterStale(frontmatterDate: string, lastCommitDate: stri
   return frontmatterDate < lastCommitDate;
 }
 
+// Sync-only commit subjects (DEC-20260930-01 ruling 2, T-20260930-024): pipeline
+// cuts that copy template content without a content decision of their own.
+// `chore(upgrade): template sync vX` — fleet upgrade delivery into project repos;
+// `chore(templates): auto-release vX` — template release cut at L0;
+// `... propagate sync ...` — L1 publish cascade into platform mirrors.
+const SYNC_ONLY_COMMIT_PATTERNS: RegExp[] = [
+  /^chore\(upgrade\): template sync\b/i,
+  /^chore\(templates\): auto-release\b/i,
+  /\bpropagate sync\b/i,
+];
+
+export function isSyncOnlyCommitSubject(subject: string): boolean {
+  return SYNC_ONLY_COMMIT_PATTERNS.some((re) => re.test(subject));
+}
+
+/** True when a git diff contains only changes to `last_updated:` lines.
+ *  Metadata-only commits are those where every changed line (starting with +/-)
+ *  in the hunk body (after @@) matches /^[+-]last_updated:/, excluding diff headers
+ *  (diff --git, index, ---, +++, new file, deleted file, old/new mode, similarity, rename)
+ *  which appear only before the first @@ line. Empty diffs (mode-only, rename-only)
+ *  return false (fail-open). Used by lastContentCommitDate to skip bump commits that
+ *  don't represent content changes. */
+export function isMetadataOnlyChange(diffText: string): boolean {
+  const lines = diffText.split('\n');
+  let hasChangedLines = false;
+  let inHunk = false;
+
+  for (const line of lines) {
+    // Empty lines are always skipped
+    if (!line.trim()) continue;
+
+    // "\ No newline at end of file" is metadata, skip it
+    if (line.startsWith('\\ ')) continue;
+
+    // @@ marks the start of the hunk body; headers end
+    if (line.startsWith('@@')) {
+      inHunk = true;
+      continue;
+    }
+
+    // Before first @@: skip all diff headers
+    if (!inHunk) {
+      if (line.startsWith('diff --git')) continue;
+      if (line.startsWith('index')) continue;
+      if (line.startsWith('---')) continue;
+      if (line.startsWith('+++')) continue;
+      if (line.startsWith('new file')) continue;
+      if (line.startsWith('deleted file')) continue;
+      if (line.startsWith('old mode')) continue;
+      if (line.startsWith('new mode')) continue;
+      if (line.startsWith('similarity')) continue;
+      if (line.startsWith('rename')) continue;
+      // If we encounter something else before @@, skip it
+      continue;
+    }
+
+    // In hunk body: check if this is a changed line
+    if (line.startsWith('+') || line.startsWith('-')) {
+      hasChangedLines = true;
+      // All changed lines must match /^[+-]last_updated:/
+      if (!/^[+-]last_updated:/.test(line)) {
+        return false; // Found a changed line that isn't last_updated
+      }
+    }
+  }
+
+  // True only if we found at least one changed line and all are last_updated
+  return hasChangedLines;
+}
+
 // ── v1.3.0 lifecycle-modernization checks (2026-09-21) ──────────────────────
 
 /** An agent name resolves if a roster entry, an agent file, or a variant agent file exists. */
@@ -362,11 +480,51 @@ function extractFrontmatterDate(filePath: string, field: string): string | null 
 
 // Last git commit date (YYYY-MM-DD) for a file; null when git is unavailable or the
 // file has no commits yet (freshly added, uncommitted).
-function lastCommitDate(filePath: string): string | null {
+/** Newest commit touching the file that is not a sync-only pipeline cut
+ *  (DEC-20260930-01 ruling 2): upgrade template-sync, auto-release, and
+ *  propagate-sync cascade commits are skipped so copying template content
+ *  alone never makes frontmatter last_updated look stale. Metadata-only commits
+ *  (changing only last_updated: lines) are also skipped per isMetadataOnlyChange.
+ *  Returns null when git history is unavailable or every commit touching the file
+ *  is sync-only. */
+export function lastContentCommitDate(filePath: string, repoCwd: string = cwd()): string | null {
   try {
-    const result = spawnSync('git', ['log', '-1', '--format=%cs', '--', filePath], { encoding: 'utf-8' });
-    const date = (result.stdout || '').trim();
-    return /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : null;
+    const result = spawnSync('git', ['log', '-n', '200', '--format=%H%x09%cs%x09%s', '--', filePath], { encoding: 'utf-8', cwd: repoCwd });
+    for (const line of (result.stdout || '').split('\n')) {
+      const trimmed = line.trim();
+      if (!trimmed) continue;
+
+      // Parse: SHA<tab>date<tab>subject
+      const parts = trimmed.split('\t');
+      if (parts.length < 3) continue;
+
+      const sha = parts[0];
+      const date = parts[1];
+      const subject = parts.slice(2).join('\t');
+
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) continue;
+
+      // Skip sync-only commits
+      if (isSyncOnlyCommitSubject(subject)) continue;
+
+      // For non-sync-only commits, check if it's metadata-only by running git show
+      try {
+        const showResult = spawnSync('git', ['show', sha, '-U0', '--format=', '--', filePath], {
+          encoding: 'utf-8',
+          cwd: repoCwd,
+        });
+        if (showResult.status === 0 && isMetadataOnlyChange(showResult.stdout || '')) {
+          // Metadata-only commit; skip it
+          continue;
+        }
+      } catch {
+        // git show failed; treat as content commit (fail-open)
+      }
+
+      // Return the first non-skipped commit
+      return date;
+    }
+    return null;
   } catch {
     return null;
   }
@@ -444,12 +602,12 @@ function auditAgents(jsonMode = false): AuditResult {
     }
 
     // Check 3: Missing role
-    if (!frontmatter.role) {
+    if (!frontmatter.role && !frontmatter.description) {
       warnings.push({
         level: 'warning',
         file: relPath,
-        message: 'Missing role in frontmatter',
-        fix: "Add 'role: brief description of agent role'",
+        message: 'Missing role and description in frontmatter',
+        fix: "Add 'role: brief description of agent role' (or 'description:')",
       });
     }
 
@@ -498,10 +656,13 @@ function auditAgents(jsonMode = false): AuditResult {
 
     // Check 11: Stale last_updated (T-20260909-004) — the file's git history moved
     // past its declared last_updated without the lifecycle metadata being refreshed.
+    // Sync-only pipeline commits (upgrade template-sync, auto-release, propagate
+    // cascade) are skipped per DEC-20260930-01 ruling 2. Metadata-only commits
+    // (changing only last_updated: lines) are also skipped per isMetadataOnlyChange.
     // Archived agents are exempt: stale metadata is expected there by definition.
     if (frontmatter.status !== 'archived' && !relPath.includes('_archive')) {
       const fmDate = parseFrontmatterDate(extractFrontmatterDate(agentFile, 'last_updated'));
-      const commitDate = lastCommitDate(agentFile);
+      const commitDate = lastContentCommitDate(agentFile);
       if (fmDate && commitDate && isFrontmatterStale(fmDate, commitDate)) {
         warnings.push({
           level: 'warning',
@@ -574,19 +735,24 @@ function auditAgents(jsonMode = false): AuditResult {
       }
     }
 
-    // Check 8: Tier validation - missing tier field
-    if (!frontmatter.tier) {
-      errors.push({
-        level: 'error',
-        file: relPath,
-        message: 'Missing tier field in frontmatter',
-        fix: "Add tier field with claude, antigravity, and gemini-cli specifications",
-      });
+    // Check 8: Tier validation — extends-stubs inherit tier from their target
+    // (T-20261001-004): a stub without its own tier is legitimate; follow the chain
+    // and exempt the stub when the chain cannot be resolved at this location.
+    const effectiveTier = resolveEffectiveTier(agentFile, frontmatter as unknown as Record<string, unknown>);
+    if (!effectiveTier) {
+      if (!frontmatter.extends) {
+        errors.push({
+          level: 'error',
+          file: relPath,
+          message: 'Missing tier field in frontmatter',
+          fix: "Add tier field with claude, antigravity, and gemini-cli specifications",
+        });
+      }
     } else {
       // Check 9: Tier validation - missing platforms
       const requiredPlatforms = ['claude', 'antigravity', 'gemini-cli'] as const;
       for (const platform of requiredPlatforms) {
-        if (!frontmatter.tier[platform]) {
+        if (!effectiveTier[platform]) {
           errors.push({
             level: 'error',
             file: relPath,
@@ -596,11 +762,11 @@ function auditAgents(jsonMode = false): AuditResult {
         } else {
           // Check 10: Tier validation - invalid tier values
           const validTiers = ['high', 'medium', 'low'];
-          if (!validTiers.includes(frontmatter.tier[platform])) {
+          if (!validTiers.includes(effectiveTier[platform])) {
             errors.push({
               level: 'error',
               file: relPath,
-              message: `Invalid tier.${platform} value: "${frontmatter.tier[platform]}"`,
+              message: `Invalid tier.${platform} value: "${effectiveTier[platform]}"`,
               fix: `Use one of: ${validTiers.join(', ')}`,
             });
           }
@@ -747,3 +913,4 @@ Platform: ${PLATFORM}
 
   process.exit(result.errors.length > 0 ? 1 : 0);
 }
+

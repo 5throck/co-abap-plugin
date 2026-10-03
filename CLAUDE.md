@@ -79,6 +79,8 @@ Config file: `.mcp.json` (project root) - auto-loaded by both the CLI and the De
 * **Path Resolving**: relative paths (e.g., `./server` or `python scripts/mcp.py`) are automatically resolved by Claude Code relative to the individual project's root folder. When defining commands inside `.mcp.json`, always keep command executable paths relative to the project directory for portable cross-platform runs.
 
 <!-- COMMON-CLAUDE:START -->
+> **Mandatory**: Read [`AGENTS.md`](AGENTS.md) first and follow its content in every task. It is the SSOT registry for the agent roster, PM Gateway workflow, tier model, skill resolution priority, and universal baseline behaviors; this file carries platform-specific behavior only.
+
 #### teammateMode (Claude Code Agent Teams execution mode)
 
 **teammateMode** specifies the parallel execution mode when Agent Teams is enabled in Claude Code.
@@ -121,9 +123,9 @@ When writing Korean documentation or Korean translation output, prefer native Ko
 <!-- COMMON-CLAUDE:START -->
 ## Execution Plan Boilerplate
 
-The execution plan table format, the Design Gate (Row 0) rule, exemption categories, and the `/sync`-as-final-step rule are the Single Source of Truth in **[AGENTS.md §5.1 Standard Execution Plan Template](AGENTS.md#51-standard-execution-plan-template)** and **[§5.1.1 Design Gate Exemptions](AGENTS.md#511-design-gate-exemptions)** — do not restate them here.
+The execution plan table format, the Design Gate (Row 0) rule, exemption categories, and the `/sync`-as-final-step rule are the Single Source of Truth in **[Execution Plan Templates §5.1 Standard Execution Plan Template](docs/governance/agents/execution-plan-templates.md#51-standard-execution-plan-template)** and **[§5.1.1 Design Gate Exemptions](docs/governance/agents/execution-plan-templates.md#511-design-gate-exemptions)** — do not restate them here.
 
-> **Note (Claude Code-specific)**: The `Model` column shows the Claude Code short alias (`sonnet`/`opus`/`haiku`/`fable`) actually passed to the `Agent()` tool's `model` parameter — not the registry ID (e.g. `claude-sonnet-5-0`). See §6 (Native Sub-agents) below for the registry-ID → alias translation table. On Gemini/Antigravity, use the literal model ID instead (see GEMINI.md's equivalent note).
+> **Note (Claude Code-specific)**: The `Model` column shows the Claude Code short alias (`sonnet`/`opus`/`haiku`/`fable`) actually passed to the `Agent()` tool's `model` parameter — not the registry ID (e.g. `claude-sonnet-5-5`). See §6 (Native Sub-agents) below for the registry-ID → alias translation table. On Gemini/Antigravity, use the literal model ID instead (see GEMINI.md's equivalent note).
 <!-- Note: `fable` is a forward-looking alias not yet registered in docs/workspace-schema.json; do not use until added to the schema -->
 
 **Claude Code execution**: Use the native `Agent` tool for specialist dispatch. See §6 (Native Sub-agents) and §7 (Native Plan Mode) in this file.
@@ -134,7 +136,7 @@ Use the native `Agent` tool to spawn sub-agents for parallel or isolated tasks. 
 
 > **Agent Architecture**: See [docs/context.md](docs/context.md) for governance rules.
 > **Agent Roster**: See [AGENTS.md](AGENTS.md) for the canonical index of all available agents.
-> **docs-writer tier**: Medium (claude-sonnet-5-0) — upgraded from Low per 2026-05-28 team restructuring.
+> **docs-writer tier**: Medium (claude-sonnet-5-5) — upgraded from Low per 2026-05-28 team restructuring.
 
 **Agent Dispatch** - use the `Agent` tool (not a bash CLI command):
 ```
@@ -146,11 +148,11 @@ Agent(
 )
 ```
 
-> **Registry name → `model` parameter mapping**: `docs/workspace-schema.json` and the tables above name models by full registry ID (e.g. `claude-opus-5-0`) for cross-platform documentation. The native `Agent` tool's `model` parameter only accepts the short aliases `sonnet | opus | haiku | fable`. <!-- Note: `fable` is a forward-looking alias not yet registered in workspace-schema.json --> When dispatching, translate the agent's tier to its registry model, then to the matching alias: High → `claude-opus-5-0` → `model = "opus"`; Medium → `claude-sonnet-5-0` → `model = "sonnet"`; Low → `claude-haiku-4-5` → `model = "haiku"`. Omitting `model` lets the subagent fall back to its frontmatter (`model: inherit`), which inherits the parent session's model instead of the tier-appropriate one — always set `model` explicitly to actually get the cost-tier benefit.
+> **Registry name → `model` parameter mapping**: `docs/workspace-schema.json` and the tables above name models by full registry ID (e.g. `claude-opus-5-5`) for cross-platform documentation. The native `Agent` tool's `model` parameter only accepts the short aliases `sonnet | opus | haiku | fable`. <!-- Note: `fable` is a forward-looking alias not yet registered in workspace-schema.json --> When dispatching, translate the agent's tier to its registry model, then to the matching alias: High → `claude-opus-5-5` → `model = "opus"`; Medium → `claude-sonnet-5-5` → `model = "sonnet"`; Low → `claude-haiku-4-5` → `model = "haiku"`. Omitting `model` lets the subagent fall back to its frontmatter (`model: inherit`), which inherits the parent session's model instead of the tier-appropriate one — always set `model` explicitly to actually get the cost-tier benefit.
 >
 > **Automated enforcement (Claude Code CLI only)**: `scripts/hooks/agent-model-gate.ts` runs as a `PreToolUse` hook (matcher: `Agent`) and asks for confirmation whenever an `Agent()` call dispatches one of the 8 workspace-root agents (`pm`, `architect`, `auditor`, `lifecycle-manager`, `automation-engineer`, `docs-writer`, `scaffolding-expert`, `security-expert`) without a valid `model` alias — this is the check that catches the High/Low-tier (`opus`/`haiku`) silent-fallback bug described above before it happens. L0-only; not propagated to `templates/common/` since variant projects have their own agent rosters without a workspace-wide tier registry.
 
-Each implementation task follows the **Phase 4 execution loop** (see [AGENTS.md - Subagent Roster](AGENTS.md#subagent-roster)):
+Each implementation task follows the **Phase 4 execution loop** (see [AGENTS.md - Agent Roster](AGENTS.md#1-agent-ecosystem-overview)):
 1. **automation-engineer** implements the changes (or code-writer for project-specific agents).
 2. **PM** verifies against acceptance criteria by running `bun scripts/audit.ts` directly.
 3. **Quality gate (audit script)** validates compliance.
@@ -161,8 +163,8 @@ Each implementation task follows the **Phase 4 execution loop** (see [AGENTS.md 
 <!-- COMMON-CLAUDE:START -->
 #### Cost Optimization (3-Tier Model Strategy)
 The High/Medium/Low tier concept and its usage rules are the Single Source of Truth in [AGENTS.md §3.6 3-Tier Strategy](AGENTS.md#36-3-tier-strategy). Claude Code's model-ID mapping (overridden per agent invocation when appropriate):
-- **High-tier** → `claude-opus-5-0`
-- **Medium-tier** → `claude-sonnet-5-0`
+- **High-tier** → `claude-opus-5-5`
+- **Medium-tier** → `claude-sonnet-5-5`
 - **Low-tier** → `claude-haiku-4-5`
 <!-- COMMON-CLAUDE:END -->
 
@@ -226,7 +228,7 @@ All shared Git/PR rules are in [docs/context.md](docs/context.md). Claude Code-s
 
 - **PR Language**: Governed by [docs/context.md](docs/context.md). All PR titles, bodies, and review comments must be written in English - no exceptions.
 
-*Last Updated: 2026-09-26 — removed redundant N-1/N boilerplate rows; /sync already covers lifecycle + audit + commit + push + PR; previous: 2026-06-21 inlined N-1/N rows*
+*Last Updated: 2026-10-03 — removed redundant N-1/N boilerplate rows; /sync already covers lifecycle + audit + commit + push + PR; previous: 2026-06-21 inlined N-1/N rows*
 <!-- COMMON-CLAUDE:END -->
 
 ---
@@ -307,7 +309,7 @@ See `skills/desktop-app-fallback/SKILL.md` for the complete fallback workflow.
 
 ---
 
-*Last Updated: 2026-09-26 — resynced Claude Code-Specific Behaviors (§1-11) with the current
+*Last Updated: 2026-10-03 — resynced Claude Code-Specific Behaviors (§1-11) with the current
 templates/common/CLAUDE.md baseline (Role Declaration, full Automated Hooks/Slash Commands/
 Language Policy/Skill Resolution/Agent Dispatch/Plan Mode/Task Tracking sections had drifted
 out of sync); consolidated the orphaned teammateMode block into §6; kept all ABAP-specific
