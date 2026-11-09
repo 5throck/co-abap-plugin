@@ -4,8 +4,9 @@
 
 | Date | Summary |
 |------|---------|
-| [2026-10-03](2026-10-03.md) | chore: upgrade template to 0.10.0 |
-| [2026-09-26](2026-09-26.md) | --help |
+| [2026-11-10](2026-11-10.md) | chore(skills): remove stale /meeting command stubs (retired 2026-09-26; workspace-root T-20261109-003) |
+| 2026-10-03 | chore: upgrade template to 0.10.0 |
+| 2026-09-26 | --help |
 | 2026-09-20 | chore(graft): track .ignore for graft card searchability; regenerate VERSION_MANIFEST |
 | 2026-09-19 | chore(upgrade): template upgrade — ADR-0080 policy delivery |
 | 2026-09-17 | chore: regenerate VERSION_MANIFEST and fix i18n-specialist model comments |
