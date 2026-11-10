@@ -1265,6 +1265,12 @@
     {
       "type": "references",
       "from": "i18n-specialist",
+      "to": "meeting-facilitation",
+      "source": "prose"
+    },
+    {
+      "type": "references",
+      "from": "i18n-specialist",
       "to": "translate",
       "source": "prose"
     },
