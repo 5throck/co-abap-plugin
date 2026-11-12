@@ -232,7 +232,7 @@ See [`agents/pm.md`](agents/pm.md) for the PM Agent full definition.
 
 ## §3: PM Gateway Workflow
 
-**Thin-dispatcher section (ADR-0090)**: the PM Gateway is MANDATORY for all substantive work. Core MUST policy (§3.1), the 3-Tier model table (§3.6), meeting facilitation (§3.7), and the L0-only governance-backlog dispatch (§3.7.5) remain below. The detailed phase protocol, permission-denial procedure, and ADR-0078/0079/0080 policy summaries live in [`docs/governance/agents/pm-gateway-workflow.md`](docs/governance/agents/pm-gateway-workflow.md) — **Read it before dispatching specialists or adjudicating governance backlog items.**
+**Thin-dispatcher section (ADR-0090)**: the PM Gateway is MANDATORY for all substantive work. Core MUST policy (§3.1), the 3-Tier model table (§3.6), meeting facilitation (§3.7), and the L0-only governance-backlog dispatch (§3.7.5) remain below. The phase protocol is defined by this section (§3) and [`agents/pm.md`](agents/pm.md) — **Read them before dispatching specialists or adjudicating governance backlog items.**
 
 ### §3.1 PM Gateway Policy
 
@@ -276,7 +276,7 @@ When a specialist agent's required tool is denied, PM applies the [Permission De
 - PM creates tasks (owner: pm), dispatches project specialists (executor: `[specialist agent]`), and updates task status upon completion
 
 
-*Role boundaries, dispatch-communication templates, and specialist-roster detail: [`docs/governance/agents/pm-gateway-workflow.md`](docs/governance/agents/pm-gateway-workflow.md).*
+*Role boundaries, dispatch-communication templates, and specialist-roster detail: see [`agents/pm.md`](agents/pm.md).*
 
 ### §3.7 Meeting Facilitation
 
