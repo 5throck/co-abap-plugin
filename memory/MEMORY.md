@@ -4,6 +4,7 @@
 
 | Date | Summary |
 |------|---------|
+| [2026-11-12](2026-11-12.md) | chore(trail): migrate graft to trail and remove retired pm-gateway-workflow doc. Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com> |
 | [2026-11-10](2026-11-10.md) | chore(skills): remove stale /meeting command stubs (retired 2026-09-26; workspace-root T-20261109-003) |
 | 2026-10-03 | chore: upgrade template to 0.10.0 |
 | 2026-09-26 | --help |
